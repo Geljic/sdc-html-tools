@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Status Report — DoE Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
+  <a class="sdc-navbar__brand" href="../index.html" title="SDC AI Tools Home">
+    <span class="sdc-navbar__brand-icon">🏠</span>
+    <span>SDC AI Tools</span>
+  </a>
+  <ul class="sdc-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Synthesiser/index.html" data-page="synthesiser">
+          <span class="nav-icon">🔬</span> Research Synthesiser
+        </a>
+        <a href="../SDC Data Synthesis/index.html" data-page="data-synthesis">
+          <span class="nav-icon">🧪</span> Data Synthesis
+        </a>
+        <a href="../SDC Persona Builder/index.html" data-page="persona">
+          <span class="nav-icon">🧑</span> Persona Builder
+        </a>
+        <div class="nav-dropdown__divider"></div>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn active" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Charter/index.html" data-page="charter">
+          <span class="nav-icon">📋</span> Project Charter
+        </a>
+        <a href="../SDC Timeline Builder/index.html" data-page="timeline">
+          <span class="nav-icon">📅</span> Timeline Builder
+        </a>
+        <a href="../SDC Status Report/index.html" class="active" data-page="status-report">
+          <span class="nav-icon">📊</span> Status Report
+        </a>
+      </div>
+    </li>
+
+    <!-- Change Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Business Analyst -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="sdc-navbar__right">
+    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     PAGE HEADER
+============================================================ -->
+<header class="page-header">
+  <div class="page-header-left">
+    <h1>📊 Weekly Status Report</h1>
+    <p>Generate Q+ SD&amp;C project update slides — DoE format</p>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn-secondary" onclick="exportJSON()" title="Save report data as JSON">💾 Save JSON</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('json-import-input').click()" title="Load report data from JSON">📂 Load JSON</button>
+    <input type="file" id="json-import-input" accept=".json" onchange="importJSON(event)" />
+    <button class="btn btn-primary" onclick="exportPPTX()">⬇ Export PPTX</button>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN LAYOUT
+============================================================ -->
+<main>
+
+  <!-- ── LEFT: FORM PANEL ─────────────────────────────────── -->
+  <div class="form-panel">
+
+    <!-- SLIDE METADATA -->
+    <div class="form-section">
+      <h2>Slide Details</h2>
+      <div class="field-row">
+        <label>Project name</label>
+        <input type="text" id="project-name" placeholder="Q+ Service Design and Change" />
+      </div>
+      <div class="field-row">
+        <label>Week commencing</label>
+        <input type="date" id="week-date" />
+      </div>
+      <div class="field-row">
+        <label>Next week</label>
+        <input type="date" id="next-week-date" />
+      </div>
+    </div>
+
+    <!-- TRAFFIC LIGHT LEGEND INFO -->
+    <div class="form-section">
+      <h2>Traffic Light Legend</h2>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot green"></div> On track</div>
+        <div class="legend-item"><div class="legend-dot amber"></div> At risk</div>
+        <div class="legend-item"><div class="legend-dot red"></div> Off track / blocked</div>
+        <div class="legend-item"><div class="legend-dot navy"></div> Info / FYI</div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;">The legend appears at the bottom of the exported slide. Each stream row is colour-coded by its RAG status.</p>
+    </div>
+
+    <!-- WORK STREAMS -->
+    <div class="form-section">
+      <h2>Work Streams</h2>
+      <div id="streams-container"></div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-add" onclick="addStream()">＋ Add stream</button>
+      </div>
+      <div id="overflow-warn"></div>
+    </div>
+
+    <!-- SUPPORT REQUIRED -->
+    <div class="form-section" id="support-section">
+      <h2>Support Required from Directors <span style="font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — leave blank to hide)</span></h2>
+      <textarea id="support-text" rows="3" placeholder="e.g. Alignment with Attraction, Engagement &amp; Retention Programs | School Workforce in relation to Q+ expanded access cohorts..."></textarea>
+    </div>
+
+  </div><!-- /form-panel -->
+
+  <!-- ── RIGHT: PREVIEW PANEL ─────────────────────────────── -->
+  <div class="preview-panel">
+    <h2>Live Preview <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;font-size:10px;">— updates as you type</span></h2>
+    <div id="preview-wrap">
+      <svg id="preview-svg" viewBox="0 0 1333 750" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <p class="preview-hint">Preview is approximate. Export PPTX for the final branded slide.</p>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     TOAST
+============================================================ -->
+<div id="toast"></div>
+
+<!-- ============================================================
+     SCRIPTS
+============================================================ -->
+<script src="lib/pptxgen.bundle.js"></script>
+<script src="js/logo.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

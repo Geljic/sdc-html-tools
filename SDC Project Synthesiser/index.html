@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Synthesiser</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <button id="btn-back-projects" class="btn-back hidden" title="Back to projects">&larr;</button>
+    <h1>Research Synthesiser</h1>
+    <span id="project-indicator" class="project-indicator"></span>
+    <button id="btn-settings" class="btn-settings" title="Settings">&#9881;</button>
+  </header>
+
+  <!-- Project workspace tab bar (hidden on projects list view) -->
+  <nav id="workspace-nav" class="tab-bar hidden">
+    <button class="tab-btn active" data-tab="project">Project Info</button>
+    <button class="tab-btn" data-tab="participants">Participants</button>
+    <button class="tab-btn" data-tab="themes">Themes</button>
+    <button class="tab-btn" data-tab="export">Export</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </nav>
+
+  <main class="tab-content">
+
+    <!-- ==================== PROJECTS LIST VIEW ==================== -->
+    <section id="view-projects" class="view-panel active">
+      <div class="card">
+        <h2>Projects</h2>
+        <p>Select a project to open it, or create a new one.</p>
+        <div id="projects-list"></div>
+        <div id="projects-empty" class="placeholder-msg">
+          <p>No projects yet. Create one to get started.</p>
+        </div>
+        <div class="mt-12">
+          <button class="btn btn-primary" id="btn-new-project">New Project</button>
+        </div>
+        <div id="new-project-form" class="hidden mt-12">
+          <div class="form-group">
+            <label for="new-project-name">Project Name</label>
+            <input type="text" id="new-project-name" placeholder="e.g. Parent Portal Usability Study">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btn-create-project">Create</button>
+            <button class="btn btn-secondary" id="btn-cancel-project">Cancel</button>
+          </div>
+        </div>
+        <div id="project-status"></div>
+      </div>
+    </section>
+
+    <!-- ==================== PROJECT WORKSPACE ==================== -->
+
+    <!-- Project Info Tab -->
+    <section id="tab-project" class="tab-panel">
+
+      <!-- Background -->
+      <div class="card">
+        <h2>Project Background</h2>
+        <p>Describe the study so the synthesiser has context.</p>
+        <div class="form-group">
+          <label for="fw-background">Background &amp; Methodology</label>
+          <textarea id="fw-background" rows="4" placeholder="What is this study about? What methodology are you using?"></textarea>
+        </div>
+        <button class="btn btn-primary" id="btn-save-framework">Save</button>
+        <div id="framework-status"></div>
+      </div>
+
+      <!-- Facilitator Names -->
+      <div class="card">
+        <h2>Facilitator Names</h2>
+        <p>Names of people running the sessions. Used to auto-detect speaker roles when transcripts are uploaded.</p>
+        <div id="facilitator-list"></div>
+        <div class="form-group mt-8">
+          <div class="btn-row">
+            <input type="text" id="new-facilitator" placeholder="Facilitator name" style="flex:1">
+            <button class="btn btn-secondary" id="btn-add-facilitator">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Research Questions -->
+      <div class="card">
+        <h2>Research Questions</h2>
+        <p>The questions you're trying to answer through this research. When synthesising a transcript, the model maps findings to these questions. Define them clearly so the synthesiser knows what to look for.</p>
+        <div id="rq-list"></div>
+        <div id="rq-form" class="mt-8">
+          <div class="form-group">
+            <div class="btn-row">
+              <input type="text" id="new-rq-label" placeholder="e.g. How do participants currently access and use data?" style="flex:1">
+              <button class="btn btn-secondary" id="btn-add-rq">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participant Groups -->
+      <div class="card">
+        <h2>Participant Groups</h2>
+        <p>Optional. When defined, evidence is tagged by group and the final report includes cross-group analysis.</p>
+        <div id="group-list"></div>
+        <div id="group-form" class="mt-8">
+          <div class="form-group">
+            <label for="new-group-label">Group Name</label>
+            <input type="text" id="new-group-label" placeholder="e.g. Teachers">
+          </div>
+          <div class="form-group">
+            <label for="new-group-desc">Description</label>
+            <input type="text" id="new-group-desc" placeholder="e.g. Primary school teachers in metro Sydney">
+          </div>
+          <button class="btn btn-secondary" id="btn-add-group">Add Group</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Participants Tab -->
+    <section id="tab-participants" class="tab-panel">
+
+      <!-- Participant List -->
+      <div id="participant-list-card" class="card">
+        <div class="participants-header">
+          <h2>Participants</h2>
+          <button class="btn btn-primary btn-sm" id="btn-add-participant">Add Participant</button>
+        </div>
+        <div id="participant-list"></div>
+        <div id="participants-empty" class="placeholder-msg">
+          <p>No participants yet. Add one to get started.</p>
+        </div>
+      </div>
+
+      <!-- Synthesis controls -->
+      <div id="synthesis-controls-card" class="card hidden">
+        <h2>Synthesis</h2>
+        <p>Run synthesis on participants with uploaded transcripts. Themes are built incrementally across participants.</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-run-synthesis">Synthesise All Pending</button>
+          <button class="btn btn-secondary hidden" id="btn-stop-synthesis">Stop</button>
+        </div>
+        <div id="synthesis-status"></div>
+        <div id="synthesis-progress-card" class="hidden mt-12">
+          <div id="synthesis-progress"></div>
+        </div>
+        <div id="synthesis-log-card" class="hidden mt-12">
+          <div id="synthesis-log" class="synthesis-log"></div>
+        </div>
+      </div>
+
+
+      <!-- Participant Sub-Pages (shown when clicking a participant or adding new) -->
+      <div id="participant-subpages" class="hidden">
+        <div class="subpage-header">
+          <button class="btn btn-secondary btn-sm" id="btn-back-to-list">&larr; Back to list</button>
+          <h2 id="participant-subpage-title">Participant</h2>
+        </div>
+
+        <!-- Step nav -->
+        <nav class="subpage-nav">
+          <button class="subpage-btn active" data-subpage="details">Details</button>
+          <button class="subpage-btn disabled" data-subpage="transcript">Transcript</button>
+          <button class="subpage-btn disabled" data-subpage="synthesis">Synthesis</button>
+          <button class="subpage-btn disabled" data-subpage="inquiry">Inquire</button>
+        </nav>
+
+        <!-- Sub-page: Details -->
+        <div id="subpage-details" class="subpage-panel active">
+          <div class="card">
+            <h3>Participant Details</h3>
+            <div class="form-group">
+              <label for="pp-detail-id">Participant ID</label>
+              <span class="hint">Auto-assigned. You can change this if needed.</span>
+              <input type="text" id="pp-detail-id" placeholder="P-01">
+            </div>
+            <div class="form-group">
+              <label for="pp-detail-name">Real Name (optional)</label>
+              <span class="hint">For your reference only. Never sent to AI.</span>
+              <input type="text" id="pp-detail-name" placeholder="e.g. Jane Smith">
+            </div>
+            <div class="form-group">
+              <label for="pp-detail-group">Participant Group</label>
+              <select id="pp-detail-group">
+                <option value="">No group</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pp-detail-desc">Description (optional)</label>
+              <span class="hint">Short note about this participant. Not shared with AI.</span>
+              <input type="text" id="pp-detail-desc" placeholder="e.g. Year 3 teacher, metro Sydney">
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-save-pp-details">Save Details</button>
+            </div>
+            <div id="pp-detail-status"></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Transcript -->
+        <div id="subpage-transcript" class="subpage-panel">
+
+          <!-- Upload state (no transcript yet) -->
+          <div id="subpage-transcript-upload" class="card">
+            <h3>Upload Transcript — <span id="subpage-upload-pp-id"></span></h3>
+            <p>Upload a .docx interview transcript for this participant. The file is parsed in your browser.</p>
+            <div id="subpage-drop-zone" class="drop-zone">
+              <span class="drop-zone-text">Drag .docx file here or click to browse</span>
+              <input type="file" id="subpage-file-input" accept=".docx" class="drop-zone-input">
+            </div>
+            <div id="subpage-upload-status"></div>
+          </div>
+
+          <!-- De-identification (shown after parsing) -->
+          <div id="subpage-deidentify" class="card hidden">
+            <h3>De-identify Transcript — <span id="subpage-deid-filename"></span></h3>
+            <p>Remove participant names and other identifying information before saving.</p>
+
+            <div id="subpage-deid-names-section">
+              <h4>Speakers</h4>
+              <p class="hint">Set replacement text and role for each speaker. Facilitators are typically left unchanged.</p>
+              <div id="subpage-deid-name-list"></div>
+              <div class="btn-row mt-8">
+                <button class="btn btn-primary btn-sm" id="btn-subpage-apply-names">Apply Name Replacements</button>
+              </div>
+            </div>
+
+            <div id="subpage-deid-find-replace" class="deid-find-replace mt-16">
+              <h4>Find &amp; Replace</h4>
+              <div class="deid-fr-row">
+                <input type="text" id="subpage-deid-find-input" placeholder="Find…" class="deid-fr-input">
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-prev">&lsaquo; Prev</button>
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-next">Next &rsaquo;</button>
+                <span id="subpage-deid-match-count" class="deid-match-count"></span>
+              </div>
+              <div class="deid-fr-row">
+                <input type="text" id="subpage-deid-replace-input" placeholder="Replace with…" class="deid-fr-input">
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-replace">Replace</button>
+                <button class="btn btn-primary btn-sm" id="btn-subpage-deid-replace-all">Replace All</button>
+              </div>
+            </div>
+
+            <div id="subpage-deid-preview-section" class="mt-16">
+              <h4>Transcript</h4>
+              <p class="hint">Hover over a turn and click the pencil icon to edit it inline.</p>
+              <div id="subpage-deid-preview" class="transcript-preview"></div>
+            </div>
+
+            <div class="deid-confirm-section mt-16">
+              <label class="deid-confirm-label">
+                <input type="checkbox" id="subpage-deid-confirm-checkbox">
+                <span>I confirm that all personally identifiable information has been removed from this transcript.</span>
+              </label>
+            </div>
+
+            <div class="btn-row mt-12">
+              <button class="btn btn-primary" id="btn-subpage-deid-proceed" disabled>Confirm &amp; Save Transcript</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-cancel">Cancel</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-reset">Reset to Original</button>
+            </div>
+
+            <div id="subpage-deid-status"></div>
+          </div>
+
+          <!-- Saved transcript view (shown when transcript exists) -->
+          <div id="subpage-transcript-view" class="card hidden">
+            <div class="preview-header">
+              <h3>Transcript</h3>
+              <button class="btn btn-secondary btn-sm" id="btn-reupload-transcript">Re-upload</button>
+            </div>
+            <div id="subpage-transcript-preview" class="transcript-preview"></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Synthesis -->
+        <div id="subpage-synthesis" class="subpage-panel">
+          <div class="card">
+            <div class="preview-header">
+              <h3>Synthesis</h3>
+              <div class="btn-row">
+                <select id="pp-synth-model" class="model-select-inline">
+                  <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                  <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+                  <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+                  <option value="claude-opus-4-7">Opus 4.7</option>
+                  <option value="claude-opus-4-6">Opus 4.6</option>
+                  <option value="claude-opus-4-5-20251101">Opus 4.5</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="btn-run-pp-synthesis">Run Synthesis</button>
+              </div>
+            </div>
+            <div id="pp-synthesis-status"></div>
+            <div id="pp-synthesis-log" class="synthesis-log hidden"></div>
+          </div>
+
+          <!-- Synthesis results (shown after synthesis) -->
+          <div id="pp-synthesis-results" class="hidden">
+
+            <!-- RQ Findings -->
+            <div id="pp-rq-findings"></div>
+
+            <!-- Emergent Findings -->
+            <div id="pp-emergent-findings"></div>
+
+            <!-- Theme summary for this participant -->
+            <div id="pp-theme-summary" class="card hidden">
+              <h3>Themes from this Participant</h3>
+              <p class="hint">Themes identified for this participant. Click a quote to see it in context.</p>
+              <div id="pp-theme-blocks" class="theme-blocks"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Inquiry -->
+        <div id="subpage-inquiry" class="subpage-panel">
+          <div class="card">
+            <h3>Ask About This Transcript</h3>
+            <p class="hint">Ask a question and the model will answer based on the transcript and project context.</p>
+            <div class="form-group">
+              <textarea id="inquiry-input" rows="3" placeholder="e.g. What concerns did this participant raise about data privacy?"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-submit-inquiry">Ask</button>
+            </div>
+            <div id="inquiry-status"></div>
+          </div>
+          <div id="inquiry-history"></div>
+          <div id="inquiry-empty" class="placeholder-msg hidden">
+            <p>No inquiries yet. Ask a question above.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Themes Tab -->
+    <section id="tab-themes" class="tab-panel">
+
+      <!-- Controls -->
+      <div class="card">
+        <div class="themes-controls">
+          <h2>Theme Database</h2>
+          <div class="themes-filters">
+            <select id="theme-filter-source">
+              <option value="">All sources</option>
+              <option value="synthesised">Synthesised</option>
+              <option value="merged">Merged</option>
+            </select>
+            <select id="theme-filter-rq">
+              <option value="">All RQs</option>
+            </select>
+            <select id="theme-sort">
+              <option value="participants">Sort: Participant count</option>
+              <option value="sessions">Sort: Session count</option>
+              <option value="label">Sort: Label</option>
+              <option value="first_seen">Sort: First seen</option>
+            </select>
+          </div>
+        </div>
+        <div id="theme-summary" class="text-secondary text-small mt-8"></div>
+      </div>
+
+      <!-- Merge bar (shown when 2 themes selected) -->
+      <div id="merge-bar" class="card hidden">
+        <div class="merge-bar-content">
+          <span id="merge-label">2 themes selected</span>
+          <button class="btn btn-primary btn-sm" id="btn-merge-themes">Merge Selected</button>
+          <button class="btn btn-secondary btn-sm" id="btn-cancel-merge">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Theme cards -->
+      <div id="theme-cards"></div>
+
+      <!-- Empty state -->
+      <div id="themes-empty" class="placeholder-msg">
+        <h2>No themes yet</h2>
+        <p>Seed themes in the Project Info tab or run synthesis from the Participants tab.</p>
+      </div>
+    </section>
+
+    <!-- Export Tab -->
+    <section id="tab-export" class="tab-panel">
+
+      <!-- Generate Final Synthesis -->
+      <div class="card">
+        <h2>Generate Final Synthesis</h2>
+        <p>Consolidates all per-session findings into a single research report. Draws on the theme database for cross-participant patterns and curated quotes, and the per-session analytical narratives for interpretive context from each interview.</p>
+        <p class="hint">Output is a structured Markdown report organised by research question, with verbatim quotes attributed by participant ID. Best run after all transcripts have been synthesised.</p>
+        <div id="consolidation-stats" class="consolidation-stats hidden"></div>
+        <div class="form-group">
+          <label for="consolidation-model">Model</label>
+          <span class="hint">Sonnet for most studies. Opus for complex studies with 30+ themes.</span>
+          <select id="consolidation-model">
+            <option value="">Auto (Sonnet, or Opus for 30+ themes)</option>
+            <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+            <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+            <option value="claude-opus-4-7">Opus 4.7</option>
+            <option value="claude-opus-4-6">Opus 4.6</option>
+            <option value="claude-opus-4-5-20251101">Opus 4.5</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-consolidate">Generate Report</button>
+        </div>
+        <div id="consolidation-status"></div>
+        <div id="consolidation-log" class="synthesis-log hidden"></div>
+      </div>
+
+      <!-- Report Preview -->
+      <div id="report-preview-card" class="card hidden">
+        <div class="preview-header">
+          <h2>Report Preview</h2>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" id="btn-download-md">Download .md</button>
+            <button class="btn btn-secondary btn-sm" id="btn-toggle-raw">View Raw</button>
+          </div>
+        </div>
+        <div id="report-preview" class="report-preview"></div>
+        <div id="report-raw" class="report-raw hidden"></div>
+      </div>
+
+      <!-- Theme Database Export/Import -->
+      <div class="card">
+        <h2>Theme Database</h2>
+        <p>Export the full theme database as JSON for backup, or import a previously exported database.</p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="btn-export-json">Export as .json</button>
+          <label class="btn btn-secondary import-label" for="import-json-input">Import .json</label>
+          <input type="file" id="import-json-input" accept=".json" class="hidden">
+        </div>
+        <div id="export-status"></div>
+      </div>
+
+    </section>
+
+    <!-- Settings Tab -->
+    <section id="tab-settings" class="tab-panel">
+
+      <!-- Model Defaults -->
+      <div class="card">
+        <h2>Model Defaults</h2>
+        <p>Set the default models used for synthesis. These can be overridden per-run.</p>
+
+        <div class="form-group mt-12">
+          <label for="default-synth-model">Transcript Synthesis Model</label>
+          <span class="hint">Used when synthesising individual transcripts.</span>
+          <select id="default-synth-model">
+            <option value="claude-sonnet-4-6">Sonnet 4.6 (default)</option>
+            <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+            <option value="claude-opus-4-7">Opus 4.7</option>
+            <option value="claude-opus-4-6">Opus 4.6</option>
+            <option value="claude-opus-4-5-20251101">Opus 4.5</option>
+          </select>
+        </div>
+
+        <div class="form-group mt-12">
+          <label for="default-consolidation-model">Final Synthesis Model</label>
+          <span class="hint">Used when generating the final consolidated report.</span>
+          <select id="default-consolidation-model">
+            <option value="">Auto (Sonnet, or Opus for 30+ themes)</option>
+            <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+            <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+            <option value="claude-opus-4-7">Opus 4.7</option>
+            <option value="claude-opus-4-6">Opus 4.6</option>
+            <option value="claude-opus-4-5-20251101">Opus 4.5</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" id="btn-save-model-defaults">Save Model Defaults</button>
+        <div id="model-defaults-status"></div>
+      </div>
+
+      <!-- Prompt Settings -->
+      <div class="card">
+        <h2>Prompt Settings</h2>
+        <p>Customise the system prompts sent to the model. Changes are project-scoped. When blank, the built-in defaults are used.</p>
+
+        <div class="form-group mt-12">
+          <label for="custom-synthesis-prompt">Per-Session Synthesis Prompt</label>
+          <span class="hint">The base analytical instructions for synthesising each transcript. The RQ list and JSON output format are always appended automatically.</span>
+          <div class="prompt-current-preview" id="synthesis-prompt-current"></div>
+          <textarea id="custom-synthesis-prompt" rows="10" placeholder="Leave blank to use the default prompt"></textarea>
+          <div class="btn-row mt-8">
+            <button class="btn btn-secondary btn-sm" id="btn-reset-synthesis-prompt">Revert to Default</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preview-synthesis-prompt">Preview Full Prompt</button>
+          </div>
+        </div>
+
+        <div class="form-group mt-16">
+          <label for="custom-consolidation-prompt">Final Consolidation Prompt</label>
+          <span class="hint">The base instructions for generating the final synthesis report. Report structure sections are always appended automatically.</span>
+          <div class="prompt-current-preview" id="consolidation-prompt-current"></div>
+          <textarea id="custom-consolidation-prompt" rows="10" placeholder="Leave blank to use the default prompt"></textarea>
+          <div class="btn-row mt-8">
+            <button class="btn btn-secondary btn-sm" id="btn-reset-consolidation-prompt">Revert to Default</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preview-consolidation-prompt">Preview Full Prompt</button>
+          </div>
+        </div>
+
+        <div class="btn-row mt-12">
+          <button class="btn btn-primary" id="btn-save-prompts">Save Prompt Settings</button>
+        </div>
+        <div id="prompt-settings-status"></div>
+
+        <div id="prompt-preview-panel" class="hidden mt-16">
+          <h3 id="prompt-preview-title">Full Prompt Preview</h3>
+          <pre id="prompt-preview-content" class="prompt-preview-content"></pre>
+          <button class="btn btn-secondary btn-sm mt-8" id="btn-close-prompt-preview">Close Preview</button>
+        </div>
+      </div>
+
+      <!-- Reset Project -->
+      <div class="card">
+        <h2>Reset Synthesis</h2>
+        <p>Clear all themes and reset participant synthesis statuses. Transcripts and project settings are kept. Participants will return to "Transcript uploaded" status and can be re-synthesised.</p>
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-reset-synthesis">Clear All Themes &amp; Reset</button>
+        </div>
+        <div id="reset-synthesis-status"></div>
+      </div>
+
+      <!-- Delete Project -->
+      <div class="card">
+        <h2>Delete Project</h2>
+        <p>Permanently delete this project and all its data — participants, transcripts, themes, and syntheses. This cannot be undone.</p>
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-delete-project">Delete Project</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="btn-icon" id="btn-close-settings">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="api-endpoint">Gateway Endpoint</label>
+        <span class="hint">The base URL of your LiteLLM gateway</span>
+        <input type="url" id="api-endpoint" placeholder="https://your-gateway.example.com">
+      </div>
+      <div class="form-group">
+        <label for="api-key">API Key</label>
+        <input type="password" id="api-key" placeholder="Paste your API key here">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-save-api">Save</button>
+        <button class="btn btn-secondary" id="btn-test-api">Test Connection</button>
+      </div>
+      <div id="api-status"></div>
+      <div id="api-models-card" class="hidden mt-12">
+        <h3>Available Models</h3>
+        <ul id="api-models-list" class="model-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Quote Modal (shows transcript with quote highlighted) -->
+  <div id="quote-modal" class="modal-overlay hidden">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="quote-modal-title">Quote in Context</h2>
+        <button class="btn-icon" id="btn-close-quote-modal">&times;</button>
+      </div>
+      <div id="quote-modal-body" class="transcript-preview modal-transcript"></div>
+    </div>
+  </div>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/transcript-parser.js"></script>
+  <script src="js/deidentify.js"></script>
+  <script src="js/prompts.js"></script>
+  <script src="js/verify.js"></script>
+  <script src="js/pipeline.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

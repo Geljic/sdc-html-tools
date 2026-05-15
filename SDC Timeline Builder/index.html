@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timeline Builder — DoE Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
+  <a class="sdc-navbar__brand" href="../index.html" title="SDC AI Tools Home">
+    <span class="sdc-navbar__brand-icon">🏠</span>
+    <span>SDC AI Tools</span>
+  </a>
+  <ul class="sdc-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Synthesiser/index.html" data-page="synthesiser">
+          <span class="nav-icon">🔬</span> Research Synthesiser
+        </a>
+        <a href="../SDC Data Synthesis/index.html" data-page="data-synthesis">
+          <span class="nav-icon">🧪</span> Data Synthesis
+        </a>
+        <a href="../SDC Persona Builder/index.html" data-page="persona">
+          <span class="nav-icon">🧑</span> Persona Builder
+        </a>
+        <div class="nav-dropdown__divider"></div>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn active" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Charter/index.html" data-page="charter">
+          <span class="nav-icon">📋</span> Project Charter
+        </a>
+        <a href="../SDC Timeline Builder/index.html" class="active" data-page="timeline">
+          <span class="nav-icon">📅</span> Timeline Builder
+        </a>
+        <a href="../SDC Status Report/index.html" data-page="status-report">
+          <span class="nav-icon">📊</span> Status Report
+        </a>
+      </div>
+    </li>
+
+    <!-- Change Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Business Analyst -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="sdc-navbar__right">
+    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
+  </div>
+</nav>
+
+<header class="page-header">
+  <div>
+    <h1>Timeline Builder</h1>
+    <p>Generate Gantt timeline PPTX slides — DoE Q+ format</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- SLIDE DETAILS -->
+  <div class="form-section">
+    <h2>Slide Details</h2>
+    <div class="field-row">
+      <label>Title</label>
+      <input type="text" id="title" placeholder="Q+ Next Generation | Solution 2 — PAS Timeline">
+    </div>
+    <div class="field-row">
+      <label>Subtitle</label>
+      <input type="text" id="subtitle" placeholder="Key dates and actions for the PAS team  ·  Go Live: 02 Nov 2026">
+    </div>
+    <div class="field-row">
+      <label>Endorsed badge</label>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div class="checkbox-wrap" style="padding-top:0;min-width:130px;">
+          <input type="checkbox" id="show-badge" checked>
+          <label for="show-badge">Show badge</label>
+        </div>
+        <textarea id="badge-text" rows="2" style="width:160px;min-height:44px;">Endorsed
+18.03.26</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE SETTINGS -->
+  <div class="form-section">
+    <h2>Timeline Settings</h2>
+    <div class="field-row">
+      <label>Date range</label>
+      <div class="date-range">
+        <select id="start-month"></select>
+        <input type="number" id="start-year" value="2026" min="2024" max="2035">
+        <span>→</span>
+        <select id="end-month"></select>
+        <input type="number" id="end-year" value="2026" min="2024" max="2035">
+      </div>
+    </div>
+    <div class="field-row">
+      <label>"We are here"</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="checkbox-wrap" style="padding-top:0;">
+          <input type="checkbox" id="show-today" checked>
+          <label for="show-today">Show line</label>
+        </div>
+        <input type="date" id="today-date" style="flex:none;width:155px;">
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Show weeks</label>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div class="checkbox-wrap" style="padding-top:0;">
+          <input type="checkbox" id="show-weeks">
+          <label for="show-weeks">Show w/c dates below month header</label>
+        </div>
+        <span style="font-size:12px;color:var(--muted);">Recommended for timelines ≤ 3 months</span>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Section label</label>
+      <input type="text" id="section-label" placeholder="RELEASE 2 — Solution 2  (PAS Focus)">
+    </div>
+    <div class="field-row">
+      <label>Go Live text</label>
+      <input type="text" id="golive-text" placeholder="Go Live: 02 Nov 2026">
+    </div>
+  </div>
+
+  <!-- ROWS -->
+  <div class="form-section">
+    <h2>Timeline Rows / Swim Lanes</h2>
+
+    <div class="quick-add-wrap">
+      <div class="quick-add-label">Quick add swim lane</div>
+      <div class="epic-chips">
+        <button type="button" class="epic-chip chip-sd"     onclick="quickAddRow('servicedesign')"><span class="dot" style="background:var(--c-sd)"></span>Service Design</button>
+        <button type="button" class="epic-chip chip-proto"  onclick="quickAddRow('prototype')"   ><span class="dot" style="background:var(--c-proto)"></span>Prototype / Content</button>
+        <button type="button" class="epic-chip chip-ur"     onclick="quickAddRow('userresearch')" ><span class="dot" style="background:var(--c-ur)"></span>User Research</button>
+        <button type="button" class="epic-chip chip-pas"    onclick="quickAddRow('pas')"          ><span class="dot" style="background:var(--c-pas)"></span>Actions</button>
+        <button type="button" class="epic-chip chip-dev"    onclick="quickAddRow('development')"  ><span class="dot" style="background:var(--c-dev)"></span>Development</button>
+        <button type="button" class="epic-chip chip-change" onclick="quickAddRow('change')"       ><span class="dot" style="background:var(--c-change)"></span>Change &amp; Comms</button>
+        <button type="button" class="epic-chip chip-live"   onclick="quickAddRow('golive')"       ><span class="dot" style="background:var(--c-live)"></span>Go Live</button>
+        <button type="button" class="epic-chip chip-care"   onclick="quickAddRow('hypercare')"    ><span class="dot" style="background:var(--c-care)"></span>Hyper Care</button>
+        <button type="button" class="epic-chip" style="border-color:var(--border);color:var(--muted);" onclick="addRow()">+ Custom row</button>
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Only add the swim lanes relevant to your project — not every project needs every epic.</p>
+
+    <div id="rows-container"></div>
+    <button type="button" class="btn-add-row" onclick="addRow()">+ Add custom row</button>
+  </div>
+
+  <!-- TYPE EDITOR (editable legend / bar type reference) -->
+  <div class="form-section">
+    <h2>Bar Type Reference <span class="section-hint">— edit names and colours used in the PPTX legend</span></h2>
+    <div id="type-editor-grid" class="type-editor-grid"></div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="form-section">
+    <h2>Timeline Preview <span class="section-hint" id="overflow-hint"></span></h2>
+    <div class="preview-controls">
+      <label class="preview-toggle">
+        <input type="checkbox" id="auto-scale" checked>
+        <span>Shrink bars to fit overflow</span>
+        <em>Turn off if bars become too small</em>
+      </label>
+      <label class="preview-toggle">
+        <input type="checkbox" id="label-below" checked>
+        <span>Show full label below bar when text doesn't fit</span>
+      </label>
+    </div>
+    <div class="preview-wrap">
+      <svg id="preview-svg" viewBox="0 0 13.33 7.5" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;border-radius:4px;"></svg>
+    </div>
+  </div>
+
+  <!-- SAVE / LOAD -->
+  <div class="generate-section" style="margin-bottom:10px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);">Save / Load</span>
+      <span style="font-size:12px;color:var(--muted);">Save your work as a JSON file and reload it later — nothing is stored in the browser.</span>
+    </div>
+    <div style="display:flex;gap:10px;margin-left:auto;margin-top:8px;">
+      <button type="button" class="btn-save-load" onclick="saveTimeline()">💾 Save</button>
+      <label class="btn-save-load btn-load-label">
+        📂 Load
+        <input type="file" id="load-input" accept=".json" onchange="loadTimeline(event)" style="display:none;">
+      </label>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <div class="generate-section">
+    <div id="overflow-warn" class="overflow-warn-box"></div>
+    <div class="generate-actions">
+      <button type="button" id="generate-btn" onclick="generatePPTX()">⬇ Generate PPTX</button>
+      <button type="button" class="btn-save-load" onclick="exportJiraCSV()" style="font-size:14px;padding:10px 20px;">⬇ Export Jira CSV</button>
+      <span id="status-msg"></span>
+    </div>
+  </div>
+
+</main>
+
+<!-- PptxGenJS — vendored locally so the tool works offline -->
+<script src="lib/pptxgen.bundle.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

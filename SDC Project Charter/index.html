@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DoE Project Charter Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
+  <a class="sdc-navbar__brand" href="../index.html" title="SDC AI Tools Home">
+    <span class="sdc-navbar__brand-icon">🏠</span>
+    <span>SDC AI Tools</span>
+  </a>
+  <ul class="sdc-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Synthesiser/index.html" data-page="synthesiser">
+          <span class="nav-icon">🔬</span> Research Synthesiser
+        </a>
+        <a href="../SDC Data Synthesis/index.html" data-page="data-synthesis">
+          <span class="nav-icon">🧪</span> Data Synthesis
+        </a>
+        <a href="../SDC Persona Builder/index.html" data-page="persona">
+          <span class="nav-icon">🧑</span> Persona Builder
+        </a>
+        <div class="nav-dropdown__divider"></div>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn active" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Charter/index.html" class="active" data-page="charter">
+          <span class="nav-icon">📋</span> Project Charter
+        </a>
+        <a href="../SDC Timeline Builder/index.html" data-page="timeline">
+          <span class="nav-icon">📅</span> Timeline Builder
+        </a>
+        <a href="../SDC Status Report/index.html" data-page="status-report">
+          <span class="nav-icon">📊</span> Status Report
+        </a>
+      </div>
+    </li>
+
+    <!-- Change Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Business Analyst -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="sdc-navbar__right">
+    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     TOAST CONTAINER
+============================================================ -->
+<div id="toast-container"></div>
+
+<!-- ============================================================
+     MODAL
+============================================================ -->
+<div id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-message">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="toolbar-btn" id="modal-cancel">Cancel</button>
+      <button class="toolbar-btn danger" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="app-header">
+    <div class="brand">
+      <div class="brand-icon">📋</div>
+      <div class="brand-text">
+        <h1>Project Charter Generator</h1>
+        <p>NSW Department of Education · HCD Pilot</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="save-indicator">
+        <span id="save-dot">●</span>
+        <span id="save-text">All changes saved</span>
+      </span>
+      <button class="toolbar-btn" onclick="openSharePointModal()" title="How to save and share your work with the team" style="font-size:0.8rem;padding:4px 10px;">
+        ℹ️ How to save
+      </button>
+    </div>
+  </header>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <div id="progress-container">
+      <div id="progress-label">
+        <span>Charter completion</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div id="progress-bar-track">
+        <div id="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <button class="toolbar-btn" onclick="importJSON()" title="Restore from a previously exported JSON file">
+      📂 Import
+    </button>
+    <button class="toolbar-btn" onclick="exportJSON()" title="Save all form data as JSON backup">
+      💾 Export JSON
+    </button>
+    <button class="toolbar-btn danger" onclick="confirmClear()">
+      🗑️ Clear All
+    </button>
+    <button class="toolbar-btn success" onclick="exportPPTX()">
+      📊 Export PPTX
+    </button>
+    <button class="toolbar-btn primary" onclick="exportPDF()">
+      🖨️ Print / PDF
+    </button>
+  </div>
+
+  <!-- FORM CONTAINER — sections injected by JS -->
+  <main id="form-container">
+    <!-- Sections 1–10 will be rendered here by JavaScript -->
+    <div id="sections-placeholder" style="padding:40px;text-align:center;color:var(--grey-400);">
+      <p style="font-size:1.1rem;">⏳ Loading form sections…</p>
+    </div>
+  </main>
+
+  <!-- PREVIEW PANEL -->
+  <aside id="preview-panel">
+    <div id="preview-header">
+      <h3>📄 Live Preview</h3>
+      <span class="badge badge-blue">Updates as you type</span>
+    </div>
+    <div id="preview-content">
+      <div class="charter-preview" id="charter-preview">
+        <!-- Rendered by renderPreview() -->
+        <div class="cp-header">
+          <h2 class="cp-placeholder">Project name will appear here…</h2>
+          <p class="cp-placeholder">Version · Status · Author · Date</p>
+        </div>
+        <div class="cp-sponsors">
+          <div><strong>Project Sponsor:</strong> <span class="cp-placeholder">—</span></div>
+          <div><strong>Executive Sponsors:</strong> <span class="cp-placeholder">—</span></div>
+        </div>
+        <div class="cp-team cp-placeholder">Team members will appear here…</div>
+        <div class="cp-section">
+          <div class="cp-section-title">Problem Statement</div>
+          <div class="cp-section-body cp-placeholder">HMW question will appear here…</div>
+        </div>
+        <div class="cp-section">
+          <div class="cp-section-title">Strategic Objective</div>
+          <div class="cp-section-body cp-placeholder">Strategic objective will appear here…</div>
+        </div>
+        <div class="cp-section">
+          <div class="cp-grid">
+            <div>
+              <div class="cp-section-title" style="margin:-8px -14px 8px;">Success Measures</div>
+              <span class="cp-placeholder">Measures will appear here…</span>
+            </div>
+            <div>
+              <div class="cp-section-title" style="margin:-8px -14px 8px;">Scope</div>
+              <span class="cp-placeholder">Scope will appear here…</span>
+            </div>
+          </div>
+        </div>
+        <div class="cp-section">
+          <div class="cp-section-title">Dependencies &amp; Stakeholders</div>
+          <div class="cp-section-body cp-placeholder">Dependencies will appear here…</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /#app -->
+
+<!-- Hidden file input for JSON import -->
+<input type="file" id="json-file-input" accept=".json" class="hidden" onchange="handleJSONImport(event)" />
+
+<!-- PptxGenJS — vendored locally so the tool works offline -->
+<script src="lib/pptxgen.bundle.js"></script>
+
+<!-- App scripts (load order matters: state → ui → storage/copy → fields → builders → gap-warnings → sections → exports → app) -->
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/copy-prompt.js"></script>
+<script src="js/fields.js"></script>
+<script src="js/section-builders.js"></script>
+<script src="js/gap-warnings.js"></script>
+<script src="js/sections.js"></script>
+<script src="js/export-pptx.js"></script>
+<script src="js/export-pdf.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
