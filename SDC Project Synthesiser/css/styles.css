@@ -5,14 +5,14 @@
 }
 
 :root {
-  --bg: #f5f6f8;
+  --bg: #f0f2f5;
   --surface: #ffffff;
-  --border: #e2e5ea;
-  --text: #1a1d23;
-  --text-secondary: #5f6672;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff4ff;
+  --border: #d1d5db;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --primary: #4A90D9;
+  --primary-hover: #3a7bbf;
+  --primary-light: #EBF4FF;
   --success: #16a34a;
   --success-bg: #dcfce7;
   --warning: #d97706;
@@ -28,7 +28,7 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -40,16 +40,18 @@ body {
 .app-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .app-header h1 {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   white-space: nowrap;
+  color: var(--text);
 }
 
 .app-header .project-indicator {
@@ -66,6 +68,7 @@ body {
   padding: 0 24px;
   gap: 0;
   overflow-x: auto;
+  font-family: inherit;
 }
 
 .tab-btn {

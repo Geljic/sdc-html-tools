@@ -2,6 +2,7 @@
 const SW = 13.33, SH = 7.5;
 const LABEL_W = 1.8, TL = 1.8, TR = 12.95, TW = TR - TL;
 const TITLE_H = 0.55, SUB_H = 0.22;
+const YEAR_BAND_H = 0.22;  // height of the year band row (when showYearBands is on)
 const HDR_Y = TITLE_H + SUB_H;
 const HDR_H_BASE = 0.26;  // doubles when showWeeks is on
 const SEC_H = 0.32, ROW_GAP = 0.10;
@@ -113,10 +114,25 @@ function spanDates(s, e, months, MW) {
   return { x:x1, w:Math.max(0, x2-x1) };
 }
 
+// ── Year band helpers ─────────────────────────────────────────────────────────
+// Returns an array of { year, startIdx, endIdx } groupings over the months array
+function genYearBands(months) {
+  const bands = [];
+  months.forEach((mo, i) => {
+    if (!bands.length || bands[bands.length - 1].year !== mo.year) {
+      bands.push({ year: mo.year, startIdx: i, endIdx: i });
+    } else {
+      bands[bands.length - 1].endIdx = i;
+    }
+  });
+  return bands;
+}
+
 // ── Overflow detection & auto-scale ──────────────────────────────────────────
 function checkOverflow(data) {
+  const yearBandH = data.showYearBands ? YEAR_BAND_H : 0;
   const hdrH  = data.showWeeks ? HDR_H_BASE * 2 : HDR_H_BASE;
-  const dataY = HDR_Y + hdrH;
+  const dataY = HDR_Y + yearBandH + hdrH;
   const avail = LEGEND_Y - dataY - SEC_H - 0.05;
   let   used  = 0;
   (data.rows || []).forEach((row, i) => {
@@ -127,7 +143,7 @@ function checkOverflow(data) {
   const overflow  = used > avail;
   const autoScale = document.getElementById('auto-scale')?.checked ?? true;
   const scale     = (overflow && autoScale) ? avail / used : 1.0;
-  return { used: +used.toFixed(2), avail: +avail.toFixed(2), overflow, autoScale, scale };
+  return { used: +used.toFixed(2), avail: +avail.toFixed(2), overflow, autoScale, scale, yearBandH };
 }
 
 function updateOverflowWarning(data) {
@@ -164,6 +180,11 @@ function svgRect(x, y, w, h, fill, extra) {
   return svgCreate('rect', { x, y, width:w, height:h, fill, ...(extra||{}) });
 }
 
+// Safe appendChild — silently skips null/undefined (returned by svgRect/svgText guards)
+function svgAppend(parent, child) {
+  if (child != null) parent.appendChild(child);
+}
+
 function svgText(str, x, y, opts) {
   if (!str) return null;
   const o = opts || {};
@@ -192,11 +213,11 @@ function svgText(str, x, y, opts) {
 function svgRoundedBar(x, y, w, h, fillHex, label, textHex, sz) {
   if (w <= 0.01) return null;
   const g = svgCreate('g', {});
-  g.appendChild(svgRect(x, y, w, h, '#'+fillHex, { rx:0.06, ry:0.06 }));
+  svgAppend(g, svgRect(x, y, w, h, '#'+fillHex, { rx:0.06, ry:0.06 }));
   if (label && w > 0.18) {
     const clipId = 'bc' + (Math.random()*1e9|0);
     const cp = svgCreate('clipPath', { id: clipId });
-    cp.appendChild(svgRect(x, y, w, h, 'black'));
+    svgAppend(cp, svgRect(x, y, w, h, 'black'));
     g.appendChild(cp);
     const t = svgText(label, x + w/2, y + h/2, {
       sz: sz||7.5, bold:true, fill:'#'+(textHex||'FFFFFF'),
@@ -225,69 +246,86 @@ function renderPreview() {
 
   const months = genMonths(data.startYear, data.startMonth, data.endYear, data.endMonth);
   if (!months.length) {
-    svg.appendChild(svgText('Invalid date range', SW/2, SH/2, { sz:14, anchor:'middle', fill:'#999' }));
+    svgAppend(svg, svgText('Invalid date range', SW/2, SH/2, { sz:14, anchor:'middle', fill:'#999' }));
     return;
   }
 
-  const MW    = TW / months.length;
-  const hdrH  = data.showWeeks ? HDR_H_BASE * 2 : HDR_H_BASE;
-  const dataY = HDR_Y + hdrH;
-  const gridH = LEGEND_Y - dataY + 0.05;
-  const g     = svgCreate('g', {});
+  const MW         = TW / months.length;
+  const yearBandH  = data.showYearBands ? YEAR_BAND_H : 0;
+  const hdrH       = data.showWeeks ? HDR_H_BASE * 2 : HDR_H_BASE;
+  const monthRowY  = HDR_Y + yearBandH;          // month header starts after year band
+  const dataY      = monthRowY + hdrH;
+  const gridH      = LEGEND_Y - dataY + 0.05;
+  const g          = svgCreate('g', {});
 
   // Slide background
-  g.appendChild(svgRect(0, 0, SW, SH, '#f5f6fa'));
+  svgAppend(g, svgRect(0, 0, SW, SH, '#f5f6fa'));
 
   // Title bar
-  g.appendChild(svgRect(0, 0, SW, TITLE_H, '#1F2D5A'));
-  g.appendChild(svgText(data.title || 'Timeline', 0.2, TITLE_H/2, { sz:16, bold:true, fill:'#FFFFFF' }));
+  svgAppend(g, svgRect(0, 0, SW, TITLE_H, '#1F2D5A'));
+  svgAppend(g, svgText(data.title || 'Timeline', 0.2, TITLE_H/2, { sz:16, bold:true, fill:'#FFFFFF' }));
 
   // Badge
   if (data.showBadge && data.badgeText?.trim()) {
     const bx = SW-1.55, by = 0.08, bw = 1.35, bh = TITLE_H-0.16;
-    g.appendChild(svgRect(bx, by, bw, bh, '#008A4B', { rx:0.06, ry:0.06 }));
+    svgAppend(g, svgRect(bx, by, bw, bh, '#008A4B', { rx:0.06, ry:0.06 }));
     const lines = data.badgeText.trim().split('\n');
     lines.forEach((ln, i) => {
       const ly = by + bh/2 + (i - (lines.length-1)/2) * (6/72);
-      g.appendChild(svgText(ln, bx+bw/2, ly, { sz:7, bold:true, fill:'#FFFFFF', anchor:'middle' }));
+      svgAppend(g, svgText(ln, bx+bw/2, ly, { sz:7, bold:true, fill:'#FFFFFF', anchor:'middle' }));
     });
   }
 
   // Subtitle
   if (data.subtitle) {
-    g.appendChild(svgText(data.subtitle, 0.2, TITLE_H + SUB_H/2, { sz:8.5, italic:true, fill:'#1F2D5A' }));
+    svgAppend(g, svgText(data.subtitle, 0.2, TITLE_H + SUB_H/2, { sz:8.5, italic:true, fill:'#1F2D5A' }));
+  }
+
+  // ── Year band row (optional) ──────────────────────────────────────────────
+  if (data.showYearBands) {
+    svgAppend(g, svgRect(0,  HDR_Y, LABEL_W, yearBandH, '#141E3C'));
+    svgAppend(g, svgRect(TL, HDR_Y, TW,      yearBandH, '#141E3C'));
+    const bands = genYearBands(months);
+    bands.forEach((band, bi) => {
+      const bx = TL + band.startIdx * MW;
+      const bw = (band.endIdx - band.startIdx + 1) * MW;
+      // Divider before each band (except first)
+      if (bi > 0) svgAppend(g, svgRect(bx - 0.004, HDR_Y, 0.008, yearBandH, '#FFFFFF'));
+      svgAppend(g, svgText(String(band.year), bx + bw/2, HDR_Y + yearBandH/2, {
+        sz:8, bold:true, fill:'#FFFFFF', anchor:'middle',
+      }));
+    });
   }
 
   // Month header area
   const monthH = data.showWeeks ? HDR_H_BASE : hdrH;
-  g.appendChild(svgRect(0,  HDR_Y, LABEL_W, hdrH, '#1F2D5A'));
-  g.appendChild(svgRect(TL, HDR_Y, TW,      hdrH, '#2E4070'));
+  svgAppend(g, svgRect(0,  monthRowY, LABEL_W, hdrH, '#1F2D5A'));
+  svgAppend(g, svgRect(TL, monthRowY, TW,      hdrH, '#2E4070'));
 
   months.forEach((mo, i) => {
     const mx = TL + i * MW;
-    if (i > 0) g.appendChild(svgRect(mx-0.004, HDR_Y, 0.008, hdrH+gridH, '#CCCCCC'));
-    g.appendChild(svgText(mo.name, mx+MW/2, HDR_Y+monthH/2, { sz:9, bold:true, fill:'#FFFFFF', anchor:'middle' }));
+    if (i > 0) svgAppend(g, svgRect(mx-0.004, monthRowY, 0.008, hdrH+gridH, '#CCCCCC'));
+    svgAppend(g, svgText(mo.name, mx+MW/2, monthRowY+monthH/2, { sz:9, bold:true, fill:'#FFFFFF', anchor:'middle' }));
   });
 
   // Week sub-header
   if (data.showWeeks) {
-    const wkY = HDR_Y + monthH;
-    g.appendChild(svgRect(TL, wkY, TW, monthH, '#334070'));
+    const wkY = monthRowY + monthH;
+    svgAppend(g, svgRect(TL, wkY, TW, monthH, '#334070'));
     const weeks = genWeeks(data.startYear, data.startMonth, data.endYear, data.endMonth);
 
     // Clip week labels to timeline area
     const wkClipId = 'wkclip';
     const wkClip = svgCreate('clipPath', { id: wkClipId });
-    wkClip.appendChild(svgRect(TL, wkY, TW, monthH, 'black'));
+    svgAppend(wkClip, svgRect(TL, wkY, TW, monthH, 'black'));
     g.appendChild(wkClip);
 
     weeks.forEach((wk, i) => {
       const wx = dateX(wk.isoDate, months, MW);
       if (wx === null || wx >= TR) return;
-      g.appendChild(svgRect(wx-0.003, wkY, 0.006, monthH*0.55, '#5A72A0'));
+      svgAppend(g, svgRect(wx-0.003, wkY, 0.006, monthH*0.55, '#5A72A0'));
       const t = svgText(wk.label, wx+0.05, wkY+monthH/2, { sz:5.5, fill:'#FFFFFF' });
-      t.setAttribute('clip-path', `url(#${wkClipId})`);
-      g.appendChild(t);
+      if (t) { t.setAttribute('clip-path', `url(#${wkClipId})`); g.appendChild(t); }
     });
   }
 
@@ -295,16 +333,16 @@ function renderPreview() {
   if (data.showToday && data.todayDate) {
     const wx = dateX(data.todayDate, months, MW);
     if (wx !== null) {
-      g.appendChild(svgRect(wx-0.006, HDR_Y, 0.012, LEGEND_Y-HDR_Y-0.05, '#CC2222'));
-      g.appendChild(svgText('We are here', wx, HDR_Y-0.14, { sz:7, bold:true, fill:'#CC2222', anchor:'middle' }));
+      svgAppend(g, svgRect(wx-0.006, monthRowY, 0.012, LEGEND_Y-monthRowY-0.05, '#CC2222'));
+      svgAppend(g, svgText('We are here', wx, monthRowY-0.14, { sz:7, bold:true, fill:'#CC2222', anchor:'middle' }));
     }
   }
 
   // Section bar
-  g.appendChild(svgRect(0, dataY, SW, SEC_H, '#1F2D5A'));
-  g.appendChild(svgText(data.sectionLabel, 0.15, dataY+SEC_H/2, { sz:10, bold:true, fill:'#FFFFFF' }));
+  svgAppend(g, svgRect(0, dataY, SW, SEC_H, '#1F2D5A'));
+  svgAppend(g, svgText(data.sectionLabel, 0.15, dataY+SEC_H/2, { sz:10, bold:true, fill:'#FFFFFF' }));
   if (data.goLiveText) {
-    g.appendChild(svgText(data.goLiveText, TR-0.1, dataY+SEC_H/2, { sz:8.5, bold:true, fill:'#FFFFFF', anchor:'end' }));
+    svgAppend(g, svgText(data.goLiveText, TR-0.1, dataY+SEC_H/2, { sz:8.5, bold:true, fill:'#FFFFFF', anchor:'end' }));
   }
 
   // Rows — auto-scale bar heights to fit if needed
@@ -325,13 +363,13 @@ function renderPreview() {
     const rowH    = calcRowHs(numTracks);
     const rowMidY = rowY + rowH / 2;
 
-    g.appendChild(svgRect(0, rowY, LABEL_W-0.06, rowH, '#EEF2F8'));
+    svgAppend(g, svgRect(0, rowY, LABEL_W-0.06, rowH, '#EEF2F8'));
 
     const labelLines = (row.label || '').split('\n');
     const lineStep = 8/72;
     labelLines.forEach((ln, li) => {
       const ly = rowY + rowH/2 + (li - (labelLines.length-1)/2) * lineStep;
-      g.appendChild(svgText(ln, 0.1, ly, { sz:7.5, bold:true }));
+      svgAppend(g, svgText(ln, 0.1, ly, { sz:7.5, bold:true }));
     });
 
     (row.bars || []).forEach((bar, bi) => {
@@ -346,10 +384,9 @@ function renderPreview() {
       // Suppress in-bar label only when the below-bar copy is taking over — otherwise
       // fall back to clipped in-bar so you still see what you can.
       const inBarLabel  = (labelFits || !data.labelBelow) ? bar.label : '';
-      const el = svgRoundedBar(sp.x, by, sp.w, sBarH, t.color, inBarLabel, t.textColor, scaledSz);
-      if (el) g.appendChild(el);
+      svgAppend(g, svgRoundedBar(sp.x, by, sp.w, sBarH, t.color, inBarLabel, t.textColor, scaledSz));
       if (!labelFits && bar.label && data.labelBelow) {
-        g.appendChild(svgText(bar.label, sp.x + sp.w/2, by + sBarH + 0.035, {
+        svgAppend(g, svgText(bar.label, sp.x + sp.w/2, by + sBarH + 0.035, {
           sz: Math.max(5.5, scaledSz * 0.85), anchor:'middle', base:'hanging', fill:'#1F2D5A',
         }));
       }
@@ -361,19 +398,19 @@ function renderPreview() {
       hasMilestones = true;
       const msFill = ms.color === 'green' ? '#00A651' : '#CC2222';
       const msSize = ms.color === 'green' ? 0.18 : 0.17;
-      g.appendChild(svgDiamond(mx, rowMidY, msSize, msFill));
+      svgAppend(g, svgDiamond(mx, rowMidY, msSize, msFill));
       const lbl = (ms.label || '').replace(/\\n/g, '\n').split('\n');
       if (ms.pos === 'right') {
         lbl.forEach((ln, li) => {
           const ly = rowMidY + (li - (lbl.length-1)/2) * (7/72);
-          g.appendChild(svgText(ln, mx + msSize/2 + 0.06, ly, { sz:6.5, base:'middle' }));
+          svgAppend(g, svgText(ln, mx + msSize/2 + 0.06, ly, { sz:6.5, base:'middle' }));
         });
       } else {
         const baseY = ms.pos === 'above'
           ? rowMidY - msSize/2 - 0.06 - lbl.length*(6.5/72)
           : rowMidY + msSize/2 + 0.06;
         lbl.forEach((ln, li) => {
-          g.appendChild(svgText(ln, mx, baseY+li*(7/72), { sz:6.5, anchor:'middle', base:'hanging' }));
+          svgAppend(g, svgText(ln, mx, baseY+li*(7/72), { sz:6.5, anchor:'middle', base:'hanging' }));
         });
       }
     });
@@ -385,9 +422,9 @@ function renderPreview() {
   if (isOverflow && !data.autoScale) {
     const cutY = LEGEND_Y - 0.12;
     for (let dx = TL; dx < TR; dx += 0.18) {
-      g.appendChild(svgRect(dx, cutY-0.005, 0.10, 0.01, '#CC2222'));
+      svgAppend(g, svgRect(dx, cutY-0.005, 0.10, 0.01, '#CC2222'));
     }
-    g.appendChild(svgText('⚠ Content cut off below this line', TL+TW/2, cutY-0.1, {
+    svgAppend(g, svgText('⚠ Content cut off below this line', TL+TW/2, cutY-0.1, {
       sz:7, bold:true, fill:'#CC2222', anchor:'middle',
     }));
   }
@@ -395,13 +432,13 @@ function renderPreview() {
   // Legend
   let lx = 0.3;
   Object.entries(customTypes).filter(([k]) => usedTypes.has(k)).forEach(([, v]) => {
-    g.appendChild(svgRect(lx, LEGEND_Y+0.12, 0.22, 0.15, '#'+v.color));
-    g.appendChild(svgText(v.label, lx+0.28, LEGEND_Y+0.195, { sz:7 }));
+    svgAppend(g, svgRect(lx, LEGEND_Y+0.12, 0.22, 0.15, '#'+v.color));
+    svgAppend(g, svgText(v.label, lx+0.28, LEGEND_Y+0.195, { sz:7 }));
     lx += 1.8;
   });
   if (hasMilestones) {
-    g.appendChild(svgDiamond(lx+0.11, LEGEND_Y+0.195, 0.14, '#CC2222'));
-    g.appendChild(svgText('Milestone', lx+0.26, LEGEND_Y+0.195, { sz:7 }));
+    svgAppend(g, svgDiamond(lx+0.11, LEGEND_Y+0.195, 0.14, '#CC2222'));
+    svgAppend(g, svgText('Milestone', lx+0.26, LEGEND_Y+0.195, { sz:7 }));
   }
 
   svg.appendChild(g);
@@ -444,10 +481,12 @@ function txtBox(slide, text, x, y, w, h, o={}) {
 function buildPPTX(data) {
   const months = genMonths(data.startYear, data.startMonth, data.endYear, data.endMonth);
   if (!months.length) { alert('Invalid date range.'); return; }
-  const MW    = TW / months.length;
-  const hdrH  = data.showWeeks ? HDR_H_BASE * 2 : HDR_H_BASE;
-  const dataY = HDR_Y + hdrH;
-  const gridH = LEGEND_Y - dataY + 0.05;
+  const MW         = TW / months.length;
+  const yearBandH  = data.showYearBands ? YEAR_BAND_H : 0;
+  const hdrH       = data.showWeeks ? HDR_H_BASE * 2 : HDR_H_BASE;
+  const monthRowY  = HDR_Y + yearBandH;
+  const dataY      = monthRowY + hdrH;
+  const gridH      = LEGEND_Y - dataY + 0.05;
 
   const pres = new PptxGenJS();
   pres.defineLayout({ name:'TIMELINE', width:SW, height:SH });
@@ -467,19 +506,34 @@ function buildPPTX(data) {
   }
   txtBox(slide, data.subtitle, 0.2, TITLE_H+0.02, 12.5, SUB_H-0.04, { sz:8.5, italic:true, col:CLR.NAVY, va:'middle' });
 
+  // ── Year band row (optional) ──────────────────────────────────────────────
+  if (data.showYearBands) {
+    filledRect(slide, 0,  HDR_Y, LABEL_W, yearBandH, '0D1529');
+    filledRect(slide, TL, HDR_Y, TW,      yearBandH, '0D1529');
+    const bands = genYearBands(months);
+    bands.forEach((band, bi) => {
+      const bx = TL + band.startIdx * MW;
+      const bw = (band.endIdx - band.startIdx + 1) * MW;
+      if (bi > 0) filledRect(slide, bx - 0.004, HDR_Y, 0.008, yearBandH, CLR.WHITE);
+      txtBox(slide, String(band.year), bx, HDR_Y, bw, yearBandH, {
+        sz:8, bold:true, col:CLR.WHITE, align:'center', va:'middle',
+      });
+    });
+  }
+
   // Month header row
   const monthH = data.showWeeks ? HDR_H_BASE : hdrH;
-  filledRect(slide, 0,  HDR_Y, LABEL_W, hdrH,   CLR.NAVY);
-  filledRect(slide, TL, HDR_Y, TW,      hdrH,   CLR.NAVY_MID);
+  filledRect(slide, 0,  monthRowY, LABEL_W, hdrH,   CLR.NAVY);
+  filledRect(slide, TL, monthRowY, TW,      hdrH,   CLR.NAVY_MID);
   months.forEach((mo, i) => {
     const mx = TL + i*MW;
-    txtBox(slide, mo.name, mx, HDR_Y, MW, monthH, { sz:9, bold:true, col:CLR.WHITE, align:'center' });
-    if (i > 0) filledRect(slide, mx-0.004, HDR_Y, 0.008, hdrH+gridH, CLR.GRAY);
+    txtBox(slide, mo.name, mx, monthRowY, MW, monthH, { sz:9, bold:true, col:CLR.WHITE, align:'center' });
+    if (i > 0) filledRect(slide, mx-0.004, monthRowY, 0.008, hdrH+gridH, CLR.GRAY);
   });
 
   // Week sub-header row
   if (data.showWeeks) {
-    const wkY = HDR_Y + monthH;
+    const wkY = monthRowY + monthH;
     filledRect(slide, 0,  wkY, LABEL_W, monthH, '263660');
     filledRect(slide, TL, wkY, TW,      monthH, '334070');
     const weeks = genWeeks(data.startYear, data.startMonth, data.endYear, data.endMonth);
@@ -499,8 +553,8 @@ function buildPPTX(data) {
   if (data.showToday && data.todayDate) {
     const wx = dateX(data.todayDate, months, MW);
     if (wx !== null) {
-      vLine(slide, wx, HDR_Y, LEGEND_Y-0.05, CLR.RED_MS);
-      txtBox(slide, 'We are here', wx-0.45, HDR_Y-0.28, 0.9, 0.26, { sz:7, bold:true, col:CLR.RED_MS, align:'center' });
+      vLine(slide, wx, monthRowY, LEGEND_Y-0.05, CLR.RED_MS);
+      txtBox(slide, 'We are here', wx-0.45, monthRowY-0.28, 0.9, 0.26, { sz:7, bold:true, col:CLR.RED_MS, align:'center' });
     }
   }
 
@@ -852,6 +906,7 @@ function getFormData() {
     showToday:          document.getElementById('show-today').checked,
     todayDate:          document.getElementById('today-date').value,
     showWeeks:          document.getElementById('show-weeks').checked,
+    showYearBands:      document.getElementById('show-year-bands').checked,
     autoScale:          document.getElementById('auto-scale').checked,
     labelBelow:         document.getElementById('label-below').checked,
     sectionLabel:       document.getElementById('section-label').value || '',
@@ -862,21 +917,22 @@ function getFormData() {
 }
 
 function applyFormData(data) {
-  document.getElementById('title').value         = data.title        || '';
-  document.getElementById('subtitle').value      = data.subtitle     || '';
-  document.getElementById('show-badge').checked  = !!data.showBadge;
-  document.getElementById('badge-text').value    = data.badgeText    || '';
-  document.getElementById('start-month').value   = data.startMonth   || 4;
-  document.getElementById('start-year').value    = data.startYear    || 2026;
-  document.getElementById('end-month').value     = data.endMonth     || 11;
-  document.getElementById('end-year').value      = data.endYear      || 2026;
-  document.getElementById('show-today').checked  = !!data.showToday;
-  document.getElementById('today-date').value    = data.todayDate    || '';
-  document.getElementById('show-weeks').checked  = !!data.showWeeks;
-  document.getElementById('auto-scale').checked  = data.autoScale !== false;
-  document.getElementById('label-below').checked = data.labelBelow !== false;
-  document.getElementById('section-label').value = data.sectionLabel || '';
-  document.getElementById('golive-text').value   = data.goLiveText   || '';
+  document.getElementById('title').value              = data.title        || '';
+  document.getElementById('subtitle').value           = data.subtitle     || '';
+  document.getElementById('show-badge').checked       = !!data.showBadge;
+  document.getElementById('badge-text').value         = data.badgeText    || '';
+  document.getElementById('start-month').value        = data.startMonth   || 4;
+  document.getElementById('start-year').value         = data.startYear    || 2026;
+  document.getElementById('end-month').value          = data.endMonth     || 11;
+  document.getElementById('end-year').value           = data.endYear      || 2026;
+  document.getElementById('show-today').checked       = !!data.showToday;
+  document.getElementById('today-date').value         = data.todayDate    || '';
+  document.getElementById('show-weeks').checked       = !!data.showWeeks;
+  document.getElementById('show-year-bands').checked  = !!data.showYearBands;
+  document.getElementById('auto-scale').checked       = data.autoScale !== false;
+  document.getElementById('label-below').checked      = data.labelBelow !== false;
+  document.getElementById('section-label').value      = data.sectionLabel || '';
+  document.getElementById('golive-text').value        = data.goLiveText   || '';
 
   // Restore custom types then rebuild editor
   initCustomTypes(data.typeCustomizations || {});
@@ -991,6 +1047,423 @@ function schedulePreviewRefresh() {
   previewTimer = setTimeout(renderPreview, 350);
 }
 
+// ── Welcome screen ────────────────────────────────────────────────────────────
+
+function showScreen(id) {
+  ['welcome-screen', 'ai-screen', 'page-header', 'main-app'].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(id);
+  if (target) target.style.display = (id === 'page-header' || id === 'main-app') ? '' : 'flex';
+}
+
+function showApp() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('ai-screen').style.display      = 'none';
+  document.getElementById('page-header').style.display    = '';
+  document.getElementById('main-app').style.display       = '';
+}
+
+function backToWelcome() {
+  document.getElementById('welcome-screen').style.display = 'flex';
+  document.getElementById('ai-screen').style.display      = 'none';
+  document.getElementById('page-header').style.display    = 'none';
+  document.getElementById('main-app').style.display       = 'none';
+}
+
+function welcomeChooseManual() {
+  showApp();
+}
+
+function welcomeChooseLoad() {
+  document.getElementById('welcome-json-input').click();
+}
+
+function welcomeJsonSelected(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      applyFormData(JSON.parse(e.target.result));
+      showApp();
+    } catch(err) {
+      alert('Could not read timeline file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function welcomeChooseAi() {
+  // Pre-fill saved credentials into the AI screen inputs
+  document.getElementById('ai-endpoint').value = getEndpoint();
+  document.getElementById('ai-key').value      = getApiKey();
+  document.getElementById('ai-model').value    = getModel();
+  updateCredsStatusBadge();
+
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('ai-screen').style.display      = 'flex';
+}
+
+// ── AI credentials panel ──────────────────────────────────────────────────────
+
+function toggleCredsPanel() {
+  const body    = document.getElementById('ai-creds-body');
+  const chevron = document.getElementById('ai-creds-chevron');
+  const isOpen  = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+
+function saveAiCreds() {
+  const endpoint = document.getElementById('ai-endpoint').value.trim();
+  const key      = document.getElementById('ai-key').value.trim();
+  const model    = document.getElementById('ai-model').value.trim();
+  saveApiCredentials(endpoint, key, model);
+  updateCredsStatusBadge();
+  const msg = document.getElementById('ai-creds-saved-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => { msg.style.display = 'none'; }, 2000);
+}
+
+function updateCredsStatusBadge() {
+  const icon = document.getElementById('ai-creds-status-icon');
+  const text = document.getElementById('ai-creds-status-text');
+  if (hasCredentials()) {
+    icon.textContent = '✅';
+    text.textContent = 'AI Settings — configured';
+  } else {
+    icon.textContent = '⚙️';
+    text.textContent = 'AI Settings — not configured (click to expand)';
+    // Auto-open if not configured
+    const body    = document.getElementById('ai-creds-body');
+    const chevron = document.getElementById('ai-creds-chevron');
+    body.classList.add('open');
+    chevron.classList.add('open');
+  }
+}
+
+// ── Test connection & model picker ───────────────────────────────────────────
+
+async function testAndLoadModels() {
+  // Persist whatever is currently in the inputs first
+  const endpoint = document.getElementById('ai-endpoint').value.trim();
+  const key      = document.getElementById('ai-key').value.trim();
+  const model    = document.getElementById('ai-model').value.trim();
+  if (endpoint || key) saveApiCredentials(endpoint || getEndpoint(), key || getApiKey(), model || getModel());
+
+  const btn        = document.getElementById('ai-test-btn');
+  const statusEl   = document.getElementById('ai-conn-status');
+  const modelList  = document.getElementById('ai-model-list');
+
+  btn.disabled     = true;
+  btn.textContent  = 'Testing…';
+  statusEl.className = 'ai-conn-status';
+  statusEl.textContent = '';
+  modelList.innerHTML  = '';
+
+  try {
+    const result = await testConnection();
+
+    statusEl.className   = 'ai-conn-status success';
+    statusEl.textContent = '✅ Connected — ' + result.models.length + ' model' + (result.models.length !== 1 ? 's' : '') + ' available';
+
+    // Prefer Anthropic models in the chip list; fall back to all models
+    const display = result.anthropic.length ? result.anthropic : result.models;
+
+    if (display.length) {
+      const label = document.createElement('span');
+      label.className   = 'ai-model-list-label';
+      label.textContent = 'Click a model to select it:';
+      modelList.appendChild(label);
+
+      display.forEach(m => {
+        const chip = document.createElement('button');
+        chip.type      = 'button';
+        chip.className = 'ai-model-chip' + (m === getModel() ? ' selected' : '');
+        chip.textContent = m;
+        chip.onclick = () => {
+          document.getElementById('ai-model').value = m;
+          saveApiCredentials(getEndpoint(), getApiKey(), m);
+          modelList.querySelectorAll('.ai-model-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+          updateCredsStatusBadge();
+        };
+        modelList.appendChild(chip);
+      });
+    }
+
+    updateCredsStatusBadge();
+
+  } catch (e) {
+    statusEl.className   = 'ai-conn-status error';
+    statusEl.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Test Connection';
+  }
+}
+
+// ── AI import ─────────────────────────────────────────────────────────────────
+
+const AI_SYSTEM_PROMPT = `You are a timeline data extractor. The user will describe a project timeline in plain English.
+Your job is to convert it into a structured JSON object that matches the Timeline Builder format exactly.
+
+Return ONLY valid JSON — no markdown fences, no explanation, no extra text.
+
+The JSON schema is:
+{
+  "title": "string — slide title",
+  "subtitle": "string — slide subtitle (optional)",
+  "showBadge": false,
+  "badgeText": "",
+  "startMonth": number (1-12),
+  "startYear": number,
+  "endMonth": number (1-12),
+  "endYear": number,
+  "showToday": true,
+  "todayDate": "YYYY-MM-DD",
+  "showWeeks": false,
+  "autoScale": true,
+  "labelBelow": true,
+  "sectionLabel": "string (optional)",
+  "goLiveText": "string (optional)",
+  "typeCustomizations": {},
+  "rows": [
+    {
+      "label": "string — swim lane name (can be multi-line with \\n)",
+      "epicType": "one of: servicedesign | prototype | userresearch | pas | development | change | golive | hypercare",
+      "bars": [
+        {
+          "label": "string — task name",
+          "start": "YYYY-MM-DD",
+          "end": "YYYY-MM-DD",
+          "type": "one of the epicType values above"
+        }
+      ],
+      "milestones": [
+        {
+          "date": "YYYY-MM-DD",
+          "label": "string",
+          "pos": "above or below",
+          "color": "red or green"
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Infer startMonth/startYear and endMonth/endYear from the earliest and latest dates mentioned, adding 1 month buffer each side if possible.
+- Use todayDate = today's date in YYYY-MM-DD format.
+- Map swim lanes to the closest epicType. Use "pas" for generic actions/tasks.
+- If a task spans a range, create a bar. If it is a single date event, create a milestone.
+- Go Live events should be milestones with color "green" in a "golive" row.
+- Keep bar labels concise (under 40 chars).
+- If no title is given, infer one from context.`;
+
+// ── File upload helpers ───────────────────────────────────────────────────────
+
+const TL_TEXT_EXTS  = ['txt', 'md', 'csv', 'docx'];
+const TL_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+const TL_IMAGE_MIME = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', webp:'image/webp', gif:'image/gif' };
+
+let tlUploadedFiles = [];
+
+function tlHandleFileInput(ev) {
+  tlHandleFiles(ev.target.files);
+  ev.target.value = '';
+}
+
+async function tlHandleFiles(fileList) {
+  for (const file of Array.from(fileList)) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+    if (TL_IMAGE_EXTS.includes(ext)) {
+      try {
+        const { dataUrl, base64 } = await tlReadImage(file);
+        tlUploadedFiles.push({ name: file.name, size: file.size, text: '', image: true, base64, mimeType: TL_IMAGE_MIME[ext] || 'image/png', dataUrl });
+      } catch (err) {
+        tlUploadedFiles.push({ name: file.name, size: file.size, text: '', error: err.message || 'Image read failed' });
+      }
+      tlRenderFileList();
+      continue;
+    }
+
+    if (!TL_TEXT_EXTS.includes(ext)) {
+      tlUploadedFiles.push({ name: file.name, size: file.size, text: '', error: `Unsupported type: .${ext}` });
+      tlRenderFileList();
+      continue;
+    }
+
+    try {
+      const text = ext === 'docx' ? await tlReadDocx(file) : await tlReadText(file);
+      tlUploadedFiles.push({ name: file.name, size: file.size, text });
+    } catch (err) {
+      tlUploadedFiles.push({ name: file.name, size: file.size, text: '', error: err.message || 'Read failed' });
+    }
+    tlRenderFileList();
+  }
+}
+
+function tlReadText(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload  = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Could not read file'));
+    r.readAsText(file);
+  });
+}
+
+function tlReadDocx(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = async () => {
+      try {
+        if (typeof mammoth === 'undefined') { reject(new Error('mammoth.js not loaded — check internet connection')); return; }
+        const result = await mammoth.extractRawText({ arrayBuffer: r.result });
+        resolve(result.value || '');
+      } catch (err) { reject(new Error('docx extraction failed: ' + err.message)); }
+    };
+    r.onerror = () => reject(new Error('Could not read docx file'));
+    r.readAsArrayBuffer(file);
+  });
+}
+
+function tlReadImage(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const dataUrl = r.result; resolve({ dataUrl, base64: dataUrl.split(',')[1] }); };
+    r.onerror = () => reject(new Error('Could not read image file'));
+    r.readAsDataURL(file);
+  });
+}
+
+function tlRemoveFile(idx) {
+  tlUploadedFiles.splice(idx, 1);
+  tlRenderFileList();
+}
+
+function tlFormatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function tlEscapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function tlRenderFileList() {
+  const ul = document.getElementById('tl-file-list');
+  if (!ul) return;
+  ul.innerHTML = '';
+  tlUploadedFiles.forEach((f, idx) => {
+    const li = document.createElement('li');
+    li.className = 'tl-file-chip' + (f.error ? ' error' : '') + (f.image ? ' image' : '');
+    const meta = f.error ? f.error
+      : f.image ? `${tlFormatBytes(f.size)} · image`
+      : `${tlFormatBytes(f.size)} · ${(f.text||'').length.toLocaleString()} chars`;
+    const thumb = f.image ? `<img class="tl-fc-thumb" src="${f.dataUrl}" alt="${tlEscapeHtml(f.name)}" />` : '';
+    li.innerHTML = `${thumb}<span class="tl-fc-name">${tlEscapeHtml(f.name)}</span><span class="tl-fc-meta">${tlEscapeHtml(meta)}</span><button type="button" class="tl-fc-remove" onclick="tlRemoveFile(${idx})">✕</button>`;
+    ul.appendChild(li);
+  });
+}
+
+// Wire up drag-and-drop on the dropzone
+function initTlDropzone() {
+  const dz = document.getElementById('tl-dropzone');
+  if (!dz) return;
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', e => tlHandleFiles(e.dataTransfer.files));
+}
+
+// ── AI status & import ────────────────────────────────────────────────────────
+
+function setAiStatus(msg, cls) {
+  const el = document.getElementById('ai-status-msg');
+  el.textContent = msg;
+  el.className   = 'ai-status-msg' + (cls ? ' ' + cls : '');
+}
+
+async function runAiImport() {
+  const text = document.getElementById('ai-text-input').value.trim();
+  const hasFiles = tlUploadedFiles.some(f => !f.error && (f.text || f.image));
+
+  if (!text && !hasFiles) {
+    setAiStatus('Please enter some text or upload a file describing your timeline.', 'err');
+    return;
+  }
+
+  // Save any credentials the user may have just typed (without clicking Save)
+  const endpoint = document.getElementById('ai-endpoint').value.trim();
+  const key      = document.getElementById('ai-key').value.trim();
+  const model    = document.getElementById('ai-model').value.trim();
+  if (endpoint || key) saveApiCredentials(endpoint || getEndpoint(), key || getApiKey(), model || getModel());
+
+  if (!getApiKey()) {
+    setAiStatus('API key required — expand AI Settings above.', 'err');
+    const body    = document.getElementById('ai-creds-body');
+    const chevron = document.getElementById('ai-creds-chevron');
+    body.classList.add('open');
+    chevron.classList.add('open');
+    return;
+  }
+
+  const btn = document.getElementById('ai-generate-btn');
+  btn.disabled = true;
+  setAiStatus('⏳ Generating timeline…', '');
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Build user message content — may be multipart if images are included
+    const imageFiles = tlUploadedFiles.filter(f => f.image && !f.error);
+    const textFiles  = tlUploadedFiles.filter(f => !f.image && !f.error && f.text);
+
+    // Assemble text context
+    let textContext = `Today's date is ${today}.\n\n`;
+    if (textFiles.length) {
+      textFiles.forEach(f => {
+        textContext += `--- File: ${f.name} ---\n${f.text}\n\n`;
+      });
+    }
+    if (text) textContext += text;
+
+    let userContent;
+    if (imageFiles.length) {
+      // Multipart content with images
+      userContent = [{ type: 'text', text: textContext }];
+      imageFiles.forEach(f => {
+        userContent.push({ type: 'image_url', image_url: { url: `data:${f.mimeType};base64,${f.base64}` } });
+      });
+    } else {
+      userContent = textContext;
+    }
+
+    const result = await chatCompletion([
+      { role: 'system', content: AI_SYSTEM_PROMPT },
+      { role: 'user',   content: userContent }
+    ], { max_tokens: 4096, temperature: 0 });
+
+    // Strip any accidental markdown fences
+    let raw = result.content.trim();
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+    const data = JSON.parse(raw);
+    applyFormData(data);
+    showApp();
+    setStatus('✓ Timeline imported from AI', 'ok');
+
+  } catch(e) {
+    console.error('AI import error:', e);
+    setAiStatus('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
   ['start-month','end-month'].forEach(id => {
@@ -1008,8 +1481,14 @@ function schedulePreviewRefresh() {
   buildTypeEditor();
 
   // Auto-refresh preview on any form input
-  document.querySelector('main').addEventListener('input',  schedulePreviewRefresh);
-  document.querySelector('main').addEventListener('change', schedulePreviewRefresh);
+  document.getElementById('main-app').addEventListener('input',  schedulePreviewRefresh);
+  document.getElementById('main-app').addEventListener('change', schedulePreviewRefresh);
 
   renderPreview();
+
+  // Wire up file drop zone on AI screen
+  initTlDropzone();
+
+  // Show welcome screen on load
+  backToWelcome();
 })();

@@ -6,6 +6,8 @@
   <title>Timeline Builder — DoE Tools</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <!-- mammoth.js — client-side .docx text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <link rel="stylesheet" href="../shared/navbar.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -103,25 +105,156 @@
   </div>
 </nav>
 
-<header class="page-header">
+<!-- ============================================================
+     WELCOME SCREEN
+============================================================ -->
+<div id="welcome-screen">
+
+  <!-- Hidden file input for loading a saved JSON -->
+  <input type="file" id="welcome-json-input" accept=".json" style="display:none"
+    onchange="welcomeJsonSelected(this.files[0]); this.value=''" />
+
+  <div class="welcome-inner">
+
+    <div class="welcome-brand">
+      <span class="welcome-brand-icon">📅</span>
+      <div class="welcome-brand-text">
+        <h2>Timeline Builder</h2>
+        <p>NSW Department of Education · HCD Pilot</p>
+      </div>
+    </div>
+
+    <p class="welcome-prompt">How would you like to build this timeline?</p>
+
+    <div class="welcome-cards">
+
+      <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
+        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-title">Generate from plain text</span>
+        <span class="welcome-card-desc">Describe your tasks and dates in plain English and AI will convert them into a structured timeline ready to review and export.</span>
+        <span class="welcome-card-hint">Best when you have a list of tasks, owners, and rough dates</span>
+      </button>
+
+      <button class="welcome-card" onclick="welcomeChooseManual()">
+        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-title">Build manually</span>
+        <span class="welcome-card-desc">Start with a blank form and add swim lanes, bars, and milestones yourself. Quick-add chips make it fast to set up common lane types.</span>
+        <span class="welcome-card-hint">Good when you already know your swim lanes and dates</span>
+      </button>
+
+      <button class="welcome-card" onclick="welcomeChooseLoad()">
+        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-title">Load a saved timeline</span>
+        <span class="welcome-card-desc">Import a JSON file exported from a previous session to continue editing or adapt an existing timeline for a new project.</span>
+        <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     AI PROMPT SCREEN
+============================================================ -->
+<div id="ai-screen" style="display:none">
+  <div class="ai-screen-inner">
+
+    <div class="ai-screen-header">
+      <button class="tl-btn" onclick="backToWelcome()">← Back</button>
+      <div class="ai-screen-title">
+        <h2>✨ Generate timeline from plain text</h2>
+        <p>Describe your project tasks, swim lanes, and dates. AI will structure them into a timeline you can review and edit.</p>
+      </div>
+    </div>
+
+    <!-- API credentials (collapsed by default if already saved) -->
+    <div class="ai-creds-panel" id="ai-creds-panel">
+      <div class="ai-creds-toggle" onclick="toggleCredsPanel()">
+        <span id="ai-creds-status-icon">⚙️</span>
+        <span id="ai-creds-status-text">AI Settings</span>
+        <span class="ai-creds-chevron" id="ai-creds-chevron">▼</span>
+      </div>
+      <div class="ai-creds-body" id="ai-creds-body">
+        <div class="ai-creds-row">
+          <label>API Endpoint</label>
+          <input type="url" id="ai-endpoint" placeholder="https://v1alpha1.aigateway.ocp.dev.education.nsw.gov.au" />
+        </div>
+        <div class="ai-creds-row">
+          <label>API Key</label>
+          <input type="password" id="ai-key" placeholder="sk-…" autocomplete="off" />
+        </div>
+        <div class="ai-creds-row ai-creds-row--model">
+          <label>Model</label>
+          <div class="ai-model-row">
+            <input type="text" id="ai-model" placeholder="claude-sonnet-4-6" />
+            <button class="tl-btn tl-btn--sm" id="ai-test-btn" onclick="testAndLoadModels()">Test Connection</button>
+          </div>
+        </div>
+        <div id="ai-model-list" class="ai-model-list"></div>
+        <div id="ai-conn-status" class="ai-conn-status"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+          <button class="tl-btn tl-btn--sm" onclick="saveAiCreds()">Save settings</button>
+          <span id="ai-creds-saved-msg" style="font-size:12px;color:var(--success);display:none">✓ Saved</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-body">
+
+      <div class="ai-input-panel">
+        <!-- Optional file upload -->
+        <label class="ai-panel-label">Upload a file <span class="ai-panel-optional">(optional — image, .docx, or .csv)</span></label>
+        <div class="tl-dropzone" id="tl-dropzone" onclick="document.getElementById('tl-file-input').click()">
+          <span class="tl-dz-icon">📎</span>
+          <div class="tl-dz-text">Drag a file here or click to browse</div>
+          <div class="tl-dz-hint">Supports .csv, .docx, .txt, .md, .png, .jpg, .webp — stays in your browser</div>
+        </div>
+        <input type="file" id="tl-file-input" accept=".csv,.txt,.md,.docx,.png,.jpg,.jpeg,.webp,.gif" style="display:none"
+          onchange="tlHandleFileInput(event)" />
+        <ul class="tl-file-list" id="tl-file-list"></ul>
+
+        <label class="ai-panel-label" style="margin-top:12px;">Your tasks and dates <span class="ai-panel-optional">(or describe here — combined with any file above)</span></label>
+        <p class="ai-panel-hint">Write in plain English — e.g. "Service Design runs from March to May. User Research starts mid-April and ends June. Go Live milestone in November."</p>
+        <textarea id="ai-text-input" class="ai-text-input" rows="8"
+          placeholder="e.g.&#10;Project: My Project — Implementation Timeline&#10;Date range: April 2026 to November 2026&#10;&#10;Service Design: March – May 2026&#10;User Research: April – June 2026&#10;Development: May – October 2026&#10;Go Live milestone: November 2026&#10;UAT: September – October 2026"></textarea>
+
+        <div class="ai-privacy-note">
+          <span>🔒</span>
+          <span>File content and text are sent to the AI gateway to generate the timeline structure. Do not include personal or sensitive information.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ai-screen-actions">
+      <button class="tl-btn" onclick="backToWelcome()">Cancel</button>
+      <button class="tl-btn tl-btn--primary" id="ai-generate-btn" onclick="runAiImport()">✨ Generate timeline</button>
+      <span id="ai-status-msg" class="ai-status-msg"></span>
+    </div>
+
+  </div>
+</div>
+
+<header class="page-header" id="page-header" style="display:none">
   <div>
     <h1>Timeline Builder</h1>
-    <p>Generate Gantt timeline PPTX slides — DoE Q+ format</p>
+    <p>Generate Gantt timeline PPTX slides</p>
   </div>
 </header>
 
-<main>
+<main id="main-app" style="display:none">
 
   <!-- SLIDE DETAILS -->
   <div class="form-section">
     <h2>Slide Details</h2>
     <div class="field-row">
       <label>Title</label>
-      <input type="text" id="title" placeholder="Q+ Next Generation | Solution 2 — PAS Timeline">
+      <input type="text" id="title" placeholder="e.g. Project Alpha — Implementation Timeline">
     </div>
     <div class="field-row">
       <label>Subtitle</label>
-      <input type="text" id="subtitle" placeholder="Key dates and actions for the PAS team  ·  Go Live: 02 Nov 2026">
+      <input type="text" id="subtitle" placeholder="e.g. Key milestones and delivery dates  ·  Go Live: DD Mon YYYY">
     </div>
     <div class="field-row">
       <label>Endorsed badge</label>
@@ -130,8 +263,7 @@
           <input type="checkbox" id="show-badge" checked>
           <label for="show-badge">Show badge</label>
         </div>
-        <textarea id="badge-text" rows="2" style="width:160px;min-height:44px;">Endorsed
-18.03.26</textarea>
+        <textarea id="badge-text" rows="2" style="width:160px;min-height:44px;"></textarea>
       </div>
     </div>
   </div>
@@ -160,6 +292,16 @@
       </div>
     </div>
     <div class="field-row">
+      <label>Year bands</label>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div class="checkbox-wrap" style="padding-top:0;">
+          <input type="checkbox" id="show-year-bands">
+          <label for="show-year-bands">Show year labels above month header</label>
+        </div>
+        <span style="font-size:12px;color:var(--muted);">Useful when the timeline spans more than one calendar year</span>
+      </div>
+    </div>
+    <div class="field-row">
       <label>Show weeks</label>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <div class="checkbox-wrap" style="padding-top:0;">
@@ -171,11 +313,11 @@
     </div>
     <div class="field-row">
       <label>Section label</label>
-      <input type="text" id="section-label" placeholder="RELEASE 2 — Solution 2  (PAS Focus)">
+      <input type="text" id="section-label" placeholder="e.g. Phase 1 — Discovery &amp; Design">
     </div>
     <div class="field-row">
       <label>Go Live text</label>
-      <input type="text" id="golive-text" placeholder="Go Live: 02 Nov 2026">
+      <input type="text" id="golive-text" placeholder="e.g. Go Live: DD Mon YYYY">
     </div>
   </div>
 
@@ -258,6 +400,7 @@
 
 <!-- PptxGenJS — vendored locally so the tool works offline -->
 <script src="lib/pptxgen.bundle.js"></script>
+<script src="js/api.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

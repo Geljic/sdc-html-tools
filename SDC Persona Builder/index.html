@@ -152,9 +152,121 @@
 </div>
 
 <!-- ============================================================
+     DE-IDENTIFICATION SCREEN
+============================================================ -->
+<div id="deid-screen" style="display:none">
+  <div class="deid-inner">
+
+    <div class="deid-header">
+      <button class="toolbar-btn" onclick="backToWelcome()">Back</button>
+      <div class="deid-title">
+        <h2>🔒 Remove personal information</h2>
+        <p>Replace names or other identifying details before your notes are sent to AI. All replacements happen in your browser — nothing is stored or sent until you click Apply.</p>
+      </div>
+    </div>
+
+    <div class="deid-body">
+
+      <!-- Left: editable text -->
+      <div class="deid-preview-panel">
+        <div class="deid-panel-label">Research notes — edit directly or use find and replace</div>
+        <textarea id="deid-editor" class="deid-editor" spellcheck="false"
+          oninput="onDeIdEditorInput(this.value)"
+          placeholder="Your research notes will appear here…"></textarea>
+      </div>
+
+      <!-- Right: rules -->
+      <div class="deid-rules-panel">
+        <div class="deid-panel-label">Find and replace</div>
+        <p class="deid-rules-hint">Add terms to find and what to replace them with. Matching is case-insensitive and whole-word.</p>
+
+        <div id="deid-rules-list" class="deid-rules-list"></div>
+
+        <button class="toolbar-btn" onclick="addDeIdRow()" style="margin-top:8px;">+ Add row</button>
+
+        <div class="deid-privacy-note">
+          <span class="deid-privacy-icon">🔒</span>
+          <span>Replacements happen in your browser only. The cleaned text is what gets sent to AI — your original file is never uploaded.</span>
+        </div>
+
+        <label class="deid-consent-label">
+          <input type="checkbox" id="deid-consent-checkbox" onchange="onDeIdConsentChange()" />
+          <span>I confirm I have removed all personal information from the text above before sending to AI.</span>
+        </label>
+
+        <div class="deid-actions">
+          <button class="toolbar-btn" onclick="skipDeId()">Skip - notes are already clean</button>
+          <button class="toolbar-btn primary" id="btn-deid-apply" onclick="applyDeIdAndContinue()" disabled>Apply and Continue</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WELCOME SCREEN
+============================================================ -->
+<div id="welcome-screen">
+
+  <!-- Hidden file inputs triggered by welcome card actions -->
+  <input type="file" id="welcome-md-input" accept=".md,.txt" style="display:none"
+    onchange="welcomeMdSelected(this.files[0]); this.value=''" />
+  <input type="file" id="welcome-json-input" accept=".json" style="display:none"
+    onchange="welcomeJsonSelected(this.files[0]); this.value=''" />
+
+  <div class="welcome-inner">
+
+    <div class="welcome-brand">
+      <span class="welcome-brand-icon">🧑</span>
+      <div class="welcome-brand-text">
+        <h2>Persona Builder</h2>
+        <p>NSW Department of Education · HCD Pilot</p>
+      </div>
+    </div>
+
+    <p class="welcome-prompt">How would you like to build this persona?</p>
+
+    <div class="welcome-cards">
+
+      <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
+        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-title">Generate from research notes</span>
+        <span class="welcome-card-desc">Upload a .md summary from your research and AI will draft the persona fields for you to review and refine. You stay in control of the final content.</span>
+        <span class="welcome-card-hint">Best when you have a synthesis or transcript file ready</span>
+      </button>
+
+      <button class="welcome-card" onclick="welcomeChooseManual()">
+        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-title">Build manually</span>
+        <span class="welcome-card-desc">Start with a blank form and fill in the persona yourself, section by section. AI is still available to help populate individual fields at any point.</span>
+        <span class="welcome-card-hint">Good for workshop outputs or when you already know the content</span>
+      </button>
+
+      <button class="welcome-card" onclick="welcomeChooseLoad()">
+        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-title">Load a saved persona</span>
+        <span class="welcome-card-desc">Import a JSON file exported from a previous session to continue editing, or adapt an existing persona for a new project or context.</span>
+        <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
+      </button>
+
+    </div>
+
+    <div class="welcome-secondary">
+      <button class="welcome-example-btn" onclick="welcomeLoadExample()">💡 Load example persona</button>
+      <span class="welcome-sep" id="welcome-sep" style="display:none"></span>
+      <button class="welcome-continue" id="welcome-continue-btn" style="display:none" onclick="welcomeContinue()">
+        Continue editing <span id="welcome-continue-name"></span> →
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
      APP SHELL
 ============================================================ -->
-<div id="app">
+<div id="app" style="display:none">
 
   <!-- HEADER — brand left, all actions right (matches other tools) -->
   <header id="app-header">
@@ -371,6 +483,7 @@
 <script src="js/state.js?v=7"></script>
 <script src="js/api.js?v=7"></script>
 <script src="js/prompts.js?v=7"></script>
+<script src="js/deidentify.js?v=1"></script>
 <script src="js/avatar.js?v=7"></script>
 <script src="js/tools-icons.js?v=7"></script>
 <script src="js/fields.js?v=7"></script>
@@ -393,6 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPreview();
   restoreAvatarUploadUI();
   setSaveIndicator('saved');
+  initWelcome();
 });
 
 // ── AVATAR UPLOAD ZONE — restore state on load ───────────────
@@ -459,6 +573,11 @@ function selectModel(modelId) {
 }
 
 </script>
+
+<footer class="site-footer">
+  NSW Department of Education · Service Design and Change · HCD AI Pilot
+  &nbsp;·&nbsp; <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=muagBYpBwUecJZOHJhv5kXxf32_ZmJZMuTpvDowi52BUODVEM0MyUjhZVDNLOTFKSVJTRllYOEJPSCQlQCN0PWcu" target="_blank" rel="noopener">Share feedback or report a bug</a>
+</footer>
 
 </body>
 </html>

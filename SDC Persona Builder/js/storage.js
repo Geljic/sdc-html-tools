@@ -64,18 +64,26 @@ function importJSON(file) {
 function importMarkdown(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
-    mdFileContent = e.target.result;
-    mdFileName    = file.name;
-    // Update both md indicators (toolbar + AI Setup tab)
-    ['md-file-indicator', 'md-file-indicator-2'].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = '📄 ' + file.name;
-        if (el.classList) el.classList.add('loaded');
-      }
-    });
-    showToast('Markdown file loaded: ' + file.name + '. Click "Generate with AI" to use it.', 'success');
+  reader.onload = function (e) {
+    const rawText  = e.target.result;
+    const fileName = file.name;
+    // Determine if we're already in the builder (toolbar import) or coming from welcome
+    const appVisible = document.getElementById('app')?.style.display !== 'none';
+    const returnTo   = appVisible ? 'builder' : 'welcome';
+    // Route through de-identification screen
+    showDeIdScreen(rawText, fileName, function (cleanedText, cleanedFileName) {
+      mdFileContent = cleanedText;
+      mdFileName    = cleanedFileName;
+      // Update both md indicators (toolbar + AI Setup tab)
+      ['md-file-indicator', 'md-file-indicator-2'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = '📄 ' + cleanedFileName;
+          if (el.classList) el.classList.add('loaded');
+        }
+      });
+      showToast('Research notes loaded: ' + cleanedFileName + '. Click "Generate with AI" to use it.', 'success');
+    }, returnTo);
   };
   reader.readAsText(file);
 }

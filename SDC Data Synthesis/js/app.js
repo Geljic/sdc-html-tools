@@ -923,3 +923,216 @@ function updateSharePointHint() {
   document.getElementById('sharepoint-hint-text').textContent = hint;
   panel.classList.toggle('show', !!(hint && lastOutput));
 }
+
+// ── DE-IDENTIFICATION MODAL ──────────────────────────────────
+
+let _deIdModalCurrentText = ''; // tracks current editor content
+
+/**
+ * Assemble all text sources into a single string for the de-id editor.
+ * Images are excluded (can't de-id binary content).
+ */
+function _assembleTextForDeId() {
+  const parts = [];
+  uploadedFiles.forEach(function (f) {
+    if (f.error || f.image) return;
+    if (f.text) parts.push('=== ' + f.name + ' ===\n\n' + f.text);
+  });
+  const pasted = (document.getElementById('transcript-text').value || '').trim();
+  if (pasted) parts.push('=== pasted-text ===\n\n' + pasted);
+  return parts.join('\n\n---\n\n');
+}
+
+/**
+ * Open the de-identification modal.
+ * Validates inputs first, then assembles content for review.
+ */
+function openDeIdModal() {
+  const proxyUrl = localStorage.getItem(LS_PROXY);
+  const apiKey   = localStorage.getItem(LS_KEY);
+  if (!proxyUrl || !apiKey) {
+    openSettings();
+    setStatus('Please configure your proxy URL and virtual key first.', 'error');
+    return;
+  }
+
+  const date = document.getElementById('session-date').value;
+  const name = document.getElementById('session-name').value.trim();
+  if (!date || !name) { setStatus('Please fill in the date and session name.', 'error'); return; }
+
+  if (countSources() === 0) { setStatus('Please upload at least one file or paste some content.', 'error'); return; }
+
+  // Assemble combined text
+  _deIdModalCurrentText = _assembleTextForDeId();
+
+  // Populate editor
+  const editor = document.getElementById('deid-modal-editor');
+  if (editor) editor.value = _deIdModalCurrentText;
+
+  // Reset consent + button
+  const checkbox = document.getElementById('deid-modal-consent');
+  const runBtn   = document.getElementById('btn-deid-modal-run');
+  if (checkbox) checkbox.checked = false;
+  if (runBtn)   runBtn.disabled  = true;
+
+  // Reset rules list
+  const rulesList = document.getElementById('deid-modal-rules-list');
+  if (rulesList) {
+    rulesList.innerHTML = '';
+    addDeIdModalRow();
+  }
+
+  // Show modal
+  const modal = document.getElementById('deid-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeDeIdModal() {
+  const modal = document.getElementById('deid-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function onDeIdModalEditorInput(value) {
+  _deIdModalCurrentText = value;
+  // Refresh match counts
+  document.querySelectorAll('.deid-modal-rule-row').forEach(function (row) {
+    const find  = (row.querySelector('input.deid-find') || {}).value || '';
+    const badge = row.querySelector('.deid-modal-match-count');
+    if (badge && find.trim()) {
+      const count = _deIdModalCountMatches(_deIdModalCurrentText, find.trim());
+      badge.textContent = count > 0 ? count + ' match' + (count !== 1 ? 'es' : '') : '';
+      badge.className   = 'deid-modal-match-count' + (count > 0 ? ' has-matches' : '');
+    } else if (badge) {
+      badge.textContent = '';
+      badge.className   = 'deid-modal-match-count';
+    }
+  });
+}
+
+function onDeIdModalConsentChange() {
+  const checkbox = document.getElementById('deid-modal-consent');
+  const runBtn   = document.getElementById('btn-deid-modal-run');
+  if (runBtn) runBtn.disabled = !(checkbox && checkbox.checked);
+}
+
+function addDeIdModalRow() {
+  const list = document.getElementById('deid-modal-rules-list');
+  if (!list) return;
+
+  const row = document.createElement('div');
+  row.className = 'deid-modal-rule-row';
+  row.innerHTML =
+    '<input type="text" class="deid-find" placeholder="Find (e.g. Jane Smith)" />' +
+    '<span class="deid-modal-arrow">→</span>' +
+    '<input type="text" class="deid-replace" placeholder="Replace with" />' +
+    '<span class="deid-modal-match-count"></span>';
+
+  const findInput = row.querySelector('.deid-find');
+  findInput.addEventListener('input', function () {
+    const count = _deIdModalCountMatches(_deIdModalCurrentText, this.value.trim());
+    const badge = row.querySelector('.deid-modal-match-count');
+    if (badge) {
+      badge.textContent = count > 0 ? count + ' match' + (count !== 1 ? 'es' : '') : '';
+      badge.className   = 'deid-modal-match-count' + (count > 0 ? ' has-matches' : '');
+    }
+  });
+
+  list.appendChild(row);
+}
+
+function _deIdModalCountMatches(text, find) {
+  if (!text || !find) return 0;
+  try {
+    const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex   = new RegExp('\\b' + escaped + '\\b', 'gi');
+    return (text.match(regex) || []).length;
+  } catch (_) { return 0; }
+}
+
+function _deIdModalApplyRules(text, rules) {
+  let result = text;
+  rules.forEach(function (r) {
+    if (!r.find) return;
+    try {
+      const escaped = r.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex   = new RegExp('\\b' + escaped + '\\b', 'gi');
+      result = result.replace(regex, r.replace || '');
+    } catch (_) {}
+  });
+  return result;
+}
+
+function _collectDeIdModalRules() {
+  const rules = [];
+  document.querySelectorAll('.deid-modal-rule-row').forEach(function (row) {
+    const find    = ((row.querySelector('.deid-find') || {}).value || '').trim();
+    const replace = ((row.querySelector('.deid-replace') || {}).value || '').trim();
+    if (find) rules.push({ find: find, replace: replace });
+  });
+  return rules;
+}
+
+/**
+ * Apply de-id rules to the current editor text, close the modal,
+ * and run synthesis with the cleaned combined text.
+ */
+async function applyDeIdAndRun() {
+  const editor = document.getElementById('deid-modal-editor');
+  const currentText = editor ? editor.value : _deIdModalCurrentText;
+
+  const rules       = _collectDeIdModalRules();
+  const cleanedText = _deIdModalApplyRules(currentText, rules);
+
+  closeDeIdModal();
+
+  // Run synthesis using the cleaned combined text
+  await synthesiseWithCleanedText(cleanedText);
+}
+
+/**
+ * Run synthesis using a pre-cleaned combined text string.
+ * Bypasses the normal file/paste assembly — uses the cleaned text as a single source.
+ */
+async function synthesiseWithCleanedText(cleanedText) {
+  const proxyUrl = localStorage.getItem(LS_PROXY);
+  const apiKey   = localStorage.getItem(LS_KEY);
+  const date     = document.getElementById('session-date').value;
+  const name     = document.getElementById('session-name').value.trim();
+
+  const btn = document.getElementById('synthesise-btn');
+  btn.disabled    = true;
+  btn.innerHTML   = '<span class="spinner"></span>Running…';
+  clearOutput();
+
+  try {
+    setStatus('Loading skill…');
+    const systemPrompt = await loadSkill(currentSkill);
+    const deident      = document.getElementById('deidentify').value;
+    const deidentLabel = deident === 'yes' ? 'Yes (use P1, P2, P3…)' : 'No';
+
+    const textPrompt = [
+      'Date: ' + date,
+      'Session name: ' + name,
+      'De-identify speakers: ' + deidentLabel,
+      '',
+      '---',
+      cleanedText,
+    ].join('\n');
+
+    setStatus('Sending to LiteLLM proxy…');
+    const r = await callLiteLLM(systemPrompt, textPrompt);
+
+    lastOutput = r.content;
+    showOutput(lastOutput);
+    setStatus('Done — ' + (r.tokens || 0).toLocaleString() + ' tokens used.', 'success');
+    document.getElementById('download-btn').disabled = false;
+    document.getElementById('copy-btn').disabled     = false;
+    updateSharePointHint();
+
+  } catch (err) {
+    setStatus('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = 'Review and Run';
+  }
+}

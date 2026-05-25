@@ -196,10 +196,8 @@ function initSharePointModal() {
     }
   });
 
-  // Show on first load
-  if (!localStorage.getItem(SP_ONBOARDED_KEY)) {
-    openSharePointModal();
-  }
+  // NOTE: First-load modal is now triggered from enterBuilder() so it
+  // only appears after the user has passed the welcome screen.
 }
 
 function openSharePointModal() {

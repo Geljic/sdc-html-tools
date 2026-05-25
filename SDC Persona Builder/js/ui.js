@@ -169,6 +169,78 @@ function initAiDialog() {
   });
 }
 
+// ── WELCOME SCREEN ────────────────────────────────────────────
+function initWelcome() {
+  const name = (formData.name || '').trim();
+  const hasData = name || (formData.bio || '').trim() || (formData.role || '').trim();
+
+  if (hasData) {
+    const continueBtn  = document.getElementById('welcome-continue-btn');
+    const continueName = document.getElementById('welcome-continue-name');
+    const sep          = document.getElementById('welcome-sep');
+    if (continueBtn)  continueBtn.style.display  = '';
+    if (continueName) continueName.textContent    = name || 'last session';
+    if (sep)          sep.style.display           = '';
+  }
+}
+
+function enterBuilder() {
+  const welcome = document.getElementById('welcome-screen');
+  const deid    = document.getElementById('deid-screen');
+  const app     = document.getElementById('app');
+  if (welcome) welcome.style.display = 'none';
+  if (deid)    deid.style.display    = 'none';
+  if (app)     app.style.display     = '';
+}
+
+function welcomeChooseAi() {
+  document.getElementById('welcome-md-input').click();
+}
+
+function welcomeMdSelected(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    showDeIdScreen(e.target.result, file.name, function (cleanedText, fileName) {
+      // Store cleaned markdown
+      mdFileContent = cleanedText;
+      mdFileName    = fileName;
+      ['md-file-indicator', 'md-file-indicator-2'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = '📄 ' + fileName; el.classList.add('loaded'); }
+      });
+      enterBuilder();
+      setTimeout(function () {
+        showToast('Research notes loaded. Click "AI Generate" in the toolbar to draft the persona.', 'info');
+      }, 150);
+    });
+  };
+  reader.readAsText(file);
+}
+
+function welcomeChooseManual() {
+  enterBuilder();
+}
+
+function welcomeChooseLoad() {
+  document.getElementById('welcome-json-input').click();
+}
+
+function welcomeJsonSelected(file) {
+  if (!file) return;
+  enterBuilder();
+  importJSON(file);
+}
+
+function welcomeLoadExample() {
+  loadExample();
+  enterBuilder();
+}
+
+function welcomeContinue() {
+  enterBuilder();
+}
+
 // ── EDITOR SECTION RENDERERS ─────────────────────────────────
 
 function renderAllSections() {

@@ -225,8 +225,8 @@
 
     <div id="token-estimate">No content yet</div>
 
-    <button class="btn btn-primary" id="synthesise-btn" onclick="synthesise()">
-      Run
+    <button class="btn btn-primary" id="synthesise-btn" onclick="openDeIdModal()">
+      Review and Run
     </button>
     <div id="status"></div>
 
@@ -253,6 +253,59 @@
   </div>
 
 </main>
+
+<!-- ============================================================
+     DE-IDENTIFICATION MODAL
+============================================================ -->
+<div class="modal-overlay" id="deid-modal" style="display:none;align-items:flex-start;padding:24px;">
+  <div class="modal deid-modal-box">
+
+    <div class="deid-modal-header">
+      <div>
+        <h2>🔒 Remove personal information</h2>
+        <p>Review and edit your content before it is sent to AI. Use find and replace to remove names or other identifying details. All changes happen in your browser.</p>
+      </div>
+      <button class="btn btn-secondary deid-modal-close" onclick="closeDeIdModal()">Cancel</button>
+    </div>
+
+    <div class="deid-modal-body">
+
+      <!-- Left: editable combined text -->
+      <div class="deid-modal-preview">
+        <div class="deid-modal-label">Combined content — edit directly or use find and replace</div>
+        <textarea id="deid-modal-editor" class="deid-modal-editor" spellcheck="false"
+          oninput="onDeIdModalEditorInput(this.value)"
+          placeholder="Your content will appear here…"></textarea>
+      </div>
+
+      <!-- Right: find/replace + consent + actions -->
+      <div class="deid-modal-rules">
+        <div class="deid-modal-label">Find and replace</div>
+        <p class="deid-modal-hint">Matching is case-insensitive and whole-word.</p>
+
+        <div id="deid-modal-rules-list" class="deid-modal-rules-list"></div>
+
+        <button class="btn btn-secondary btn-sm" onclick="addDeIdModalRow()" style="margin-top:8px;">+ Add row</button>
+
+        <div class="deid-modal-privacy">
+          <span>🔒</span>
+          <span>Replacements happen in your browser only. The cleaned text is what gets sent to AI — your original files are never uploaded.</span>
+        </div>
+
+        <label class="deid-modal-consent">
+          <input type="checkbox" id="deid-modal-consent" onchange="onDeIdModalConsentChange()" />
+          <span>I confirm I have removed all personal information from the content above before sending to AI.</span>
+        </label>
+
+        <div class="deid-modal-actions">
+          <button class="btn btn-secondary" onclick="closeDeIdModal()">Cancel</button>
+          <button class="btn btn-primary" id="btn-deid-modal-run" onclick="applyDeIdAndRun()" disabled>Send to AI</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script src="js/app.js"></script>
 </body>

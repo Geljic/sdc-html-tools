@@ -8,4 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateProgress();
   initDragAndDrop();
   initSharePointModal();
+  initAiDialog();
+  initWelcome();
 });
