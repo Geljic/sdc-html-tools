@@ -174,8 +174,39 @@ Synth.parser = (function () {
     return '';
   }
 
+  async function extractDocxText(file) {
+    var zip = await JSZip.loadAsync(file);
+    var docXml = zip.file('word/document.xml');
+    if (!docXml) throw new Error('Not a valid .docx file.');
+    var xml = await docXml.async('string');
+    return stripXml(xml);
+  }
+
+  async function extractPptxText(file) {
+    var zip = await JSZip.loadAsync(file);
+    var slideFiles = [];
+    zip.forEach(function (path) {
+      if (/^ppt\/slides\/slide\d+\.xml$/.test(path)) slideFiles.push(path);
+    });
+    slideFiles.sort(function (a, b) {
+      var numA = parseInt(a.match(/slide(\d+)/)[1]);
+      var numB = parseInt(b.match(/slide(\d+)/)[1]);
+      return numA - numB;
+    });
+    var parts = [];
+    for (var i = 0; i < slideFiles.length; i++) {
+      var xml = await zip.file(slideFiles[i]).async('string');
+      var text = xml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      text = decodeEntities(text);
+      if (text) parts.push(text);
+    }
+    return parts.join('\n\n');
+  }
+
   return {
     parseDocx,
+    extractDocxText,
+    extractPptxText,
     extractSpeakers,
     autoAssignRoles,
     suggestParticipantId,

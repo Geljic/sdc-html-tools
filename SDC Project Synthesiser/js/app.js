@@ -6,6 +6,7 @@ Synth.app = (function () {
   let pendingParse = null;
   let pendingParticipantId = null;
   let selectedThemes = new Set();
+  let cachedRqMap = {};
 
   async function init() {
     initNavigation();
@@ -18,6 +19,7 @@ Synth.app = (function () {
     initSynthesisControls();
     initThemesTab();
     initExportTab();
+    initNudges();
     loadSavedCredentials();
 
     try {
@@ -206,12 +208,197 @@ Synth.app = (function () {
 
   function initProjectTab() {
     document.getElementById('btn-save-framework').addEventListener('click', saveFramework);
-    document.getElementById('btn-add-facilitator').addEventListener('click', addFacilitator);
     document.getElementById('btn-add-rq').addEventListener('click', addResearchQuestion);
     document.getElementById('btn-add-group').addEventListener('click', addParticipantGroup);
     document.getElementById('new-rq-label').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); addResearchQuestion(); }
     });
+    initBgHelper();
+  }
+
+  // ========== Background Generator ==========
+
+  var bgDocFile = null;
+
+  function initBgHelper() {
+    document.getElementById('btn-open-bg-helper').addEventListener('click', function () {
+      document.getElementById('bg-helper-panel').classList.remove('hidden');
+      this.classList.add('hidden');
+    });
+    document.getElementById('btn-close-bg-helper').addEventListener('click', closeBgHelper);
+
+    document.querySelectorAll('.bg-path-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.bg-path-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var path = btn.dataset.bgPath;
+        document.getElementById('bg-path-questions').classList.toggle('hidden', path !== 'questions');
+        document.getElementById('bg-path-document').classList.toggle('hidden', path !== 'document');
+      });
+    });
+
+    document.getElementById('btn-bg-generate').addEventListener('click', generateBgFromQuestions);
+    document.getElementById('btn-bg-extract').addEventListener('click', generateBgFromDocument);
+    document.getElementById('btn-bg-use').addEventListener('click', useBgPreview);
+    document.getElementById('btn-bg-regenerate').addEventListener('click', regenerateBg);
+
+    var dropzone = document.getElementById('bg-doc-dropzone');
+    var fileInput = document.getElementById('bg-doc-input');
+    dropzone.addEventListener('click', function () { fileInput.click(); });
+    dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+    dropzone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      handleBgDocFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files[0]) handleBgDocFile(fileInput.files[0]);
+    });
+  }
+
+  function closeBgHelper() {
+    document.getElementById('bg-helper-panel').classList.add('hidden');
+    document.getElementById('btn-open-bg-helper').classList.remove('hidden');
+  }
+
+  function handleBgDocFile(file) {
+    if (!file) return;
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'docx' && ext !== 'pptx') {
+      showStatus('bg-helper-status', 'error', 'Unsupported file type. Please upload a .docx or .pptx file.');
+      return;
+    }
+    bgDocFile = file;
+    var nameEl = document.getElementById('bg-doc-filename');
+    nameEl.textContent = file.name;
+    nameEl.classList.remove('hidden');
+    document.getElementById('btn-bg-extract').disabled = false;
+  }
+
+  function getBgModel() {
+    var sel = document.getElementById('default-synth-model');
+    return (sel && sel.value) ? sel.value : 'claude-sonnet-4-6';
+  }
+
+  async function generateBgFromQuestions() {
+    if (!Synth.api.hasCredentials()) {
+      showStatus('bg-helper-status', 'error', 'Configure your API credentials in Settings first.');
+      return;
+    }
+    var project = document.getElementById('bg-q-project').value.trim();
+    var goal = document.getElementById('bg-q-goal').value.trim();
+    var method = document.getElementById('bg-q-method').value.trim();
+    if (!project || !goal || !method) {
+      showStatus('bg-helper-status', 'error', 'Please fill in at least the first three fields.');
+      return;
+    }
+    var answers = {
+      project: project,
+      goal: goal,
+      method: method,
+      participants: document.getElementById('bg-q-participants').value.trim(),
+      domain: document.getElementById('bg-q-domain').value.trim()
+    };
+
+    var existing = document.getElementById('fw-background').value.trim();
+    var userPrompt = Synth.prompts.buildBgFromQuestionnaire(answers);
+    if (existing) userPrompt += '\n\nExisting background (for reference):\n' + existing;
+
+    await callBgGeneration(userPrompt);
+  }
+
+  async function generateBgFromDocument() {
+    if (!Synth.api.hasCredentials()) {
+      showStatus('bg-helper-status', 'error', 'Configure your API credentials in Settings first.');
+      return;
+    }
+    if (!bgDocFile) {
+      showStatus('bg-helper-status', 'error', 'Please upload a document first.');
+      return;
+    }
+
+    var btn = document.getElementById('btn-bg-extract');
+    btn.disabled = true;
+    btn.textContent = 'Extracting...';
+    showStatus('bg-helper-status', 'info', 'Reading document...');
+
+    try {
+      var ext = bgDocFile.name.split('.').pop().toLowerCase();
+      var text;
+      if (ext === 'pptx') {
+        text = await Synth.parser.extractPptxText(bgDocFile);
+      } else {
+        text = await Synth.parser.extractDocxText(bgDocFile);
+      }
+
+      if (!text || text.trim().length < 20) {
+        showStatus('bg-helper-status', 'error', 'Could not extract enough text from the document. Try a different file.');
+        return;
+      }
+
+      var maxChars = 24000;
+      if (text.length > maxChars) {
+        text = text.substring(0, maxChars);
+      }
+
+      var note = document.getElementById('bg-doc-note').value.trim();
+      var userPrompt = Synth.prompts.buildBgFromDocument(text, note);
+
+      await callBgGeneration(userPrompt);
+    } catch (err) {
+      showStatus('bg-helper-status', 'error', 'Failed to read document: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Extract &amp; Generate';
+    }
+  }
+
+  async function callBgGeneration(userPrompt) {
+    var genBtn = document.getElementById('btn-bg-generate');
+    var extBtn = document.getElementById('btn-bg-extract');
+    genBtn.disabled = true;
+    extBtn.disabled = true;
+    genBtn.textContent = 'Generating...';
+    showStatus('bg-helper-status', 'info', 'Generating background...');
+
+    try {
+      var model = getBgModel();
+      var result = await Synth.api.chatCompletion(model, [
+        { role: 'system', content: Synth.prompts.BG_GENERATOR_SYSTEM },
+        { role: 'user', content: userPrompt }
+      ], { max_tokens: 1024 });
+
+      var text = result.content.trim();
+      document.getElementById('bg-preview-text').value = text;
+      document.getElementById('bg-preview-panel').classList.remove('hidden');
+      showStatus('bg-helper-status', 'success', 'Background generated. Review the preview below.');
+    } catch (err) {
+      showStatus('bg-helper-status', 'error', 'Generation failed: ' + err.message);
+    } finally {
+      genBtn.disabled = false;
+      genBtn.textContent = 'Generate Background';
+      extBtn.disabled = !bgDocFile;
+      extBtn.innerHTML = 'Extract &amp; Generate';
+    }
+  }
+
+  function useBgPreview() {
+    var text = document.getElementById('bg-preview-text').value.trim();
+    if (!text) return;
+    document.getElementById('fw-background').value = text;
+    document.getElementById('bg-preview-panel').classList.add('hidden');
+    closeBgHelper();
+    showStatus('framework-status', 'info', 'Background updated. Click Save to keep your changes.');
+  }
+
+  function regenerateBg() {
+    var activePath = document.querySelector('.bg-path-btn.active');
+    if (activePath && activePath.dataset.bgPath === 'document') {
+      generateBgFromDocument();
+    } else {
+      generateBgFromQuestions();
+    }
   }
 
   // ========== Settings Tab ==========
@@ -362,7 +549,6 @@ Synth.app = (function () {
     }
 
     document.getElementById('fw-background').value = fw.background || '';
-    renderFacilitators(fw.facilitator_names || []);
     renderResearchQuestions(fw.research_questions || []);
     renderParticipantGroups(fw.participant_groups || []);
     updateRqDropdowns(fw.research_questions || []);
@@ -411,42 +597,6 @@ Synth.app = (function () {
 
   // --- Facilitators ---
 
-  function renderFacilitators(names) {
-    var container = document.getElementById('facilitator-list');
-    container.innerHTML = '';
-    names.forEach(function (name, i) {
-      var div = document.createElement('div');
-      div.className = 'fw-item';
-      div.innerHTML =
-        '<div class="fw-item-content"><span class="fw-item-label">' + escapeHtml(name) + '</span></div>' +
-        '<button class="btn-icon" data-action="remove-fac" data-index="' + i + '">&times;</button>';
-      container.appendChild(div);
-    });
-    container.addEventListener('click', handleFacilitatorRemove);
-  }
-
-  async function addFacilitator() {
-    var input = document.getElementById('new-facilitator');
-    var name = input.value.trim();
-    if (!name || !activeProjectId) return;
-
-    var fw = await Synth.db.getFramework(activeProjectId);
-    fw.facilitator_names.push(name);
-    await Synth.db.saveFramework(fw);
-    input.value = '';
-    renderFacilitators(fw.facilitator_names);
-  }
-
-  async function handleFacilitatorRemove(e) {
-    var btn = e.target.closest('[data-action="remove-fac"]');
-    if (!btn || !activeProjectId) return;
-    var idx = parseInt(btn.dataset.index, 10);
-    var fw = await Synth.db.getFramework(activeProjectId);
-    fw.facilitator_names.splice(idx, 1);
-    await Synth.db.saveFramework(fw);
-    renderFacilitators(fw.facilitator_names);
-  }
-
   // --- Research Questions ---
 
   function renderResearchQuestions(rqs) {
@@ -458,7 +608,6 @@ Synth.app = (function () {
       div.innerHTML =
         '<div class="fw-item-content">' +
           '<div class="fw-item-label">' + escapeHtml(rq.label) + '</div>' +
-          '<div class="fw-item-meta">' + rq.rq_id + '</div>' +
         '</div>' +
         '<div class="fw-item-actions">' +
           '<button class="btn-icon btn-icon-edit" data-action="edit-rq" data-index="' + i + '" title="Edit">&#9998;</button>' +
@@ -568,7 +717,6 @@ Synth.app = (function () {
         '<div class="fw-item-content">' +
           '<div class="fw-item-label">' + escapeHtml(g.label) + '</div>' +
           '<div class="fw-item-desc">' + escapeHtml(g.description || '') + '</div>' +
-          '<div class="fw-item-meta">' + g.group_id + '</div>' +
         '</div>' +
         '<button class="btn-icon" data-action="remove-group" data-index="' + i + '">&times;</button>';
       container.appendChild(div);
@@ -732,7 +880,7 @@ Synth.app = (function () {
 
     var nextNum = await Synth.db.getNextParticipantNumber(activeProjectId);
     document.getElementById('pp-detail-id').value = 'P-' + String(nextNum).padStart(2, '0');
-    document.getElementById('pp-detail-id').disabled = false;
+    document.getElementById('pp-detail-id').disabled = true;
     document.getElementById('pp-detail-name').value = '';
     document.getElementById('pp-detail-desc').value = '';
     document.getElementById('pp-detail-group').value = '';
@@ -860,8 +1008,7 @@ Synth.app = (function () {
       var header = document.createElement('div');
       header.className = 'theme-rq-header';
       header.innerHTML =
-        '<div class="theme-rq-id">' + escapeHtml(rqGroup.rq_id) + '</div>' +
-        '<div class="theme-rq-label">' + escapeHtml(rqMap[rqGroup.rq_id] || '') + '</div>';
+        '<div class="theme-rq-label">' + escapeHtml(rqMap[rqGroup.rq_id] || rqGroup.rq_id) + '</div>';
       section.appendChild(header);
 
       (rqGroup.findings || []).forEach(function (f) {
@@ -1513,10 +1660,11 @@ Synth.app = (function () {
 
   async function showSynthesisControlsIfNeeded() {
     if (!activeProjectId) return;
-    var participants = await Synth.db.getParticipantsByProject(activeProjectId);
-    var hasTranscripts = participants.some(function (p) { return p.transcript_id !== null; });
+    if (currentParticipantId || isNewParticipant) return;
+    var transcripts = await Synth.db.getTranscriptsByProject(activeProjectId);
+    var hasPending = transcripts.some(function (t) { return t.status === 'uploaded'; });
     var card = document.getElementById('synthesis-controls-card');
-    if (hasTranscripts) {
+    if (hasPending) {
       card.classList.remove('hidden');
     } else {
       card.classList.add('hidden');
@@ -1604,6 +1752,14 @@ Synth.app = (function () {
         btn.disabled = false;
         btn.textContent = 'Synthesise All Pending';
         await refreshParticipantList();
+
+        var allThemes = await Synth.db.getThemesByProject(activeProjectId);
+        if (allThemes.length > 30) {
+          var nudge = document.getElementById('synthesis-theme-nudge');
+          var nudgeText = document.getElementById('synthesis-nudge-text');
+          nudgeText.textContent = 'You have ' + allThemes.length + ' themes. Consider reviewing to consolidate related findings.';
+          nudge.classList.remove('hidden');
+        }
       }
     );
   }
@@ -1632,6 +1788,25 @@ Synth.app = (function () {
     document.getElementById('btn-cancel-merge').addEventListener('click', function () {
       selectedThemes.clear();
       refreshThemes();
+    });
+    document.getElementById('btn-review-themes').addEventListener('click', startThemeReview);
+    document.getElementById('btn-close-review').addEventListener('click', closeThemeReview);
+  }
+
+  function initNudges() {
+    document.getElementById('btn-synthesis-nudge-review').addEventListener('click', function () {
+      Synth.app.switchTab('themes');
+      startThemeReview();
+    });
+    document.getElementById('btn-dismiss-synthesis-nudge').addEventListener('click', function () {
+      document.getElementById('synthesis-theme-nudge').classList.add('hidden');
+    });
+    document.getElementById('btn-export-nudge-review').addEventListener('click', function () {
+      Synth.app.switchTab('themes');
+      startThemeReview();
+    });
+    document.getElementById('btn-dismiss-export-nudge').addEventListener('click', function () {
+      document.getElementById('export-theme-nudge').classList.add('hidden');
     });
   }
 
@@ -1669,6 +1844,10 @@ Synth.app = (function () {
     var fw = await Synth.db.getFramework(activeProjectId);
     renderThemeCards(themes, fw);
     updateMergeBar();
+
+    var allThemes = await Synth.db.getThemesByProject(activeProjectId);
+    var reviewSection = document.getElementById('theme-review-section');
+    if (reviewSection) reviewSection.style.display = allThemes.length >= 20 ? '' : 'none';
   }
 
   function sortThemes(themes, sortBy) {
@@ -1703,9 +1882,13 @@ Synth.app = (function () {
     var hasRqs = framework && framework.research_questions && framework.research_questions.length > 0;
     var filterRq = document.getElementById('theme-filter-rq').value;
 
+    if (hasRqs) {
+      cachedRqMap = {};
+      framework.research_questions.forEach(function (rq) { cachedRqMap[rq.rq_id] = rq.label; });
+    }
+
     if (hasRqs && !filterRq) {
-      var rqMap = {};
-      framework.research_questions.forEach(function (rq) { rqMap[rq.rq_id] = rq.label; });
+      var rqMap = cachedRqMap;
 
       var grouped = {};
       var unmapped = [];
@@ -1726,7 +1909,6 @@ Synth.app = (function () {
         var header = document.createElement('div');
         header.className = 'theme-rq-header';
         header.innerHTML =
-          '<div class="theme-rq-id">' + escapeHtml(rq.rq_id) + '</div>' +
           '<div class="theme-rq-label">' + escapeHtml(rq.label) + '</div>';
         container.appendChild(header);
 
@@ -1765,7 +1947,7 @@ Synth.app = (function () {
       var eCount = theme.supporting_evidence ? theme.supporting_evidence.length : 0;
 
       var badgeClass = 'badge-' + theme.source;
-      var rqLabels = (theme.rq_mappings || []).join(', ');
+      var rqLabels = (theme.rq_mappings || []).map(function (id) { return cachedRqMap[id] || id; }).join(', ');
 
       card.innerHTML =
         '<div class="theme-card-header">' +
@@ -1924,30 +2106,190 @@ Synth.app = (function () {
       theme1.current_description + ' ' + theme2.current_description);
     if (mergedDesc === null) return;
 
-    var mergedId = await Synth.db.getNextThemeId();
-    var merged = {
-      theme_id: mergedId,
-      project_id: activeProjectId,
-      label: mergedLabel,
-      original_description: mergedDesc,
-      current_description: mergedDesc,
-      source: 'merged',
-      supporting_evidence: (theme1.supporting_evidence || []).concat(theme2.supporting_evidence || []),
-      rq_mappings: Array.from(new Set((theme1.rq_mappings || []).concat(theme2.rq_mappings || []))),
-      related_themes: Array.from(new Set(
-        (theme1.related_themes || []).concat(theme2.related_themes || [])
-          .filter(function (id) { return id !== theme1.theme_id && id !== theme2.theme_id; })
-      )),
-      first_seen: theme1.first_seen || theme2.first_seen,
-      status: 'verified'
-    };
-
-    await Synth.db.saveTheme(merged);
-    await Synth.db.deleteTheme(theme1.theme_id);
-    await Synth.db.deleteTheme(theme2.theme_id);
-
+    await Synth.pipeline.applyThemeMerge(activeProjectId, ids, mergedLabel, mergedDesc);
     selectedThemes.clear();
     await refreshThemes();
+  }
+
+  // ========== Theme Review ==========
+
+  async function startThemeReview() {
+    if (!activeProjectId) return;
+    if (!Synth.api.hasCredentials()) {
+      showStatus('review-log', 'error', 'Configure your API credentials first.');
+      return;
+    }
+
+    document.getElementById('theme-review-panel').classList.remove('hidden');
+    document.getElementById('theme-cards').classList.add('hidden');
+    document.getElementById('themes-empty').classList.add('hidden');
+    document.getElementById('merge-bar').classList.add('hidden');
+
+    var logEl = document.getElementById('review-log');
+    logEl.innerHTML = '';
+    logEl.classList.remove('hidden');
+    document.getElementById('review-summary').classList.add('hidden');
+    document.getElementById('review-clusters').innerHTML = '';
+    document.getElementById('review-weak-themes').classList.add('hidden');
+
+    var activeLine = null;
+
+    var result = await Synth.pipeline.reviewThemes(activeProjectId, function (msg, type) {
+      if (type === 'step') {
+        if (activeLine) { activeLine.classList.remove('active'); activeLine.classList.add('done'); }
+        activeLine = document.createElement('div');
+        activeLine.className = 'log-line active';
+        activeLine.textContent = msg;
+        logEl.appendChild(activeLine);
+        logEl.scrollTop = logEl.scrollHeight;
+      } else if (type === 'update') {
+        if (activeLine) {
+          activeLine.setAttribute('data-label', activeLine.getAttribute('data-label') || activeLine.textContent);
+          activeLine.textContent = activeLine.getAttribute('data-label') + ' — ' + msg;
+        }
+      } else if (type === 'done') {
+        if (activeLine) { activeLine.classList.remove('active'); activeLine.classList.add('done'); activeLine.textContent = msg; activeLine = null; }
+      } else if (type === 'error') {
+        if (activeLine) { activeLine.classList.remove('active'); activeLine.classList.add('error'); activeLine.textContent = msg; activeLine = null; }
+      }
+    });
+
+    if (!result.success) {
+      return;
+    }
+
+    if (result.summary) {
+      var summaryEl = document.getElementById('review-summary');
+      summaryEl.textContent = result.summary;
+      summaryEl.classList.remove('hidden');
+    }
+
+    await renderReviewClusters(result.clusters);
+    renderWeakThemes(result.weak_themes);
+  }
+
+  async function renderReviewClusters(clusters) {
+    var container = document.getElementById('review-clusters');
+    container.innerHTML = '';
+
+    if (!clusters || clusters.length === 0) {
+      container.innerHTML = '<div class="card"><p>No theme clusters identified. Your themes appear distinct.</p></div>';
+      return;
+    }
+
+    for (var i = 0; i < clusters.length; i++) {
+      var card = await buildClusterCard(clusters[i], i);
+      container.appendChild(card);
+    }
+  }
+
+  async function buildClusterCard(cluster, idx) {
+    var card = document.createElement('div');
+    card.className = 'cluster-card';
+
+    var recClass = (cluster.recommendation || '').replace(/ /g, '_');
+    var recLabel = cluster.recommendation === 'merge' ? 'Merge' :
+                   cluster.recommendation === 'group' ? 'Group as Sub-themes' :
+                   cluster.recommendation === 'keep_separate' ? 'Keep Separate' : cluster.recommendation;
+
+    var html = '<span class="cluster-recommendation ' + escapeHtml(recClass) + '">' + escapeHtml(recLabel) + '</span>';
+    html += '<span class="cluster-confidence">' + escapeHtml(cluster.confidence || '') + ' confidence</span>';
+    html += '<div class="cluster-rationale">' + escapeHtml(cluster.rationale || '') + '</div>';
+
+    html += '<div class="cluster-themes">';
+    for (var i = 0; i < (cluster.theme_ids || []).length; i++) {
+      var theme = await Synth.db.getTheme(cluster.theme_ids[i]);
+      if (!theme) continue;
+      var pCount = getParticipantCount(theme);
+      var eCount = theme.supporting_evidence ? theme.supporting_evidence.length : 0;
+      html += '<div class="cluster-theme-item">';
+      html += '<div class="theme-label">' + escapeHtml(theme.label) + '</div>';
+      html += '<div class="theme-desc">' + escapeHtml(theme.current_description || '') + '</div>';
+      html += '<div class="theme-meta">' + pCount + ' participant(s), ' + eCount + ' quote(s)';
+      if (theme.rq_mappings && theme.rq_mappings.length) html += ' · RQ: ' + theme.rq_mappings.map(function (id) { return cachedRqMap[id] || id; }).join(', ');
+      html += '</div></div>';
+    }
+    html += '</div>';
+
+    if (cluster.recommendation !== 'keep_separate' && cluster.suggested_label) {
+      html += '<div class="cluster-suggestion">';
+      html += '<strong>Suggested label:</strong> ' + escapeHtml(cluster.suggested_label) + '<br>';
+      html += '<strong>Suggested description:</strong> ' + escapeHtml(cluster.suggested_description || '');
+      html += '</div>';
+    }
+
+    html += '<div class="cluster-actions">';
+    if (cluster.recommendation === 'merge') {
+      html += '<button class="btn btn-primary btn-sm" data-action="merge">Accept Merge</button>';
+      html += '<button class="btn btn-secondary btn-sm" data-action="reject">Keep Separate</button>';
+    } else if (cluster.recommendation === 'group') {
+      html += '<button class="btn btn-primary btn-sm" data-action="merge">Merge</button>';
+      html += '<button class="btn btn-secondary btn-sm" data-action="reject">Keep Separate</button>';
+    } else {
+      html += '<button class="btn btn-secondary btn-sm" data-action="merge">Merge Anyway</button>';
+      html += '<button class="btn btn-primary btn-sm" data-action="reject">Confirmed Separate</button>';
+    }
+    html += '<button class="btn btn-secondary btn-sm" data-action="skip">Skip</button>';
+    html += '</div>';
+
+    card.innerHTML = html;
+
+    card.querySelector('[data-action="merge"]').addEventListener('click', function () {
+      handleClusterMerge(cluster, card);
+    });
+    card.querySelector('[data-action="reject"]').addEventListener('click', function () {
+      card.classList.add('resolved');
+    });
+    card.querySelector('[data-action="skip"]').addEventListener('click', function () {
+      card.classList.add('resolved');
+    });
+
+    return card;
+  }
+
+  async function handleClusterMerge(cluster, card) {
+    var label = cluster.suggested_label || cluster.theme_ids.join(' + ');
+    var desc = cluster.suggested_description || '';
+
+    var userLabel = prompt('Label for merged theme:', label);
+    if (!userLabel) return;
+    var userDesc = prompt('Description for merged theme:', desc);
+    if (userDesc === null) return;
+
+    try {
+      var merged = await Synth.pipeline.applyThemeMerge(activeProjectId, cluster.theme_ids, userLabel, userDesc);
+      if (merged) {
+        card.classList.add('resolved');
+      }
+    } catch (e) {
+      alert('Merge failed: ' + e.message);
+    }
+  }
+
+  function renderWeakThemes(weakThemes) {
+    var container = document.getElementById('review-weak-themes');
+    var list = document.getElementById('review-weak-list');
+    list.innerHTML = '';
+
+    if (!weakThemes || weakThemes.length === 0) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    container.classList.remove('hidden');
+    weakThemes.forEach(function (wt) {
+      var div = document.createElement('div');
+      div.className = 'weak-theme-item';
+      div.innerHTML = '<div class="theme-label">' + escapeHtml(wt.label || wt.theme_id) + '</div>' +
+        '<div class="weak-reason">' + escapeHtml(wt.reason || '') + '</div>';
+      list.appendChild(div);
+    });
+  }
+
+  function closeThemeReview() {
+    document.getElementById('theme-review-panel').classList.add('hidden');
+    document.getElementById('theme-cards').classList.remove('hidden');
+    refreshThemes();
   }
 
   // ========== Export Tab ==========
@@ -1970,6 +2312,16 @@ Synth.app = (function () {
       document.getElementById('consolidation-model').value = fw.default_consolidation_model;
     }
     await loadConsolidationStats();
+
+    var themes = await Synth.db.getThemesByProject(activeProjectId);
+    var exportNudge = document.getElementById('export-theme-nudge');
+    if (themes.length > 30 && exportNudge) {
+      document.getElementById('export-nudge-text').textContent =
+        'You have ' + themes.length + ' themes. Reviewing themes before generating a report can improve the final synthesis.';
+      exportNudge.classList.remove('hidden');
+    } else if (exportNudge) {
+      exportNudge.classList.add('hidden');
+    }
   }
 
   async function loadConsolidationStats() {

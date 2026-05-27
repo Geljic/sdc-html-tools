@@ -22,7 +22,7 @@ Synth.prompts = (function () {
     '  - Level 2 (MINIMUM): "The participant\'s reliance on Excel suggests a need for export functionality, as they are unlikely to abandon familiar tools entirely." — This is interpretation.',
     '  - Level 3 (TARGET): "The participant\'s reliance on Excel, combined with similar patterns from other technical users, indicates that the tool\'s value for power users lies in data discovery rather than replacing analysis workflows." — This is insight.',
     '- Focus on PARTICIPANT responses. Facilitator questions and observer comments provide context only — do not synthesise them as findings.',
-    '- For EACH finding, check the existing theme database:',
+    '- For EACH finding, check the existing theme database. The database includes example_quotes for each theme — use these to understand what kind of evidence belongs to that theme. Two findings may use different words but describe the same underlying concept.',
     '  - If it matches an existing theme, set theme_match to that theme\'s ID.',
     '  - If it is related to but meaningfully distinct from an existing theme, set theme_match to null (a new theme will be created).',
     '  - If it is entirely new, set theme_match to null.',
@@ -215,13 +215,17 @@ Synth.prompts = (function () {
       parts.push('(empty — this is the first session)');
     } else {
       parts.push(JSON.stringify(themes.map(function (t) {
+        var curated = curateQuotes(t.supporting_evidence, 2);
         return {
           theme_id: t.theme_id,
           label: t.label,
           current_description: t.current_description,
           source: t.source,
           rq_mappings: t.rq_mappings,
-          participant_count: t.supporting_evidence ? new Set(t.supporting_evidence.map(function (e) { return e.participant_id; })).size : 0
+          participant_count: t.supporting_evidence ? new Set(t.supporting_evidence.map(function (e) { return e.participant_id; })).size : 0,
+          example_quotes: curated.map(function (e) {
+            return { quote: e.quote, participant_id: e.participant_id };
+          })
         };
       }), null, 2));
     }
@@ -439,7 +443,107 @@ Synth.prompts = (function () {
     return parts.join('\n');
   }
 
-  // --- 10.5 Transcript Inquiry ---
+  // --- 10.5 Theme Review ---
+
+  var THEME_REVIEW_SYSTEM = [
+    'You are a qualitative research analyst reviewing a theme database from a user research study.',
+    '',
+    'You will be given:',
+    '1. A project context describing the research study',
+    '2. A research framework (may include research questions)',
+    '3. The complete theme database, including labels, descriptions, participant counts, RQ mappings, and representative quotes',
+    '',
+    'Your task is to identify clusters of themes that may benefit from consolidation. For each cluster, recommend one of:',
+    '',
+    '1. MERGE — themes that describe the same underlying concept using different words or from different angles. These should be combined into a single theme.',
+    '   Example: "Time pressure in classroom activities" and "Not enough time for planned lessons" are the same theme expressed differently.',
+    '',
+    '2. GROUP — themes that are distinct but closely related, and could be presented as sub-themes under a parent concept. Only recommend this when a clear parent concept exists.',
+    '   Example: "Difficulty navigating the portal" and "Confusion about portal terminology" are distinct but both relate to portal usability.',
+    '',
+    '3. KEEP_SEPARATE — themes that are related by topic but genuinely distinct. Include these to confirm the separation is intentional.',
+    '   Example: "Teachers want more training" and "Teachers lack confidence with technology" are related but address different problems.',
+    '',
+    'Guidelines:',
+    '- Be conservative. Only recommend merging themes that clearly describe the same concept. Researchers prefer fewer false positives.',
+    '- A cluster must contain at least 2 themes.',
+    '- Themes with evidence from only 1 participant should be flagged as "limited evidence" in the weak_themes array.',
+    '- Use the example quotes to judge similarity — labels and descriptions alone can be misleading.',
+    '- Do not cluster themes just because they are in the same topic area.',
+    '- A theme may appear in at most one cluster.',
+    '- If no themes warrant clustering, return an empty clusters array. This is a valid outcome.',
+    '',
+    'Respond with a JSON object (no markdown fencing, no preamble):',
+    '',
+    '{',
+    '  "clusters": [',
+    '    {',
+    '      "cluster_id": 1,',
+    '      "recommendation": "merge | group | keep_separate",',
+    '      "theme_ids": ["theme_001", "theme_005"],',
+    '      "rationale": "Brief explanation of why these themes are related and what the recommendation is based on.",',
+    '      "suggested_label": "Proposed label for the merged/parent theme (null if keep_separate)",',
+    '      "suggested_description": "Proposed 2-3 sentence description synthesising across all contributing participants (null if keep_separate)",',
+    '      "confidence": "high | medium | low"',
+    '    }',
+    '  ],',
+    '  "weak_themes": [',
+    '    {',
+    '      "theme_id": "theme_042",',
+    '      "label": "Current theme label",',
+    '      "reason": "Single participant, limited evidence — may need more data before being actionable"',
+    '    }',
+    '  ],',
+    '  "summary": "Brief overview: X themes reviewed, Y clusters identified, Z themes flagged as weak."',
+    '}',
+  ].join('\n');
+
+  function buildThemeReviewUser(framework, themes) {
+    var parts = [];
+
+    parts.push('PROJECT CONTEXT:');
+    parts.push(framework.background || 'No project background provided.');
+    parts.push('');
+
+    if (framework.research_questions && framework.research_questions.length > 0) {
+      parts.push('RESEARCH QUESTIONS:');
+      framework.research_questions.forEach(function (rq) {
+        parts.push('- ' + rq.rq_id + ': ' + rq.label);
+      });
+      parts.push('');
+    }
+
+    parts.push('THEME DATABASE (' + themes.length + ' themes):');
+    parts.push(JSON.stringify(themes.map(function (t) {
+      var curated = curateQuotes(t.supporting_evidence, 3);
+      var seen = {};
+      var participantIds = [];
+      (t.supporting_evidence || []).forEach(function (e) {
+        if (e.participant_id && !seen[e.participant_id]) {
+          seen[e.participant_id] = true;
+          participantIds.push(e.participant_id);
+        }
+      });
+
+      return {
+        theme_id: t.theme_id,
+        label: t.label,
+        current_description: t.current_description,
+        source: t.source,
+        rq_mappings: t.rq_mappings,
+        participant_count: participantIds.length,
+        participants: participantIds,
+        evidence_count: (t.supporting_evidence || []).length,
+        example_quotes: curated.map(function (e) {
+          return { quote: e.quote, participant_id: e.participant_id };
+        })
+      };
+    }), null, 2));
+
+    return parts.join('\n');
+  }
+
+  // --- 10.6 Transcript Inquiry ---
 
   var INQUIRY_SYSTEM = [
     'You are a qualitative research analyst. You have been given the transcript of a research interview.',
@@ -464,6 +568,42 @@ Synth.prompts = (function () {
     return parts.join('\n');
   }
 
+  // --- Background Generator ---
+
+  var BG_GENERATOR_SYSTEM = [
+    'You are helping a UX researcher write a project background for a qualitative research synthesis tool.',
+    '',
+    'The project background will be used as context in every synthesis prompt — it helps the AI understand the domain, the research goals, and how to interpret participant responses.',
+    '',
+    'Write a concise, information-dense project background based on the input below. The output should be:',
+    '- 2–3 short paragraphs (150–250 words total)',
+    '- Written in third person ("This study..." not "We are...")',
+    '- Focused on information that would help an AI analyst understand the research context',
+    '- Include any domain-specific terminology, acronyms, or internal tool names mentioned',
+    '- Free of filler or generic methodology descriptions — only include what is specific to this study',
+    '',
+    'Do not include headings, bullet points, or markdown formatting. Write in plain flowing paragraphs.',
+  ].join('\n');
+
+  function buildBgFromQuestionnaire(answers) {
+    var parts = [];
+    if (answers.project) parts.push('Project: ' + answers.project);
+    if (answers.goal) parts.push('Research goal: ' + answers.goal);
+    if (answers.method) parts.push('Methodology: ' + answers.method);
+    if (answers.participants) parts.push('Participants: ' + answers.participants);
+    if (answers.domain) parts.push('Domain context: ' + answers.domain);
+    return parts.join('\n');
+  }
+
+  function buildBgFromDocument(documentText, note) {
+    var parts = [];
+    parts.push('Document type: ' + (note || 'Not specified'));
+    parts.push('');
+    parts.push('Document content:');
+    parts.push(documentText);
+    return parts.join('\n');
+  }
+
   return {
     buildSynthesisSystem,
     buildSynthesisUser,
@@ -471,8 +611,13 @@ Synth.prompts = (function () {
     buildVerificationUser,
     buildConsolidationSystem,
     buildConsolidationUser,
+    buildThemeReviewUser,
     buildInquiryUser,
+    buildBgFromQuestionnaire,
+    buildBgFromDocument,
+    BG_GENERATOR_SYSTEM: BG_GENERATOR_SYSTEM,
     VERIFICATION_SYSTEM: VERIFICATION_SYSTEM,
+    THEME_REVIEW_SYSTEM: THEME_REVIEW_SYSTEM,
     INQUIRY_SYSTEM: INQUIRY_SYSTEM,
     DEFAULT_SYNTHESIS_SYSTEM: SYNTHESIS_SYSTEM,
     DEFAULT_CONSOLIDATION_SYSTEM: CONSOLIDATION_SYSTEM

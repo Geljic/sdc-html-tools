@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Research Synthesiser — SDC AI Tools</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -155,25 +154,107 @@
       <!-- Background -->
       <div class="card">
         <h2>Project Background</h2>
-        <p>Describe the study so the synthesiser has context.</p>
+        <p>Describe the study so the synthesiser has context. This is used in every synthesis prompt to help the model understand the domain, research goals, and how to interpret participant responses.</p>
         <div class="form-group">
           <label for="fw-background">Background &amp; Methodology</label>
           <textarea id="fw-background" rows="4" placeholder="What is this study about? What methodology are you using?"></textarea>
         </div>
         <button class="btn btn-primary" id="btn-save-framework">Save</button>
         <div id="framework-status"></div>
-      </div>
 
-      <!-- Facilitator Names -->
-      <div class="card">
-        <h2>Facilitator Names</h2>
-        <p>Names of people running the sessions. Used to auto-detect speaker roles when transcripts are uploaded.</p>
-        <div id="facilitator-list"></div>
-        <div class="form-group mt-8">
-          <div class="btn-row">
-            <input type="text" id="new-facilitator" placeholder="Facilitator name" style="flex:1">
-            <button class="btn btn-secondary" id="btn-add-facilitator">Add</button>
+        <button class="btn-text" id="btn-open-bg-helper" type="button">Need help writing this?</button>
+
+        <!-- AI Background Helper -->
+        <div id="bg-helper-panel" class="bg-helper hidden">
+          <div class="bg-helper-header">
+            <h3>Background Generator</h3>
+            <button class="btn-icon" id="btn-close-bg-helper" type="button">&times;</button>
           </div>
+          <p class="hint">Choose a method to generate a project background. The result will be a preview you can edit before using.</p>
+
+          <!-- Path selector -->
+          <div id="bg-path-selector" class="bg-path-selector">
+            <button class="bg-path-btn active" data-bg-path="questions" type="button">
+              <span class="bg-path-icon">&#9998;</span>
+              <span class="bg-path-label">Answer a few questions</span>
+              <span class="bg-path-desc">Best when starting from scratch</span>
+            </button>
+            <button class="bg-path-btn" data-bg-path="document" type="button">
+              <span class="bg-path-icon">&#128196;</span>
+              <span class="bg-path-label">Upload an existing document</span>
+              <span class="bg-path-desc">Research plan, brief, or slide deck</span>
+            </button>
+          </div>
+
+          <!-- Path A: Questionnaire -->
+          <div id="bg-path-questions" class="bg-path-panel">
+            <div class="form-group">
+              <label for="bg-q-project">What is this project about?</label>
+              <span class="hint">A brief description of the initiative, service, or product being researched. This helps the synthesiser understand the domain and interpret participant language correctly.</span>
+              <input type="text" id="bg-q-project" placeholder="e.g. Redesigning the parent portal for NSW public schools to improve access to attendance, reports, and school communications">
+            </div>
+            <div class="form-group">
+              <label for="bg-q-goal">What are you trying to learn?</label>
+              <span class="hint">The main objective of this research. Are you exploring a problem space, evaluating a design, testing a hypothesis? This shapes the depth and focus of the synthesis.</span>
+              <input type="text" id="bg-q-goal" placeholder="e.g. Understand how parents currently access school information and identify pain points with existing digital channels">
+            </div>
+            <div class="form-group">
+              <label for="bg-q-method">How are you conducting this research?</label>
+              <span class="hint">The method and format of your sessions. This helps the synthesiser interpret transcript structure and distinguish between facilitator probes and participant responses.</span>
+              <input type="text" id="bg-q-method" placeholder="e.g. Semi-structured interviews, 45 minutes each, conducted via Teams">
+            </div>
+            <div class="form-group">
+              <label for="bg-q-participants">Who are you speaking to?</label>
+              <span class="hint">A brief description of your participant cohort. Understanding who participants are helps contextualise their perspectives and language.</span>
+              <input type="text" id="bg-q-participants" placeholder="e.g. Parents and carers of primary school students across metropolitan and regional NSW">
+            </div>
+            <div class="form-group">
+              <label for="bg-q-domain">Is there anything specific the synthesiser should know?</label>
+              <span class="hint">Jargon, acronyms, internal tool names, or domain context that a general-purpose model wouldn't know. This is often the most valuable field.</span>
+              <textarea id="bg-q-domain" rows="3" placeholder="e.g. Participants may refer to 'the app' — this is the existing SchoolBytes parent app. 'SRE' means Special Religious Education."></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-bg-generate" type="button">Generate Background</button>
+            </div>
+          </div>
+
+          <!-- Path B: Document Upload -->
+          <div id="bg-path-document" class="bg-path-panel hidden">
+            <div class="form-group">
+              <label>Upload a document</label>
+              <span class="hint">Upload a research plan, project brief, slide deck, or any document that describes this project. The AI will extract the relevant context and generate a project background. Supports .docx and .pptx files.</span>
+              <div class="upload-zone" id="bg-doc-dropzone">
+                <p>Drop a .docx or .pptx file here, or click to browse</p>
+                <input type="file" id="bg-doc-input" accept=".docx,.pptx" class="hidden">
+              </div>
+              <div id="bg-doc-filename" class="text-small text-secondary hidden"></div>
+            </div>
+            <div class="form-group">
+              <label for="bg-doc-note">What is this document? <span class="hint-inline">(optional)</span></label>
+              <span class="hint">Helps the AI understand what it's reading, especially for slide decks where context may be fragmented.</span>
+              <input type="text" id="bg-doc-note" placeholder="e.g. Research plan for the parent portal usability study">
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-bg-extract" type="button" disabled>Extract &amp; Generate</button>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div id="bg-helper-status"></div>
+
+          <!-- Preview (shown after generation) -->
+          <div id="bg-preview-panel" class="bg-preview hidden">
+            <div class="form-group">
+              <label for="bg-preview-text">Preview</label>
+              <span class="hint">Review and edit the generated background below. Click "Use This" to copy it into the project background field.</span>
+              <textarea id="bg-preview-text" rows="8"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-bg-use" type="button">Use This</button>
+              <button class="btn btn-secondary" id="btn-bg-regenerate" type="button">Regenerate</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -235,6 +316,11 @@
           <button class="btn btn-primary" id="btn-run-synthesis">Synthesise All Pending</button>
           <button class="btn btn-secondary hidden" id="btn-stop-synthesis">Stop</button>
         </div>
+        <div id="synthesis-theme-nudge" class="info-banner hidden">
+          <span id="synthesis-nudge-text"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-synthesis-nudge-review">Review Themes</button>
+          <button class="btn-icon" id="btn-dismiss-synthesis-nudge">&times;</button>
+        </div>
         <div id="synthesis-status"></div>
         <div id="synthesis-progress-card" class="hidden mt-12">
           <div id="synthesis-progress"></div>
@@ -266,7 +352,7 @@
             <h3>Participant Details</h3>
             <div class="form-group">
               <label for="pp-detail-id">Participant ID</label>
-              <span class="hint">Auto-assigned. You can change this if needed.</span>
+              <span class="hint">Auto-assigned.</span>
               <input type="text" id="pp-detail-id" placeholder="P-01">
             </div>
             <div class="form-group">
@@ -431,7 +517,7 @@
     <!-- Themes Tab -->
     <section id="tab-themes" class="tab-panel">
 
-      <!-- Controls -->
+      <!-- Theme Database header + filters -->
       <div class="card">
         <div class="themes-controls">
           <h2>Theme Database</h2>
@@ -455,6 +541,36 @@
         <div id="theme-summary" class="text-secondary text-small mt-8"></div>
       </div>
 
+      <!-- Review Themes (shown when 20+ themes) -->
+      <div id="theme-review-section" class="card" style="display:none;">
+        <div class="review-header">
+          <h3>Review Themes</h3>
+          <button class="btn btn-primary btn-sm" id="btn-review-themes">Review Themes</button>
+        </div>
+        <p class="hint">Run an AI-assisted review of your theme database. Identifies overlapping or related themes and suggests consolidation. You decide what to merge.</p>
+      </div>
+
+      <!-- Theme review panel (shown during AI-assisted review) -->
+      <div id="theme-review-panel" class="hidden">
+        <div class="card">
+          <div class="review-header">
+            <h3>Theme Review</h3>
+            <div class="btn-row">
+              <button class="btn btn-secondary btn-sm" id="btn-close-review">Close Review</button>
+            </div>
+          </div>
+          <p class="hint">AI-assisted review of your theme database. Identifies overlapping or related themes and suggests consolidation. You decide what to merge.</p>
+          <div id="review-log" class="synthesis-log hidden"></div>
+          <div id="review-summary" class="review-summary hidden"></div>
+        </div>
+        <div id="review-clusters"></div>
+        <div id="review-weak-themes" class="card hidden">
+          <h4>Themes with Limited Evidence</h4>
+          <p class="hint">These themes have evidence from only one participant. They may need more data before being actionable.</p>
+          <div id="review-weak-list"></div>
+        </div>
+      </div>
+
       <!-- Merge bar (shown when 2 themes selected) -->
       <div id="merge-bar" class="card hidden">
         <div class="merge-bar-content">
@@ -469,8 +585,7 @@
 
       <!-- Empty state -->
       <div id="themes-empty" class="placeholder-msg">
-        <h2>No themes yet</h2>
-        <p>Seed themes in the Project Info tab or run synthesis from the Participants tab.</p>
+        <p>No themes yet. Seed themes in the Project Info tab or run synthesis from the Participants tab.</p>
       </div>
     </section>
 
@@ -483,6 +598,11 @@
         <p>Consolidates all per-session findings into a single research report. Draws on the theme database for cross-participant patterns and curated quotes, and the per-session analytical narratives for interpretive context from each interview.</p>
         <p class="hint">Output is a structured Markdown report organised by research question, with verbatim quotes attributed by participant ID. Best run after all transcripts have been synthesised.</p>
         <div id="consolidation-stats" class="consolidation-stats hidden"></div>
+        <div id="export-theme-nudge" class="info-banner hidden">
+          <span id="export-nudge-text"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-export-nudge-review">Review Themes</button>
+          <button class="btn-icon" id="btn-dismiss-export-nudge">&times;</button>
+        </div>
         <div class="form-group">
           <label for="consolidation-model">Model</label>
           <span class="hint">Sonnet for most studies. Opus for complex studies with 30+ themes.</span>
@@ -680,11 +800,5 @@
   <script src="js/pipeline.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
-
-<footer class="site-footer">
-  NSW Department of Education · Service Design and Change · HCD AI Pilot
-  &nbsp;·&nbsp; <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=muagBYpBwUecJZOHJhv5kXxf32_ZmJZMuTpvDowi52BUODVEM0MyUjhZVDNLOTFKSVJTRllYOEJPSCQlQCN0PWcu" target="_blank" rel="noopener">Share feedback or report a bug</a>
-</footer>
-
 </body>
 </html>

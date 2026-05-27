@@ -462,5 +462,130 @@ Synth.pipeline = (function () {
     };
   }
 
-  return { processTranscript, processAll, consolidate, buildTranscriptText };
+  var REVIEW_MODEL = 'claude-sonnet-4-6';
+
+  async function reviewThemes(projectId, onStatus) {
+    var startTime = Date.now();
+
+    var framework = await Synth.db.getFramework(projectId);
+    if (!framework) {
+      return { success: false, error: 'No research framework found.' };
+    }
+
+    var themes = await Synth.db.getThemesByProject(projectId);
+    if (themes.length < 5) {
+      return { success: false, error: 'Too few themes (' + themes.length + ') for meaningful review. Continue synthesising.' };
+    }
+
+    onStatus('Analysing ' + themes.length + ' themes', 'step');
+
+    var systemPrompt = Synth.prompts.THEME_REVIEW_SYSTEM;
+    var userPrompt = Synth.prompts.buildThemeReviewUser(framework, themes);
+
+    var promptKb = ((systemPrompt.length + userPrompt.length) / 1024).toFixed(1);
+    onStatus(promptKb + 'KB prompt (' + elapsed(startTime) + ')', 'update');
+
+    var lastProgressUpdate = 0;
+    var response;
+    try {
+      response = await Synth.api.chatCompletionStream(REVIEW_MODEL, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ], { max_tokens: 8000, temperature: 0 }, function (charCount, chunkCount, partialContent) {
+        var now = Date.now();
+        if (now - lastProgressUpdate < 500 && chunkCount > 1) return;
+        lastProgressUpdate = now;
+
+        var clusters = (partialContent.match(/"cluster_id"\s*:/g) || []).length;
+        var kb = (charCount / 1024).toFixed(1);
+        var detail = kb + 'KB';
+        if (clusters > 0) detail += ' · ' + clusters + ' cluster' + (clusters !== 1 ? 's' : '');
+        onStatus(detail + ' (' + elapsed(startTime) + ')', 'update');
+      });
+    } catch (e) {
+      onStatus('Review failed: ' + e.message, 'error');
+      return { success: false, error: 'Review failed: ' + e.message };
+    }
+
+    var content = response.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    var result;
+    try {
+      result = JSON.parse(content);
+    } catch (e) {
+      onStatus('Model returned invalid JSON', 'error');
+      return { success: false, error: 'Model returned invalid JSON. Response starts with: ' + content.substring(0, 200) };
+    }
+
+    var themeIdSet = new Set(themes.map(function (t) { return t.theme_id; }));
+    (result.clusters || []).forEach(function (cluster) {
+      cluster.theme_ids = (cluster.theme_ids || []).filter(function (id) {
+        return themeIdSet.has(id);
+      });
+    });
+    result.clusters = (result.clusters || []).filter(function (c) {
+      return c.theme_ids && c.theme_ids.length >= 2;
+    });
+
+    var clusterCount = result.clusters ? result.clusters.length : 0;
+    var weakCount = result.weak_themes ? result.weak_themes.length : 0;
+    onStatus(clusterCount + ' cluster(s), ' + weakCount + ' weak theme(s) identified (' + elapsed(startTime) + ')', 'done');
+
+    return {
+      success: true,
+      clusters: result.clusters || [],
+      weak_themes: result.weak_themes || [],
+      summary: result.summary || '',
+      usage: response.usage,
+      model: response.model
+    };
+  }
+
+  async function applyThemeMerge(projectId, themeIds, newLabel, newDescription) {
+    var themes = [];
+    for (var i = 0; i < themeIds.length; i++) {
+      var theme = await Synth.db.getTheme(themeIds[i]);
+      if (theme) themes.push(theme);
+    }
+    if (themes.length < 2) return null;
+
+    var mergedId = await Synth.db.getNextThemeId();
+    var allEvidence = [];
+    var allRqMappings = new Set();
+    var allRelated = new Set();
+    var earliestSeen = null;
+
+    themes.forEach(function (t) {
+      allEvidence = allEvidence.concat(t.supporting_evidence || []);
+      (t.rq_mappings || []).forEach(function (rq) { allRqMappings.add(rq); });
+      (t.related_themes || []).forEach(function (rt) {
+        if (themeIds.indexOf(rt) === -1) allRelated.add(rt);
+      });
+      if (!earliestSeen || (t.first_seen && t.first_seen < earliestSeen)) {
+        earliestSeen = t.first_seen;
+      }
+    });
+
+    var merged = {
+      theme_id: mergedId,
+      project_id: projectId,
+      label: newLabel,
+      original_description: newDescription,
+      current_description: newDescription,
+      source: 'merged',
+      supporting_evidence: allEvidence,
+      rq_mappings: Array.from(allRqMappings),
+      related_themes: Array.from(allRelated),
+      first_seen: earliestSeen,
+      status: 'verified'
+    };
+
+    await Synth.db.saveTheme(merged);
+    for (var j = 0; j < themeIds.length; j++) {
+      await Synth.db.deleteTheme(themeIds[j]);
+    }
+
+    return merged;
+  }
+
+  return { processTranscript, processAll, consolidate, reviewThemes, applyThemeMerge, buildTranscriptText };
 })();
