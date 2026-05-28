@@ -84,6 +84,9 @@ Synth.pipeline = (function () {
         }
         onStatus(stats.themes_new + ' new, ' + stats.themes_updated + ' updated (' + elapsed(startTime) + ')', 'done');
 
+        var microResult = await microReviewThemes(transcript.project_id, stats.new_theme_ids, onStatus);
+        if (microResult.merged > 0) stats.themes_consolidated = microResult.merged;
+
         return { success: true, synthesisResult: synthesisResult, stats: stats };
       }
 
@@ -106,6 +109,9 @@ Synth.pipeline = (function () {
           return { success: false, error: 'Failed to update theme database: ' + e.message };
         }
         onStatus(stats.themes_new + ' new, ' + stats.themes_updated + ' updated (' + elapsed(startTime) + ')', 'done');
+
+        var microResult = await microReviewThemes(transcript.project_id, stats.new_theme_ids, onStatus);
+        if (microResult.merged > 0) stats.themes_consolidated = microResult.merged;
 
         return {
           success: true,
@@ -248,7 +254,7 @@ Synth.pipeline = (function () {
   async function updateThemeDatabase(synthesisResult, transcript, existingThemes) {
     var projectId = transcript.project_id;
     var sessionId = transcript.session_id;
-    var stats = { themes_new: 0, themes_updated: 0, quotes_total: 0, quotes_verified: 0, quotes_fabricated: 0 };
+    var stats = { themes_new: 0, themes_updated: 0, quotes_total: 0, quotes_verified: 0, quotes_fabricated: 0, new_theme_ids: [] };
 
     var participants = await Synth.db.getParticipantsByProject(projectId);
     var dimLookup = {};
@@ -269,9 +275,11 @@ Synth.pipeline = (function () {
       var finding = allFindings[i];
       var rqId = findingRqMap.get(finding) || null;
 
+      var evidenceContext = finding.evidence_context || null;
       var evidence = (finding.supporting_evidence || []).map(function (ev) {
         ev.session_id = sessionId;
         ev.participant_dimensions = dimLookup[ev.participant_id] || {};
+        if (evidenceContext) ev.evidence_context = evidenceContext;
         stats.quotes_total++;
         if (ev.verification_status === 'verified' || ev.verification_status === 'confirmed') stats.quotes_verified++;
         if (ev.verification_status === 'fabricated') stats.quotes_fabricated++;
@@ -291,6 +299,12 @@ Synth.pipeline = (function () {
             var combined = new Set((theme.rq_mappings || []).concat([rqId]));
             theme.rq_mappings = Array.from(combined);
           }
+          if (theme.significance === 'minor') {
+            var uniquePids = new Set((theme.supporting_evidence || []).map(function (e) { return e.participant_id; }));
+            if (uniquePids.size >= 2) {
+              theme.significance = 'major';
+            }
+          }
           await Synth.db.saveTheme(theme);
           stats.themes_updated++;
           continue;
@@ -305,6 +319,7 @@ Synth.pipeline = (function () {
         original_description: finding.analysis,
         current_description: finding.analysis,
         source: 'synthesised',
+        significance: finding.significance || 'major',
         supporting_evidence: evidence,
         rq_mappings: rqId ? [rqId] : [],
         related_themes: [],
@@ -314,6 +329,7 @@ Synth.pipeline = (function () {
 
       await Synth.db.saveTheme(newTheme);
       stats.themes_new++;
+      stats.new_theme_ids.push(themeId);
     }
 
     var participantIds = [];
@@ -373,12 +389,12 @@ Synth.pipeline = (function () {
       if (result.success) {
         allStats.processed++;
         if (result.flagged) allStats.flagged++;
-        onTranscriptStatus(i + 1, unprocessed.length, txLabel,
-          'Done. ' + (result.stats.themes_new || 0) + ' new theme(s), ' +
+        var doneMsg = 'Done. ' + (result.stats.themes_new || 0) + ' new theme(s), ' +
           (result.stats.themes_updated || 0) + ' updated, ' +
-          (result.stats.quotes_total || 0) + ' quote(s).' +
-          (result.flagged ? ' FLAGGED for review.' : '')
-        );
+          (result.stats.quotes_total || 0) + ' quote(s).';
+        if (result.stats.themes_consolidated) doneMsg += ' ' + result.stats.themes_consolidated + ' consolidated.';
+        if (result.flagged) doneMsg += ' FLAGGED for review.';
+        onTranscriptStatus(i + 1, unprocessed.length, txLabel, doneMsg);
       } else {
         allStats.failed++;
         onTranscriptStatus(i + 1, unprocessed.length, txLabel,
@@ -475,7 +491,9 @@ Synth.pipeline = (function () {
     };
   }
 
-  var REVIEW_MODEL = 'claude-sonnet-4-6';
+  var REVIEW_MODEL = 'claude-opus-4-6';
+  var MICRO_REVIEW_MODEL = 'claude-sonnet-4-6';
+  var MICRO_REVIEW_THRESHOLD = 3;
 
   async function reviewThemes(projectId, onStatus) {
     var startTime = Date.now();
@@ -598,6 +616,95 @@ Synth.pipeline = (function () {
     }
 
     return merged;
+  }
+
+  async function absorbTheme(targetId, sourceId, revisedLabel, revisedDescription) {
+    var target = await Synth.db.getTheme(targetId);
+    var source = await Synth.db.getTheme(sourceId);
+    if (!target || !source) return null;
+
+    target.supporting_evidence = (target.supporting_evidence || []).concat(source.supporting_evidence || []);
+
+    var combinedRqs = new Set((target.rq_mappings || []).concat(source.rq_mappings || []));
+    target.rq_mappings = Array.from(combinedRqs);
+
+    if (revisedLabel) target.label = revisedLabel;
+    if (revisedDescription) target.current_description = revisedDescription;
+
+    if (target.significance === 'minor') {
+      var uniquePids = new Set((target.supporting_evidence || []).map(function (e) { return e.participant_id; }));
+      if (uniquePids.size >= 2) target.significance = 'major';
+    }
+
+    await Synth.db.saveTheme(target);
+    await Synth.db.deleteTheme(sourceId);
+    return target;
+  }
+
+  async function microReviewThemes(projectId, newThemeIds, onStatus) {
+    if (newThemeIds.length < MICRO_REVIEW_THRESHOLD) return { merged: 0 };
+
+    var allThemes = await Synth.db.getThemesByProject(projectId);
+    var newThemeSet = new Set(newThemeIds);
+    var newThemes = allThemes.filter(function (t) { return newThemeSet.has(t.theme_id); });
+    var existingThemes = allThemes.filter(function (t) { return !newThemeSet.has(t.theme_id); });
+
+    if (newThemes.length === 0) return { merged: 0 };
+
+    onStatus('Checking ' + newThemes.length + ' new theme(s) for redundancy', 'step');
+
+    var systemPrompt = Synth.prompts.MICRO_REVIEW_SYSTEM;
+    var userPrompt = Synth.prompts.buildMicroReviewUser(newThemes, existingThemes);
+
+    var response;
+    try {
+      response = await Synth.api.chatCompletion(
+        MICRO_REVIEW_MODEL,
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        { max_tokens: 4000, temperature: 0 }
+      );
+    } catch (e) {
+      onStatus('Micro-review failed: ' + e.message, 'error');
+      return { merged: 0, error: e.message };
+    }
+
+    var content = response.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    var result;
+    try {
+      result = JSON.parse(content);
+    } catch (e) {
+      onStatus('Micro-review returned invalid JSON', 'error');
+      return { merged: 0, error: 'Invalid JSON' };
+    }
+
+    var merges = result.merges || [];
+    if (merges.length === 0) {
+      onStatus('No redundant themes found', 'done');
+      return { merged: 0 };
+    }
+
+    var allThemeIds = new Set(allThemes.map(function (t) { return t.theme_id; }));
+    var alreadyMerged = new Set();
+    var mergeCount = 0;
+
+    for (var i = 0; i < merges.length; i++) {
+      var m = merges[i];
+      if (!allThemeIds.has(m.source_theme_id) || !allThemeIds.has(m.target_theme_id)) continue;
+      if (alreadyMerged.has(m.source_theme_id)) continue;
+      if (m.source_theme_id === m.target_theme_id) continue;
+
+      var merged = await absorbTheme(m.target_theme_id, m.source_theme_id, m.revised_label, m.revised_description);
+      if (merged) {
+        alreadyMerged.add(m.source_theme_id);
+        mergeCount++;
+      }
+    }
+
+    onStatus(mergeCount + ' theme(s) consolidated', 'done');
+    return { merged: mergeCount };
   }
 
   return { processTranscript, processAll, consolidate, reviewThemes, applyThemeMerge, buildTranscriptText };

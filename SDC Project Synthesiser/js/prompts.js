@@ -13,26 +13,43 @@ Synth.prompts = (function () {
     '3. A theme database containing themes already identified from previous sessions (may be empty if this is the first session)',
     '4. A transcript from a single research interview session',
     '',
-    'Your task:',
-    '- Read the transcript carefully and identify meaningful findings relevant to the project context.',
-    '- Group your findings by research question (RQ). For each RQ, identify all findings from this session that relate to it. A single RQ may yield multiple findings. Findings that do not relate to any RQ go in emergent_findings.',
-    '- If NO research questions are defined, put ALL findings in emergent_findings.',
-    '- Aim for Level 2–3 analysis depth:',
-    '  - Level 1 (INSUFFICIENT): "The participant said they use Excel for data." — This is mere description.',
-    '  - Level 2 (MINIMUM): "The participant\'s reliance on Excel suggests a need for export functionality, as they are unlikely to abandon familiar tools entirely." — This is interpretation.',
-    '  - Level 3 (TARGET): "The participant\'s reliance on Excel, combined with similar patterns from other technical users, indicates that the tool\'s value for power users lies in data discovery rather than replacing analysis workflows." — This is insight.',
-    '- Focus on PARTICIPANT responses. Facilitator questions and observer comments provide context only — do not synthesise them as findings.',
-    '- For EACH finding, check the existing theme database. The database includes example_quotes for each theme — use these to understand what kind of evidence belongs to that theme. Two findings may use different words but describe the same underlying concept.',
-    '  - If it matches an existing theme, set theme_match to that theme\'s ID.',
-    '  - If it is related to but meaningfully distinct from an existing theme, set theme_match to null (a new theme will be created).',
-    '  - If it is entirely new, set theme_match to null.',
-    '- When a finding matches an existing theme, provide a revised_description that synthesises across all participants who have contributed to that theme (not just this session). The description should be a cross-participant summary, not specific to one participant. Keep it to 2–3 concise sentences. If no revision is needed, set revised_description to null.',
-    '- When in doubt about whether a finding matches an existing theme, KEEP THEM SEPARATE. It is easier for a human to merge later than to split incorrectly merged themes.',
-    '- Every finding MUST be supported by one or more VERBATIM QUOTES from the transcript. Copy the quote exactly as it appears — do not paraphrase, truncate, clean up grammar, or edit in any way. Include the speaker name and timestamp exactly as they appear in the transcript.',
-    '- A finding without a verbatim quote is invalid. Do not include it.',
-    '- If you cannot find a verbatim quote to support an observation, do not include that observation.',
-    '- Finding labels should be short (under 10 words) and descriptive.',
-    '- The analysis field should be 2–3 sentences of Level 2–3 interpretive analysis.',
+    'YOUR TASK:',
+    'Read the transcript carefully and identify meaningful findings relevant to the project context. Group findings by research question (RQ) where defined. A single RQ may yield multiple findings. Findings that do not relate to any RQ go in emergent_findings. If NO research questions are defined, put ALL findings in emergent_findings.',
+    '',
+    'ANALYSIS STANDARDS:',
+    'Aim for Level 2–3 analysis depth:',
+    '  - Level 1 (INSUFFICIENT): "The participant said they use Excel for data." — Mere description of what was said.',
+    '  - Level 2 (MINIMUM): "The participant\'s reliance on Excel suggests a need for export functionality, as they are unlikely to abandon familiar tools entirely." — Interpretation of what it means.',
+    '  - Level 3 (TARGET): "The participant\'s reliance on Excel, combined with similar patterns from other technical users, indicates that the tool\'s value for power users lies in data discovery rather than replacing analysis workflows." — Insight connecting to broader implications.',
+    'Distinguish what participants SAY from what their described ACTIONS reveal. When a participant says "I found it easy" but earlier described three failed attempts, the struggle is the finding, not the summary. When both stated preference and described behaviour are available, note the distinction — behavioural evidence is stronger.',
+    'Look for contradictions and tensions — within this participant\'s responses and between this participant and existing theme evidence. When you find a contradiction, DO NOT resolve it. Note both positions and what the tension reveals in the tensions field. Contradictions are analytically valuable, not errors to smooth over.',
+    'Assess how each finding arose: was it raised by the participant unprompted, did it emerge from an open question, or was it a response to a direct facilitator question? Unprompted findings carry more evidential weight. Record this in the evidence_context field.',
+    'Focus on PARTICIPANT responses. Facilitator questions provide analytical context for how findings arose — do not synthesise facilitator statements as findings.',
+    '',
+    'THEME MATCHING:',
+    'For EACH finding, your default should be to match it to an existing theme. Only create a new theme when the finding clearly addresses a different user need, frustration, or behaviour than anything in the existing database.',
+    'Judge matches by MEANING, not wording — two findings may use completely different language but describe the same underlying concept. Ask: would a researcher who owns the existing theme say "yes, that\'s the same thing"? Use the theme descriptions and example_quotes to understand what each theme encompasses.',
+    'A finding may match an existing theme even if they are mapped to different research questions. The same underlying concept can be relevant to multiple RQs — match the theme and add the new RQ mapping.',
+    '- If the finding matches an existing theme: set theme_match to the theme ID. Provide a revised_description that synthesises across ALL participants who have contributed (not just this session) — a cross-participant summary in 2–3 sentences. Write descriptions that capture the UNDERLYING CONCEPT abstractly, not the specific details of one participant\'s experience. For example: "Users struggle to locate key functions because the navigation structure does not match their mental models" is better than "P-01 couldn\'t find the attendance page because they expected it under My Child." Set revised_description to null if no revision is needed.',
+    '- If it is related to but meaningfully DISTINCT from an existing theme: set theme_match to null.',
+    '- If it is entirely new: set theme_match to null.',
+    '- When uncertain, lean toward matching if the core concept overlaps, even if specific details differ. Incorrect separation (creating duplicates) is the more common and harder-to-spot error. Only keep themes separate when they clearly address different underlying user needs or behaviours.',
+    '',
+    'THEME CREATION:',
+    'When a finding does not match any existing theme (theme_match is null), assess its significance:',
+    '- MAJOR: Discussed at length or with conviction, directly addresses a research question, or represents a pattern a researcher should act on.',
+    '- MINOR: Mentioned briefly or in passing, tangential to the core research focus, or an isolated data point that may not recur.',
+    'Be proportional: a participant who speaks at length about one topic does not make it more significant. One theme per distinct underlying concept, regardless of how much airtime it received. If a participant explores multiple facets of the same issue, that is one well-evidenced theme, not several.',
+    'Scale calibration: a typical 30-minute interview session, when the theme database already contains relevant themes, should yield 5–10 findings with most matching existing themes and only 2–5 becoming genuinely new themes. If you are creating many more new themes than this, you are likely being too granular — step back and reconsider whether some of your new themes describe different facets of the same underlying concept.',
+    '',
+    'SELF-REVIEW:',
+    'Before finalising your response, review all your findings together. If you have created multiple new themes that describe the same underlying concept from different angles, consolidate them into a single theme with all supporting evidence combined. Also check whether any new theme you created is actually a match for an existing theme that you initially overlooked.',
+    '',
+    'EVIDENCE REQUIREMENTS:',
+    'Every finding MUST be supported by one or more VERBATIM QUOTES from the transcript. Copy the quote exactly as it appears — do not paraphrase, truncate, clean up grammar, or edit in any way. Include the speaker name and timestamp exactly as they appear.',
+    'A finding without a verbatim quote is invalid. Do not include it.',
+    'Finding labels should be short (under 10 words) and descriptive.',
+    'The analysis field should be 2–3 sentences of Level 2–3 interpretive analysis.',
   ].join('\n');
 
   var RQ_SECTION_TEMPLATE = [
@@ -54,7 +71,10 @@ Synth.prompts = (function () {
     '      "findings": [',
     '        {',
     '          "label": "<short finding/theme label>",',
-    '          "analysis": "<2-3 sentence Level 2-3 analysis>",',
+    '          "analysis": "<2-3 sentence Level 2-3 interpretive analysis>",',
+    '          "significance": "<major or minor — required when theme_match is null, omit when matching existing theme>",',
+    '          "evidence_context": "<unprompted | open-prompted | direct-prompted>",',
+    '          "tensions": "<contradictions within this participant or with existing theme evidence, or null>",',
     '          "supporting_evidence": [',
     '            {',
     '              "quote": "<verbatim quote from transcript>",',
@@ -74,6 +94,9 @@ Synth.prompts = (function () {
     '    {',
     '      "label": "<finding outside any RQ>",',
     '      "analysis": "<2-3 sentence analysis>",',
+    '      "significance": "<major or minor — required when theme_match is null>",',
+    '      "evidence_context": "<unprompted | open-prompted | direct-prompted>",',
+    '      "tensions": "<contradictions, or null>",',
     '      "supporting_evidence": [',
     '        {',
     '          "quote": "<verbatim quote from transcript>",',
@@ -92,8 +115,12 @@ Synth.prompts = (function () {
     'IMPORTANT NOTES:',
     '- rq_findings should ONLY be present if research questions are defined. If no RQs exist, use only emergent_findings.',
     '- A finding with theme_match set to an existing theme ID means this finding adds new evidence to that theme.',
-    '- A finding with theme_match set to null means a new theme should be created from this finding.',
+    '- A finding with theme_match set to null means a new theme should be created. Include the significance field for these.',
     '- Multiple findings within one RQ are expected — do not artificially merge distinct insights.',
+    '- evidence_context reflects how the finding arose in the conversation:',
+    '  - "unprompted": participant raised this topic independently, before being asked',
+    '  - "open-prompted": emerged from an open facilitator question (e.g., "What did you notice?")',
+    '  - "direct-prompted": participant responded to a specific facilitator question about this topic',
   ].join('\n');
 
   // --- 10.2 Quote Verification (Tier 2 — Haiku) ---
@@ -144,9 +171,11 @@ Synth.prompts = (function () {
     'Guidelines:',
     '- Draw on BOTH the per-session analyses (for narrative and interpretation) and the theme database (for cross-session patterns and evidence).',
     '- Every claim must be traceable to the provided data. Do not invent or fabricate any content.',
-    '- For each theme, include: the theme name, description, participant count (out of total), and a curated selection of the most illustrative verbatim quotes (3-5 for major themes, 1-2 for minor ones), each attributed with participant ID.',
-    '- Distinguish between themes that emerged strongly across multiple participants and those supported by fewer voices.',
-    '- Note meaningful relationships or tensions between themes where you observe them.',
+    '- For each major theme, include: the theme name, description, participant count (out of total), and 3-5 of the most illustrative verbatim quotes, each attributed with participant ID. For minor themes, include 1-2 quotes.',
+    '- Distinguish between themes that emerged strongly across multiple participants and those supported by fewer voices. Note which themes were raised unprompted by participants versus those that emerged primarily in response to facilitator questions — this is a signal of salience.',
+    '- Surface contradictions and tensions between participants or between themes. Do not resolve tensions artificially — present both positions and what the disagreement reveals. Contradictions are often the most actionable part of a synthesis.',
+    '- Note meaningful relationships between themes where you observe them.',
+    '- Where participants\' stated preferences conflicted with their described behaviour, highlight this gap and explain what it suggests.',
     '- Keep the tone analytical and grounded. Do not speculate beyond what the evidence supports.',
     '- Aim for Level 2-3 analysis: interpret significance and implications, don\'t just describe findings.',
   ].join('\n');
@@ -216,8 +245,8 @@ Synth.prompts = (function () {
       parts.push('(empty — this is the first session)');
     } else {
       parts.push(JSON.stringify(themes.map(function (t) {
-        var curated = curateQuotes(t.supporting_evidence, 2);
-        return {
+        var curated = curateQuotes(t.supporting_evidence, 3);
+        var condensed = {
           theme_id: t.theme_id,
           label: t.label,
           current_description: t.current_description,
@@ -228,6 +257,8 @@ Synth.prompts = (function () {
             return { quote: e.quote, participant_id: e.participant_id };
           })
         };
+        if (t.significance === 'minor') condensed.significance = 'minor';
+        return condensed;
       }), null, 2));
     }
     parts.push('');
@@ -382,17 +413,27 @@ Synth.prompts = (function () {
   }
 
   function buildSessionNarratives(sessionSyntheses) {
+    function formatFinding(prefix, f) {
+      var line = '  ' + prefix + ': ' + f.label + ' — ' + (f.analysis || '');
+      var meta = [];
+      if (f.evidence_context) meta.push(f.evidence_context);
+      if (f.significance) meta.push(f.significance);
+      if (meta.length > 0) line += ' [' + meta.join(', ') + ']';
+      if (f.tensions) line += '\n    Tension: ' + f.tensions;
+      return line;
+    }
+
     return (sessionSyntheses || []).map(function (s) {
       var lines = ['SESSION: ' + (s.session_id || s.participant_id)];
 
       (s.rq_findings || []).forEach(function (rqGroup) {
         (rqGroup.findings || []).forEach(function (f) {
-          lines.push('  ' + rqGroup.rq_id + ': ' + f.label + ' — ' + (f.analysis || ''));
+          lines.push(formatFinding(rqGroup.rq_id, f));
         });
       });
 
       (s.emergent_findings || []).forEach(function (f) {
-        lines.push('  Emergent: ' + f.label + ' — ' + (f.analysis || ''));
+        lines.push(formatFinding('Emergent', f));
       });
 
       return lines.join('\n');
@@ -588,6 +629,85 @@ Synth.prompts = (function () {
     return parts.join('\n');
   }
 
+  // --- 10.7 Post-Session Micro-Review ---
+
+  var MICRO_REVIEW_SYSTEM = [
+    'You are a qualitative research analyst checking for redundancy in a theme database.',
+    '',
+    'A synthesis of a new interview session has just been completed. Several NEW themes were created during this session. Your task is to check whether any of these new themes are redundant — either duplicating an existing theme that should have been matched, or duplicating each other.',
+    '',
+    'You will be given:',
+    '1. NEW THEMES — themes just created from the latest session, with their evidence',
+    '2. EXISTING THEMES — the theme database that existed before this session',
+    '',
+    'For each new theme, determine:',
+    '- Does it describe the same underlying concept as an existing theme? If so, it should be MERGED into that existing theme.',
+    '- Does it describe the same underlying concept as another new theme? If so, one should be merged into the other.',
+    '- Is it genuinely distinct from everything else? If so, KEEP it.',
+    '',
+    'Judge by the underlying concept, not surface wording. Two themes about "navigation confusion" and "difficulty finding features" likely describe the same problem.',
+    '',
+    'Be decisive. If two themes overlap substantially, merge them. Only keep themes separate when they clearly address different user needs or behaviours.',
+    '',
+    'Respond with a JSON object (no markdown fencing, no preamble):',
+    '',
+    '{',
+    '  "merges": [',
+    '    {',
+    '      "source_theme_id": "<ID of theme to be absorbed>",',
+    '      "target_theme_id": "<ID of theme to keep>",',
+    '      "revised_label": "<updated label for the merged theme, or null to keep target label>",',
+    '      "revised_description": "<updated description synthesising both themes, or null to keep target description>",',
+    '      "rationale": "<brief explanation>"',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'If no merges are needed, return { "merges": [] }.',
+    'A theme should appear as source_theme_id at most once.',
+    'Prefer merging a new theme into an existing theme (preserving the established theme).',
+    'When merging two new themes, keep the one with the better label/description as the target.',
+  ].join('\n');
+
+  function buildMicroReviewUser(newThemes, existingThemes) {
+    var parts = [];
+
+    parts.push('NEW THEMES (just created this session):');
+    parts.push(JSON.stringify(newThemes.map(function (t) {
+      var curated = curateQuotes(t.supporting_evidence, 3);
+      return {
+        theme_id: t.theme_id,
+        label: t.label,
+        current_description: t.current_description,
+        rq_mappings: t.rq_mappings,
+        example_quotes: curated.map(function (e) {
+          return { quote: e.quote, participant_id: e.participant_id };
+        })
+      };
+    }), null, 2));
+    parts.push('');
+
+    parts.push('EXISTING THEMES (from previous sessions):');
+    if (existingThemes.length === 0) {
+      parts.push('(none)');
+    } else {
+      parts.push(JSON.stringify(existingThemes.map(function (t) {
+        var curated = curateQuotes(t.supporting_evidence, 2);
+        return {
+          theme_id: t.theme_id,
+          label: t.label,
+          current_description: t.current_description,
+          participant_count: t.supporting_evidence ? new Set(t.supporting_evidence.map(function (e) { return e.participant_id; })).size : 0,
+          example_quotes: curated.map(function (e) {
+            return { quote: e.quote, participant_id: e.participant_id };
+          })
+        };
+      }), null, 2));
+    }
+
+    return parts.join('\n');
+  }
+
   // --- Background Generator ---
 
   var BG_GENERATOR_SYSTEM = [
@@ -632,12 +752,14 @@ Synth.prompts = (function () {
     buildConsolidationSystem,
     buildConsolidationUser,
     buildThemeReviewUser,
+    buildMicroReviewUser,
     buildInquiryUser,
     buildBgFromQuestionnaire,
     buildBgFromDocument,
     BG_GENERATOR_SYSTEM: BG_GENERATOR_SYSTEM,
     VERIFICATION_SYSTEM: VERIFICATION_SYSTEM,
     THEME_REVIEW_SYSTEM: THEME_REVIEW_SYSTEM,
+    MICRO_REVIEW_SYSTEM: MICRO_REVIEW_SYSTEM,
     INQUIRY_SYSTEM: INQUIRY_SYSTEM,
     DEFAULT_SYNTHESIS_SYSTEM: SYNTHESIS_SYSTEM,
     DEFAULT_CONSOLIDATION_SYSTEM: CONSOLIDATION_SYSTEM

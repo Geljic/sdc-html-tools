@@ -2158,6 +2158,7 @@ Synth.app = (function () {
 
   function initThemesTab() {
     document.getElementById('theme-filter-rq').addEventListener('change', refreshThemes);
+    document.getElementById('theme-filter-significance').addEventListener('change', refreshThemes);
     document.getElementById('theme-group-by').addEventListener('change', refreshThemes);
     document.getElementById('theme-sort').addEventListener('change', refreshThemes);
     document.getElementById('btn-merge-themes').addEventListener('click', mergeSelectedThemes);
@@ -2202,9 +2203,11 @@ Synth.app = (function () {
 
     var themes = await Synth.db.getThemesByProject(activeProjectId);
     var filterRq = document.getElementById('theme-filter-rq').value;
+    var filterSig = document.getElementById('theme-filter-significance').value;
     var sortBy = document.getElementById('theme-sort').value;
 
     if (filterRq) themes = themes.filter(function (t) { return t.rq_mappings && t.rq_mappings.includes(filterRq); });
+    if (filterSig) themes = themes.filter(function (t) { return (t.significance || 'major') === filterSig; });
 
     var dimFilterEls = document.querySelectorAll('.theme-dim-filter');
     dimFilterEls.forEach(function (sel) {
@@ -2231,8 +2234,11 @@ Synth.app = (function () {
     emptyEl.classList.add('hidden');
 
     var totalEvidence = themes.reduce(function (sum, t) { return sum + (t.supporting_evidence ? t.supporting_evidence.length : 0); }, 0);
-    document.getElementById('theme-summary').textContent =
-      themes.length + ' theme(s), ' + totalEvidence + ' piece(s) of evidence';
+    var majorCount = themes.filter(function (t) { return (t.significance || 'major') === 'major'; }).length;
+    var minorCount = themes.length - majorCount;
+    var summaryText = themes.length + ' theme(s), ' + totalEvidence + ' piece(s) of evidence';
+    if (minorCount > 0) summaryText += ' (' + majorCount + ' major, ' + minorCount + ' minor)';
+    document.getElementById('theme-summary').textContent = summaryText;
 
     renderThemeCards(themes, fw);
     updateMergeBar();
@@ -2396,13 +2402,15 @@ Synth.app = (function () {
 
   function buildThemeCard(theme) {
       var card = document.createElement('div');
-      card.className = 'theme-card' + (selectedThemes.has(theme.theme_id) ? ' selected' : '');
+      var isMinor = theme.significance === 'minor';
+      card.className = 'theme-card' + (selectedThemes.has(theme.theme_id) ? ' selected' : '') + (isMinor ? ' minor' : '');
       card.dataset.id = theme.theme_id;
 
       var pCount = getParticipantCount(theme);
       var eCount = theme.supporting_evidence ? theme.supporting_evidence.length : 0;
 
       var sourceBadge = theme.source === 'merged' ? '<span class="badge badge-merged">merged</span>' : '';
+      var minorBadge = isMinor ? '<span class="badge badge-minor">minor</span>' : '';
       var rqLabels = (theme.rq_mappings || []).map(function (id) { return cachedRqMap[id] || id; }).join(', ');
 
       var dimTags = collectDimensionTags(theme);
@@ -2418,6 +2426,7 @@ Synth.app = (function () {
           '<span class="theme-label">' + escapeHtml(theme.label) + '</span>' +
           '<div class="theme-badges">' +
             sourceBadge +
+            minorBadge +
             '<span class="theme-stat" title="Participants"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ' + pCount + '</span>' +
             '<span class="theme-stat" title="Quotes"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ' + eCount + '</span>' +
           '</div>' +
@@ -2455,6 +2464,7 @@ Synth.app = (function () {
         var vClass = ev.verification_status || 'pending';
         var dimLabels = resolveDimensionLabels(ev.participant_dimensions, cachedDimensions);
         var dimHtml = dimLabels.length > 0 ? ' · ' + escapeHtml(dimLabels.join(' · ')) : '';
+        var ctxHtml = ev.evidence_context ? '<span class="evidence-context ' + ev.evidence_context + '">' + ev.evidence_context + '</span>' : '';
         div.innerHTML =
           '<div class="evidence-quote">"' + escapeHtml(ev.quote) + '"</div>' +
           '<div class="evidence-attr">' +
@@ -2462,6 +2472,7 @@ Synth.app = (function () {
             ' at ' + escapeHtml(ev.timestamp || '') +
             dimHtml +
             '<span class="evidence-verification ' + vClass + '">' + vClass + '</span>' +
+            ctxHtml +
           '</div>';
         div.addEventListener('click', function (e) {
           e.stopPropagation();
