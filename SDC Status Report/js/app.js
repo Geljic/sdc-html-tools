@@ -1,6 +1,7 @@
 // ============================================================
 // SDC Weekly Status Report — app.js
 // Form logic · SVG preview · PPTX export · localStorage · JSON I/O
+// Welcome screen · AI generation
 // ============================================================
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -10,7 +11,6 @@ const STORAGE_KEY = 'sdc-status-report-v1';
 const SW = 13.33, SH = 7.5;
 
 // Logo — top-right on WHITE background (not on navy bar), DoE style guide compliant
-// Logo sits in the OFFICIAL strip area + a little below, on white
 const LOGO_W = 0.55, LOGO_H = 0.62;
 const LOGO_X = SW - LOGO_W - 0.08;  // 12.70"
 const LOGO_Y = 0.04;                 // just below top edge, on white
@@ -25,24 +25,24 @@ const COL_NEXT_X  = 7.665, COL_NEXT_W  = 5.665;
 
 // Row heights
 const HDR_ROW_H   = 0.65;  // column header row
-const TITLE_H     = 0.50;  // slide title bar — compact, logo is above on white
+const TITLE_H     = 0.50;  // slide title bar
 const LEGEND_H    = 0.38;  // legend bar at bottom
 const OFFICIAL_H  = 0.22;  // OFFICIAL text strip
 const SUPPORT_H   = 0.80;  // support required section (when shown)
 const MIN_ROW_H   = 0.70;  // minimum stream row height
 
-// DoE brand colours (no # prefix for pptxgenjs) — NSW DoE official palette
+// DoE brand colours (no # prefix for pptxgenjs)
 const C = {
-  navy:     '1A3A5C',   // DOE_NAVY — primary header/section background
+  navy:     '1A3A5C',
   navyMid:  '2E4070',
-  red:      'D7153A',   // DOE_RED — NSW Gov primary accent, OFFICIAL text
+  red:      'D7153A',
   white:    'FFFFFF',
-  dark:     '22272B',   // body text (near-black)
-  lightBlue:'EBF4FF',   // alternating rows, legend background
-  accent:   '4A90D9',   // borders, secondary accents
-  green:    '5CB85C',   // DOE_GREEN — on track
-  amber:    'F0AD4E',   // DOE_AMBER — at risk
-  riskRed:  'D9534F',   // DOE_RISK_RED — off track / blocked
+  dark:     '22272B',
+  lightBlue:'EBF4FF',
+  accent:   '4A90D9',
+  green:    '5CB85C',
+  amber:    'F0AD4E',
+  riskRed:  'D9534F',
   offWhite: 'F8F9FA',
   border:   'D0D4E0',
 };
@@ -91,11 +91,10 @@ function addDays(iso, n) {
   return d.toISOString().slice(0, 10);
 }
 
-// Get the Monday of the current week (or next Monday if today is weekend)
+// Get the Monday of the current week
 function thisMonday() {
   const today = new Date();
   const day = today.getDay(); // 0=Sun, 1=Mon … 6=Sat
-  // If Mon, use today; if Sun, go forward 1; otherwise go back to last Mon
   let diff;
   if (day === 1) diff = 0;
   else if (day === 0) diff = 1;  // Sunday → next Monday
@@ -122,7 +121,6 @@ function autoBullet(text) {
   return text.split('\n').map(line => {
     const trimmed = line.trim();
     if (!trimmed) return line;
-    // Already has a bullet, dash, asterisk, or sub-bullet marker
     if (/^[•\-\*◦○▪▸►]/.test(trimmed) || /^\s+o\s/.test(line)) return line;
     return '• ' + trimmed;
   }).join('\n');
@@ -279,22 +277,15 @@ function buildStreamCard(s, idx) {
   });
 
   // Wire up sub-section toggle
-  // IMPORTANT: must read DOM values BEFORE re-rendering, then migrate text
-  // between simple/sub-section fields so nothing is lost on toggle.
   const cb = card.querySelector('.subsection-cb');
   cb.addEventListener('change', () => {
-    // 1. Capture all current DOM values into state first
     collectFormState();
-
-    // 2. Find the stream and apply the new toggle value
     const stream = state.streams.find(x => x.id === s.id);
     if (!stream) return;
     const turningOn = cb.checked;
     stream.subSections = turningOn;
 
-    // 3. Migrate text so the user doesn't lose content on toggle
     if (turningOn) {
-      // Simple → Sub-sections: move simple bullets into Project/Dev if sub-section fields are empty
       if (!stream.achievedProjectDev && stream.achieved) {
         stream.achievedProjectDev = stream.achieved;
         stream.achieved = '';
@@ -304,7 +295,6 @@ function buildStreamCard(s, idx) {
         stream.next = '';
       }
     } else {
-      // Sub-sections → Simple: move Project/Dev text back into simple field if simple is empty
       if (!stream.achieved && stream.achievedProjectDev) {
         stream.achieved = stream.achievedProjectDev;
         stream.achievedProjectDev = '';
@@ -315,7 +305,6 @@ function buildStreamCard(s, idx) {
       }
     }
 
-    // 4. Re-render with updated state
     renderStreams();
     drawPreview();
     saveState();
@@ -373,7 +362,6 @@ function onChange() {
 // ── Auto-calculate next week date when week-date changes ─────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('week-date').addEventListener('change', e => {
-    // Always auto-update next week to +7 days when week-date changes
     document.getElementById('next-week-date').value = addDays(e.target.value, 7);
     onChange();
   });
@@ -461,7 +449,7 @@ function drawPreview() {
   // OFFICIAL top (red, centred)
   svgText(svg, 'OFFICIAL', SW/2, OFFICIAL_H/2, { fill: C.red, bold: true, sz: 9, anchor: 'middle' });
 
-  // NSW Gov logo — top-right on WHITE background (DoE style guide: never on coloured bg)
+  // NSW Gov logo
   if (typeof NSW_LOGO_B64 !== 'undefined' && NSW_LOGO_B64) {
     const img = svgEl('image', {
       href: NSW_LOGO_B64,
@@ -471,16 +459,13 @@ function drawPreview() {
     });
     svg.appendChild(img);
   } else {
-    // Fallback placeholder
     svgRect(svg, LOGO_X, LOGO_Y, LOGO_W, LOGO_H, 'F0F2F5', C.border, 0.5);
     svgText(svg, 'NSW', LOGO_X + LOGO_W/2, LOGO_Y + LOGO_H * 0.38, { fill: C.red, sz: 7, anchor: 'middle', bold: true });
     svgText(svg, 'Gov', LOGO_X + LOGO_W/2, LOGO_Y + LOGO_H * 0.68, { fill: C.navy, sz: 6, anchor: 'middle' });
   }
 
-  // Title bar (navy, compact) — sits below OFFICIAL strip, logo is above on white
-  svgRect(svg, 0, OFFICIAL_H, SW, TITLE_H, C.navy);
-  // Title text — full width (logo is above the bar, not overlapping)
-  svgText(svg, title, 0.25, OFFICIAL_H + TITLE_H/2, { fill: C.white, bold: true, sz: 13, anchor: 'start' });
+  // Title text
+  svgText(svg, title, 0.25, OFFICIAL_H + TITLE_H/2, { fill: C.navy, bold: true, sz: 13, anchor: 'start' });
 
   // Column header row
   const hdrY = OFFICIAL_H + TITLE_H;
@@ -619,7 +604,7 @@ function exportPPTX() {
   const s = state;
 
   const pptx = new PptxGenJS();
-  pptx.layout = 'LAYOUT_WIDE'; // 13.33 × 7.5
+  pptx.layout = 'LAYOUT_WIDE';
 
   const weekLabel     = s.weekDate     ? `w/c ${fmtDate(s.weekDate)}`     : 'w/c [date]';
   const nextWeekLabel = s.nextWeekDate ? `w/c ${fmtDate(s.nextWeekDate)}` : 'w/c [next date]';
@@ -628,38 +613,24 @@ function exportPPTX() {
   const slide = pptx.addSlide();
   slide.background = { color: C.white };
 
-  // ── OFFICIAL top ──────────────────────────────────────────
   slide.addText('OFFICIAL', {
     x: 0, y: 0.02, w: SW, h: OFFICIAL_H,
     align: 'center', valign: 'middle',
     fontSize: 9, bold: true, color: C.red, fontFace: F.heading,
   });
 
-  // ── NSW Gov logo — top-right on WHITE (DoE style guide compliant) ──
-  // Logo sits on the white slide background, above the navy title bar.
   if (typeof NSW_LOGO_B64 !== 'undefined' && NSW_LOGO_B64) {
-    slide.addImage({
-      data: NSW_LOGO_B64,
-      x: LOGO_X, y: LOGO_Y, w: LOGO_W, h: LOGO_H,
-    });
+    slide.addImage({ data: NSW_LOGO_B64, x: LOGO_X, y: LOGO_Y, w: LOGO_W, h: LOGO_H });
   }
 
-  // ── Title bar (compact navy) — below OFFICIAL strip ───────
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 0, y: OFFICIAL_H, w: SW, h: TITLE_H,
-    fill: { color: C.navy }, line: { color: C.navy },
-  });
-  // Title text — full width (logo is above the bar on white, not overlapping)
   slide.addText(slideTitle, {
-    x: 0.25, y: OFFICIAL_H, w: SW - 0.4, h: TITLE_H,
+    x: 0.25, y: OFFICIAL_H, w: SW - LOGO_W - 0.4, h: TITLE_H,
     valign: 'middle', fontSize: 18, bold: true,
-    color: C.white, fontFace: F.heading,
+    color: C.navy, fontFace: F.heading,
   });
 
-  // ── Column header row ─────────────────────────────────────
   const hdrY = OFFICIAL_H + TITLE_H;
 
-  // Label header (grey, italic)
   slide.addShape(pptx.ShapeType.rect, {
     x: COL_LABEL_X, y: hdrY, w: COL_LABEL_W, h: HDR_ROW_H,
     fill: { color: 'F0F2F5' }, line: { color: C.border, pt: 0.5 },
@@ -670,7 +641,6 @@ function exportPPTX() {
     fontSize: 9, italic: true, color: '555555', fontFace: F.body,
   });
 
-  // Achieved header (navy)
   slide.addShape(pptx.ShapeType.rect, {
     x: COL_ACH_X, y: hdrY, w: COL_ACH_W, h: HDR_ROW_H,
     fill: { color: C.navy }, line: { color: C.navy },
@@ -681,7 +651,6 @@ function exportPPTX() {
     fontSize: 11, bold: true, color: C.white, fontFace: F.heading,
   });
 
-  // Next week header (navy)
   slide.addShape(pptx.ShapeType.rect, {
     x: COL_NEXT_X, y: hdrY, w: COL_NEXT_W, h: HDR_ROW_H,
     fill: { color: C.navy }, line: { color: C.navy },
@@ -692,7 +661,6 @@ function exportPPTX() {
     fontSize: 11, bold: true, color: C.white, fontFace: F.heading,
   });
 
-  // ── Stream rows ───────────────────────────────────────────
   const hasSupportText = (s.supportText || '').trim().length > 0;
   const bottomReserved = OFFICIAL_H + LEGEND_H + (hasSupportText ? SUPPORT_H : 0);
   const availH = SH - hdrY - HDR_ROW_H - bottomReserved;
@@ -704,7 +672,6 @@ function exportPPTX() {
   s.streams.forEach(stream => {
     const ragHex = RAG_COLOURS[stream.rag] || C.navy;
 
-    // Label column (RAG colour)
     slide.addShape(pptx.ShapeType.rect, {
       x: COL_LABEL_X, y: curY, w: COL_LABEL_W, h: rowH,
       fill: { color: ragHex }, line: { color: C.border, pt: 0.5 },
@@ -712,18 +679,15 @@ function exportPPTX() {
     slide.addText(stream.name || 'Stream', {
       x: COL_LABEL_X + 0.05, y: curY, w: COL_LABEL_W - 0.1, h: rowH,
       align: 'center', valign: 'middle',
-      fontSize: 10, bold: true, color: C.white, fontFace: F.heading,
-      wrap: true,
+      fontSize: 10, bold: true, color: C.white, fontFace: F.heading, wrap: true,
     });
 
-    // Achieved column
     slide.addShape(pptx.ShapeType.rect, {
       x: COL_ACH_X, y: curY, w: COL_ACH_W, h: rowH,
       fill: { color: C.white }, line: { color: C.border, pt: 0.5 },
     });
     addCellContent(slide, stream, 'achieved', COL_ACH_X, curY, COL_ACH_W, rowH);
 
-    // Next week column
     slide.addShape(pptx.ShapeType.rect, {
       x: COL_NEXT_X, y: curY, w: COL_NEXT_W, h: rowH,
       fill: { color: C.white }, line: { color: C.border, pt: 0.5 },
@@ -733,7 +697,6 @@ function exportPPTX() {
     curY += rowH;
   });
 
-  // ── Support required (optional) ───────────────────────────
   if (hasSupportText) {
     const suppW = TABLE_W * 0.65;
     slide.addShape(pptx.ShapeType.rect, {
@@ -751,13 +714,11 @@ function exportPPTX() {
     });
     slide.addText(s.supportText, {
       x: 0.12, y: curY + 0.32, w: suppW - 0.2, h: SUPPORT_H - 0.32,
-      valign: 'top', fontSize: 9, color: C.dark, fontFace: F.body,
-      wrap: true,
+      valign: 'top', fontSize: 9, color: C.dark, fontFace: F.body, wrap: true,
     });
     curY += SUPPORT_H;
   }
 
-  // ── Legend bar (full width) ───────────────────────────────
   const legendY = SH - OFFICIAL_H - LEGEND_H;
   slide.addShape(pptx.ShapeType.rect, {
     x: 0, y: legendY, w: SW, h: LEGEND_H,
@@ -790,14 +751,12 @@ function exportPPTX() {
     lx += 1.9;
   });
 
-  // ── OFFICIAL bottom ───────────────────────────────────────
   slide.addText('OFFICIAL', {
     x: 0, y: SH - OFFICIAL_H, w: SW, h: OFFICIAL_H,
     align: 'center', valign: 'middle',
     fontSize: 9, bold: true, color: C.red, fontFace: F.heading,
   });
 
-  // ── Write file ────────────────────────────────────────────
   const filename = `Status-Report-${s.weekDate || 'draft'}.pptx`;
   pptx.writeFile({ fileName: filename })
     .then(() => showToast('✅ Downloaded ' + filename))
@@ -814,19 +773,11 @@ function addCellContent(slide, stream, col, x, y, w, h) {
     const gov     = col === 'achieved' ? stream.achievedGovernance  : stream.nextGovernance;
     const halfH   = (h - pad * 2) / 2;
 
-    // Project/Dev section
     const pdRuns = buildBulletRuns(projDev, 'Project/Development:');
-    slide.addText(pdRuns, {
-      x: cx, y: y + pad, w: cw, h: halfH,
-      valign: 'top', wrap: true,
-    });
+    slide.addText(pdRuns, { x: cx, y: y + pad, w: cw, h: halfH, valign: 'top', wrap: true });
 
-    // Governance section
     const govRuns = buildBulletRuns(gov, 'Governance & Related Artefacts:');
-    slide.addText(govRuns, {
-      x: cx, y: y + pad + halfH, w: cw, h: halfH,
-      valign: 'top', wrap: true,
-    });
+    slide.addText(govRuns, { x: cx, y: y + pad + halfH, w: cw, h: halfH, valign: 'top', wrap: true });
   } else {
     const text = col === 'achieved' ? stream.achieved : stream.next;
     if (text && text.trim()) {
@@ -838,51 +789,154 @@ function addCellContent(slide, stream, col, x, y, w, h) {
           fontSize: 9, color: C.dark, fontFace: F.body,
         },
       }));
-      slide.addText(runs, {
-        x: cx, y: y + pad, w: cw, h: h - pad * 2,
-        valign: 'top', wrap: true,
-      });
+      slide.addText(runs, { x: cx, y: y + pad, w: cw, h: h - pad * 2, valign: 'top', wrap: true });
     }
   }
 }
 
-// Build pptxgenjs text runs for a sub-section (heading + bullets)
 function buildBulletRuns(text, heading) {
-  const runs = [
-    {
-      text: heading + '\n',
-      options: { bold: true, fontSize: 9, color: C.dark, fontFace: F.heading },
-    },
-  ];
+  const runs = [{
+    text: heading + '\n',
+    options: { bold: true, fontSize: 9, color: C.dark, fontFace: F.heading },
+  }];
   const lines = (text || 'N/A').split('\n').filter(l => l.trim());
   lines.forEach(line => {
     runs.push({
       text: line.replace(/^[•\-\*◦○▪▸►]\s*/, '') + '\n',
-      options: {
-        bullet: { type: 'bullet' },
-        fontSize: 9, color: C.dark, fontFace: F.body,
-      },
+      options: { bullet: { type: 'bullet' }, fontSize: 9, color: C.dark, fontFace: F.body },
     });
   });
   return runs;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-function init() {
-  loadState();
+// ── WELCOME SCREEN ────────────────────────────────────────────────────────────
 
-  // Always recalculate default dates to this Monday + next Monday
-  // (override stale localStorage dates from previous weeks)
-  const monday = thisMonday();
-  const nextMonday = addDays(monday, 7);
+function showWelcome() {
+  document.getElementById('welcome-screen').style.display = '';
+  document.getElementById('app-shell').style.display = 'none';
+}
 
-  // Only apply defaults if no state was loaded or dates are missing
-  if (!state.weekDate) {
-    state.weekDate = monday;
-    state.nextWeekDate = nextMonday;
+function showApp() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = '';
+}
+
+function backToWelcome() {
+  // Save current state before going back
+  if (document.getElementById('app-shell').style.display !== 'none') {
+    collectFormState();
+    saveState();
   }
+  showWelcome();
+}
 
-  // Seed default streams if none
+// Card 1: AI from notes
+function welcomeChooseAi() {
+  const panel = document.getElementById('ai-prompt-panel');
+  panel.style.display = '';
+  // Scroll to panel
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // Check credentials and show warning if missing
+  updateCredsWarning();
+  // Restore saved credentials into inputs
+  restoreAiSetupInputs();
+}
+
+function hideAiPanel() {
+  document.getElementById('ai-prompt-panel').style.display = 'none';
+}
+
+function showAiSetup() {
+  const details = document.getElementById('ai-setup-details');
+  if (details) details.open = true;
+  document.getElementById('sr-ai-key').focus();
+}
+
+function updateCredsWarning() {
+  const warn = document.getElementById('ai-creds-warn');
+  if (!warn) return;
+  warn.style.display = srHasCredentials() ? 'none' : '';
+}
+
+function restoreAiSetupInputs() {
+  const ep = document.getElementById('sr-ai-endpoint');
+  const key = document.getElementById('sr-ai-key');
+  const model = document.getElementById('sr-ai-model');
+  if (ep) ep.value = srGetEndpoint();
+  if (key) key.value = srGetApiKey();
+  if (model) model.value = srGetModel();
+}
+
+// Card 2: Manual
+function welcomeChooseManual() {
+  ensureDefaultState();
+  showApp();
+  populateForm();
+  renderStreams();
+  drawPreview();
+}
+
+// Card 3: Load JSON (file input triggers welcomeJsonSelected)
+function welcomeJsonSelected(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      state = { ...state, ...parsed };
+      saveState();
+      showApp();
+      populateForm();
+      renderStreams();
+      drawPreview();
+      showToast('📂 Loaded ' + file.name);
+    } catch(err) {
+      showToast('❌ Invalid JSON file', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Load example data
+function welcomeLoadExample() {
+  const example = {
+    projectName: 'Q+ Service Design and Change',
+    weekDate: thisMonday(),
+    nextWeekDate: addDays(thisMonday(), 7),
+    streams: [
+      {
+        id: 'ex-1', name: 'Solution 1 – Digital walk through',
+        rag: 'green', subSections: false,
+        achieved: 'Change and comm artefacts in draft\nContent being input to UAT\nFunctional testing with PAS team continues',
+        next: 'Ongoing development team standups\nFunctional testing continues\nGo live approvals for Release 1',
+        achievedProjectDev: '', achievedGovernance: '', nextProjectDev: '', nextGovernance: '',
+      },
+      {
+        id: 'ex-2', name: 'Solution 2 – Additional Workspaces',
+        rag: 'amber', subSections: false,
+        achieved: 'Stakeholder interviews completed\nDraft findings shared with sponsor',
+        next: 'Validate themes in user workshop\nFinalise research report',
+        achievedProjectDev: '', achievedGovernance: '', nextProjectDev: '', nextGovernance: '',
+      },
+    ],
+    supportText: '',
+  };
+  state = { ...state, ...example };
+  saveState();
+  showApp();
+  populateForm();
+  renderStreams();
+  drawPreview();
+  showToast('💡 Example report loaded');
+}
+
+// Ensure state has defaults before entering app
+function ensureDefaultState() {
+  if (!state.weekDate) {
+    const monday = thisMonday();
+    state.weekDate = monday;
+    state.nextWeekDate = addDays(monday, 7);
+  }
   if (!state.streams || state.streams.length === 0) {
     state.streams = [
       newStream('Solution 1 – Digital walk through'),
@@ -891,12 +945,159 @@ function init() {
     state.streams[0].rag = 'green';
     state.streams[1].rag = 'green';
   }
+}
 
+// Check if there's a saved session to continue
+function checkSavedSession() {
+  if (!state.streams || state.streams.length === 0) return;
+  const name = state.projectName || 'your report';
+  const continueBtn = document.getElementById('welcome-continue-btn');
+  const sep = document.getElementById('welcome-sep');
+  const nameSpan = document.getElementById('welcome-continue-name');
+  if (continueBtn) {
+    continueBtn.style.display = '';
+    if (sep) sep.style.display = '';
+    if (nameSpan) nameSpan.textContent = `"${name}"`;
+  }
+}
+
+function welcomeContinue() {
+  showApp();
   populateForm();
   renderStreams();
   drawPreview();
+}
 
-  // Wire up metadata fields
+// ── FILE UPLOAD HANDLERS (AI panel) ──────────────────────────────────────────
+
+// Holds the previous week's JSON state (if uploaded)
+let _prevWeekJson = null;
+
+// Upload a .txt/.md notes file → populate the textarea
+function aiLoadNotesFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const textarea = document.getElementById('ai-notes-input');
+    if (textarea) textarea.value = e.target.result;
+    const nameEl = document.getElementById('ai-notes-file-name');
+    if (nameEl) nameEl.textContent = '✓ ' + file.name;
+    showToast('📄 Notes loaded: ' + file.name);
+  };
+  reader.readAsText(file);
+}
+
+// Upload a previous week's .json report → store for AI context
+function aiLoadPrevJson(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      _prevWeekJson = JSON.parse(e.target.result);
+      const nameEl = document.getElementById('ai-prev-json-name');
+      if (nameEl) nameEl.textContent = '✓ ' + file.name;
+      showToast('📊 Previous report loaded: ' + file.name);
+    } catch (err) {
+      showToast('❌ Invalid JSON file', 'error');
+      _prevWeekJson = null;
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── AI GENERATION ─────────────────────────────────────────────────────────────
+
+async function runAiGenerate() {
+  const notesEl = document.getElementById('ai-notes-input');
+  const notes = (notesEl && notesEl.value) ? notesEl.value.trim() : '';
+
+  if (!notes && !_prevWeekJson) {
+    showToast('Please enter some notes or upload a file first.', 'error');
+    return;
+  }
+
+  if (!srHasCredentials()) {
+    showToast('⚠️ Please configure your API credentials first.', 'error');
+    showAiSetup();
+    return;
+  }
+
+  const btn = document.getElementById('btn-ai-generate');
+  const indicator = document.getElementById('ai-generating-indicator');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  if (indicator) indicator.style.display = '';
+
+  try {
+    const result = await generateStatusReportFromText(notes, _prevWeekJson);
+
+    // Merge AI result into state (preserve project name if AI didn't provide one)
+    state = {
+      ...state,
+      projectName:  result.projectName  || state.projectName,
+      weekDate:     result.weekDate     || state.weekDate     || thisMonday(),
+      nextWeekDate: result.nextWeekDate || state.nextWeekDate || addDays(thisMonday(), 7),
+      streams:      result.streams,
+      supportText:  result.supportText  || '',
+    };
+
+    saveState();
+    showApp();
+    populateForm();
+    renderStreams();
+    drawPreview();
+    showToast('✅ Report generated from your notes!');
+
+  } catch (err) {
+    console.error('AI generation error:', err);
+    showToast('❌ ' + (err.message || 'AI generation failed'), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✨ Generate report'; }
+    if (indicator) indicator.style.display = 'none';
+  }
+}
+
+// ── AI SETUP — test connection UI ─────────────────────────────────────────────
+
+async function srTestConnectionUI() {
+  const statusEl = document.getElementById('sr-conn-status');
+  if (statusEl) {
+    statusEl.textContent = 'Testing…';
+    statusEl.className = 'sr-conn-status';
+  }
+
+  try {
+    const result = await srTestConnection();
+    if (statusEl) {
+      statusEl.textContent = '✅ Connected — ' + result.models.length + ' model(s) available';
+      statusEl.className = 'sr-conn-status success';
+    }
+    updateCredsWarning();
+  } catch (err) {
+    if (statusEl) {
+      statusEl.textContent = '❌ ' + err.message;
+      statusEl.className = 'sr-conn-status error';
+    }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  loadState();
+
+  // Always recalculate default dates to this Monday + next Monday
+  const monday = thisMonday();
+  const nextMonday = addDays(monday, 7);
+  if (!state.weekDate) {
+    state.weekDate = monday;
+    state.nextWeekDate = nextMonday;
+  }
+
+  // Show welcome screen; check for saved session
+  showWelcome();
+  checkSavedSession();
+
+  // Wire up metadata fields (they exist in app-shell, safe to wire even when hidden)
   ['project-name', 'week-date', 'next-week-date', 'support-text'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', onChange);

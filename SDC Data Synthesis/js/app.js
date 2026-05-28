@@ -861,6 +861,7 @@ async function synthesise() {
     const passLabel = sources.length > 1 ? ` (${sources.length}-source multi-pass)` : '';
     setStatus(`Done${passLabel}. Tokens used: ${totalTokens.toLocaleString()}`, 'success');
     document.getElementById('download-btn').disabled = false;
+    document.getElementById('download-docx-btn').disabled = false;
     document.getElementById('copy-btn').disabled = false;
     updateSharePointHint();
 
@@ -889,6 +890,7 @@ function clearOutput() {
   el.textContent = 'Your output will appear here after you click Run…';
   lastOutput = '';
   document.getElementById('download-btn').disabled = true;
+  document.getElementById('download-docx-btn').disabled = true;
   document.getElementById('copy-btn').disabled = true;
   document.getElementById('sharepoint-hint').classList.remove('show');
 }
@@ -899,6 +901,25 @@ function downloadMd() {
   const name     = document.getElementById('session-name').value.trim().replace(/\s+/g, '-') || 'output';
   const filename = `${currentSkill}-${date}-${name}.md`;
   const blob = new Blob([lastOutput], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadDocx() {
+  if (!lastOutput) return;
+  if (typeof marked === 'undefined' || typeof htmlDocx === 'undefined') {
+    alert('Export libraries failed to load. Check your internet connection and reload the page.');
+    return;
+  }
+  const date     = document.getElementById('session-date').value;
+  const name     = document.getElementById('session-name').value.trim().replace(/\s+/g, '-') || 'output';
+  const filename = `${currentSkill}-${date}-${name}.docx`;
+  const bodyHtml = marked.parse(lastOutput);
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${bodyHtml}</body></html>`;
+  const blob = htmlDocx.asBlob(fullHtml);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
@@ -1126,6 +1147,7 @@ async function synthesiseWithCleanedText(cleanedText) {
     showOutput(lastOutput);
     setStatus('Done — ' + (r.tokens || 0).toLocaleString() + ' tokens used.', 'success');
     document.getElementById('download-btn').disabled = false;
+    document.getElementById('download-docx-btn').disabled = false;
     document.getElementById('copy-btn').disabled     = false;
     updateSharePointHint();
 

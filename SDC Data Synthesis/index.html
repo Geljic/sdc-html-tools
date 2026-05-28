@@ -8,6 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <!-- mammoth.js for .docx text extraction (client-side, ~200KB) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- marked.js + html-docx-js for .docx export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.js"></script>
   <link rel="stylesheet" href="../shared/navbar.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -241,6 +244,7 @@
     <div class="panel-title">3 — Review &amp; download output</div>
     <div id="output-toolbar">
       <button class="btn btn-success" onclick="downloadMd()" id="download-btn" disabled>⬇ Download as .md</button>
+      <button class="btn btn-success" onclick="downloadDocx()" id="download-docx-btn" disabled>⬇ Download as .docx</button>
       <button class="btn btn-secondary" onclick="copyOutput()" id="copy-btn" disabled>📋 Copy</button>
       <button class="btn btn-secondary" onclick="clearOutput()">✕ Clear</button>
     </div>
