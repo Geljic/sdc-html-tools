@@ -47,7 +47,7 @@ Synth.prompts = (function () {
     'Respond with a JSON object in the following structure (no markdown fencing, no preamble):',
     '',
     '{',
-    '  "session_id": "<participant ID for this session>",',
+    '  "session_id": "<session identifier>",',
     '  "rq_findings": [',
     '    {',
     '      "rq_id": "<research question ID>",',
@@ -60,7 +60,7 @@ Synth.prompts = (function () {
     '              "quote": "<verbatim quote from transcript>",',
     '              "speaker": "<speaker name as in transcript>",',
     '              "timestamp": "<MM:SS>",',
-    '              "participant_id": "<participant ID>"',
+    '              "participant_id": "<participant ID from PARTICIPANT MAPPING>"',
     '            }',
     '          ],',
     '          "theme_match": "<existing theme_id or null if new>",',
@@ -165,10 +165,10 @@ Synth.prompts = (function () {
     '- An "Emergent Findings" section for themes that don\'t map to any RQ',
   ].join('\n');
 
-  var CONSOLIDATION_GROUPS = [
+  var CONSOLIDATION_DIMENSIONS = [
     '',
-    'GROUP ANALYSIS:',
-    'Where relevant, note differences in findings across participant groups. For example: "4 of 6 teachers reported this theme, compared to 1 of 4 parents." Include group-level observations where patterns diverge meaningfully.',
+    'DIMENSIONAL ANALYSIS:',
+    'Where relevant, note differences in findings across participant dimensions. For example: "4 of 6 teachers reported this theme, compared to 1 of 4 principals" or "This was more prevalent among primary school participants." Include cross-dimensional observations where patterns diverge meaningfully.',
   ].join('\n');
 
   var CONSOLIDATION_SIMPLE = [
@@ -195,17 +195,18 @@ Synth.prompts = (function () {
     return system;
   }
 
-  function buildSynthesisUser(framework, themes, transcript, participantId, speakerRoles) {
+  function buildSynthesisUser(framework, themes, transcript, participantMap, speakerRoles) {
     var parts = [];
 
     parts.push('PROJECT CONTEXT:');
     parts.push(framework.background || 'No project background provided.');
     parts.push('');
 
-    if (framework.participant_groups && framework.participant_groups.length > 0) {
-      parts.push('PARTICIPANT GROUPS:');
-      framework.participant_groups.forEach(function (g) {
-        parts.push('- ' + g.group_id + ': ' + g.label + ' — ' + (g.description || ''));
+    if (framework.participant_dimensions && framework.participant_dimensions.length > 0) {
+      parts.push('PARTICIPANT DIMENSIONS:');
+      framework.participant_dimensions.forEach(function (dim) {
+        var tagLabels = dim.tags.map(function (t) { return t.label; }).join(', ');
+        parts.push('- ' + dim.label + ': ' + tagLabels);
       });
       parts.push('');
     }
@@ -237,7 +238,11 @@ Synth.prompts = (function () {
     });
     parts.push('');
 
-    parts.push('PARTICIPANT ID: ' + participantId);
+    parts.push('PARTICIPANT MAPPING:');
+    Object.entries(participantMap).forEach(function (entry) {
+      parts.push('- ' + entry[0] + ' → ' + entry[1]);
+    });
+    parts.push('When attributing quotes, use the participant_id from this mapping that corresponds to the speaker.');
     parts.push('');
     parts.push('TRANSCRIPT:');
     parts.push(transcript);
@@ -245,8 +250,8 @@ Synth.prompts = (function () {
     return parts.join('\n');
   }
 
-  function buildResynthesisUser(framework, themes, transcript, participantId, speakerRoles, fabricatedQuotes) {
-    var base = buildSynthesisUser(framework, themes, transcript, participantId, speakerRoles);
+  function buildResynthesisUser(framework, themes, transcript, participantMap, speakerRoles, fabricatedQuotes) {
+    var base = buildSynthesisUser(framework, themes, transcript, participantMap, speakerRoles);
     var warning = RESYNTHESIS_WARNING;
     fabricatedQuotes.forEach(function (q) {
       warning += '- "' + q + '"\n';
@@ -265,7 +270,7 @@ Synth.prompts = (function () {
       : CONSOLIDATION_SYSTEM;
 
     var hasRqs = framework.research_questions && framework.research_questions.length > 0;
-    var hasGroups = framework.participant_groups && framework.participant_groups.length > 0;
+    var hasDimensions = framework.participant_dimensions && framework.participant_dimensions.length > 0;
 
     if (hasRqs) {
       system += CONSOLIDATION_RQ;
@@ -273,8 +278,8 @@ Synth.prompts = (function () {
       system += CONSOLIDATION_SIMPLE;
     }
 
-    if (hasGroups) {
-      system += CONSOLIDATION_GROUPS;
+    if (hasDimensions) {
+      system += CONSOLIDATION_DIMENSIONS;
     }
 
     system += '\n\nOutput the report as clean Markdown, ready for download.';
@@ -318,7 +323,7 @@ Synth.prompts = (function () {
     return 'limited';
   }
 
-  function buildThemeSummaries(themes, totalParticipants, hasGroups) {
+  function buildThemeSummaries(themes, totalParticipants, dimensions) {
     return themes.map(function (t) {
       var evidence = t.supporting_evidence || [];
       var participantIds = [];
@@ -339,20 +344,27 @@ Synth.prompts = (function () {
       }
       lines.push('Participants: ' + count + ' of ' + totalParticipants + ' (' + strengthLabel(count) + ') — ' + participantIds.join(', '));
 
-      if (hasGroups) {
-        var groupPids = {};
-        evidence.forEach(function (e) {
-          if (e.participant_group) {
-            if (!groupPids[e.participant_group]) groupPids[e.participant_group] = {};
-            groupPids[e.participant_group][e.participant_id] = true;
+      if (dimensions && dimensions.length > 0) {
+        dimensions.forEach(function (dim) {
+          var tagPids = {};
+          evidence.forEach(function (e) {
+            var dimTags = e.participant_dimensions || {};
+            var tagId = dimTags[dim.dimension_id];
+            if (tagId) {
+              if (!tagPids[tagId]) tagPids[tagId] = {};
+              tagPids[tagId][e.participant_id] = true;
+            }
+          });
+          var parts = [];
+          dim.tags.forEach(function (tag) {
+            if (tagPids[tag.tag_id]) {
+              parts.push(tag.label + ': ' + Object.keys(tagPids[tag.tag_id]).length);
+            }
+          });
+          if (parts.length > 0) {
+            lines.push(dim.label + ' breakdown: ' + parts.join(', '));
           }
         });
-        var groupParts = Object.keys(groupPids).map(function (g) {
-          return g + ': ' + Object.keys(groupPids[g]).length;
-        });
-        if (groupParts.length > 0) {
-          lines.push('Group breakdown: ' + groupParts.join(', '));
-        }
       }
 
       var curated = curateQuotes(evidence, 5);
@@ -371,7 +383,7 @@ Synth.prompts = (function () {
 
   function buildSessionNarratives(sessionSyntheses) {
     return (sessionSyntheses || []).map(function (s) {
-      var lines = ['SESSION: ' + s.participant_id];
+      var lines = ['SESSION: ' + (s.session_id || s.participant_id)];
 
       (s.rq_findings || []).forEach(function (rqGroup) {
         (rqGroup.findings || []).forEach(function (f) {
@@ -406,8 +418,12 @@ Synth.prompts = (function () {
 
   function buildConsolidationUser(framework, themes, sessionSyntheses) {
     var parts = [];
-    var totalParticipants = (sessionSyntheses || []).length;
-    var hasGroups = framework.participant_groups && framework.participant_groups.length > 0;
+    var allPids = new Set();
+    (sessionSyntheses || []).forEach(function (s) {
+      (s.participant_ids || []).forEach(function (pid) { allPids.add(pid); });
+    });
+    var totalParticipants = allPids.size || (sessionSyntheses || []).length;
+    var dimensions = framework.participant_dimensions || [];
 
     parts.push('PROJECT CONTEXT:');
     parts.push(framework.background || 'No project background provided.');
@@ -421,10 +437,11 @@ Synth.prompts = (function () {
       parts.push('');
     }
 
-    if (hasGroups) {
-      parts.push('PARTICIPANT GROUPS:');
-      framework.participant_groups.forEach(function (g) {
-        parts.push('- ' + g.group_id + ': ' + g.label + ' — ' + (g.description || ''));
+    if (dimensions.length > 0) {
+      parts.push('PARTICIPANT DIMENSIONS:');
+      dimensions.forEach(function (dim) {
+        var tagLabels = dim.tags.map(function (t) { return t.label; }).join(', ');
+        parts.push('- ' + dim.label + ': ' + tagLabels);
       });
       parts.push('');
     }
@@ -434,7 +451,7 @@ Synth.prompts = (function () {
     parts.push('');
 
     parts.push('THEME SUMMARIES:');
-    parts.push(buildThemeSummaries(themes, totalParticipants, hasGroups));
+    parts.push(buildThemeSummaries(themes, totalParticipants, dimensions));
     parts.push('');
 
     parts.push('PER-SESSION ANALYTICAL NARRATIVES:');
@@ -553,12 +570,15 @@ Synth.prompts = (function () {
     'Do not speculate beyond what the evidence supports.',
   ].join(' ');
 
-  function buildInquiryUser(framework, transcriptText, participantId, question) {
+  function buildInquiryUser(framework, transcriptText, participantMap, question) {
     var parts = [];
     parts.push('PROJECT CONTEXT:');
     parts.push(framework.background || 'No project background provided.');
     parts.push('');
-    parts.push('PARTICIPANT ID: ' + participantId);
+    parts.push('PARTICIPANT MAPPING:');
+    Object.entries(participantMap).forEach(function (entry) {
+      parts.push('- ' + entry[0] + ' → ' + entry[1]);
+    });
     parts.push('');
     parts.push('TRANSCRIPT:');
     parts.push(transcriptText);

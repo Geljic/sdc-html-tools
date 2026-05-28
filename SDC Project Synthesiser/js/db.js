@@ -2,7 +2,7 @@ window.Synth = window.Synth || {};
 
 Synth.db = (function () {
   const DB_NAME = 'research-synthesiser';
-  const DB_VERSION = 4;
+  const DB_VERSION = 5;
   let db = null;
 
   function open() {
@@ -26,12 +26,15 @@ Synth.db = (function () {
         if (!d.objectStoreNames.contains('transcripts')) {
           const store = d.createObjectStore('transcripts', { keyPath: 'transcript_id' });
           store.createIndex('project_id', 'project_id', { unique: false });
-          store.createIndex('participant_id', 'participant_id', { unique: false });
+          store.createIndex('session_id', 'session_id', { unique: false });
           store.createIndex('status', 'status', { unique: false });
         } else {
           const txStore = tx.objectStore('transcripts');
-          if (!txStore.indexNames.contains('participant_id')) {
-            txStore.createIndex('participant_id', 'participant_id', { unique: false });
+          if (!txStore.indexNames.contains('session_id')) {
+            txStore.createIndex('session_id', 'session_id', { unique: false });
+          }
+          if (txStore.indexNames.contains('participant_id')) {
+            txStore.deleteIndex('participant_id');
           }
         }
 
@@ -46,16 +49,34 @@ Synth.db = (function () {
           store.createIndex('project_id', 'project_id', { unique: false });
         }
 
+        if (!d.objectStoreNames.contains('sessions')) {
+          const store = d.createObjectStore('sessions', { keyPath: 'session_id' });
+          store.createIndex('project_id', 'project_id', { unique: false });
+        }
+
         if (!d.objectStoreNames.contains('session_syntheses')) {
           const store = d.createObjectStore('session_syntheses', { keyPath: 'synthesis_id' });
           store.createIndex('project_id', 'project_id', { unique: false });
-          store.createIndex('participant_id', 'participant_id', { unique: false });
+          store.createIndex('session_id', 'session_id', { unique: false });
+        } else {
+          const txStore = tx.objectStore('session_syntheses');
+          if (!txStore.indexNames.contains('session_id')) {
+            txStore.createIndex('session_id', 'session_id', { unique: false });
+          }
         }
 
         if (!d.objectStoreNames.contains('inquiries')) {
           const store = d.createObjectStore('inquiries', { keyPath: 'inquiry_id' });
-          store.createIndex('participant_key', 'participant_key', { unique: false });
+          store.createIndex('session_key', 'session_key', { unique: false });
           store.createIndex('project_id', 'project_id', { unique: false });
+        } else {
+          const txStore = tx.objectStore('inquiries');
+          if (!txStore.indexNames.contains('session_key')) {
+            txStore.createIndex('session_key', 'session_key', { unique: false });
+          }
+          if (txStore.indexNames.contains('participant_key')) {
+            txStore.deleteIndex('participant_key');
+          }
         }
 
         if (!d.objectStoreNames.contains('settings')) {
@@ -79,10 +100,22 @@ Synth.db = (function () {
     return transaction.objectStore(storeName);
   }
 
+  function txMulti(storeNames, mode) {
+    const transaction = db.transaction(storeNames, mode || 'readonly');
+    return transaction;
+  }
+
   function promisify(req) {
     return new Promise((resolve, reject) => {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(new Error(req.error?.message || 'IndexedDB request failed'));
+    });
+  }
+
+  function promisifyTx(transaction) {
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(new Error(transaction.error?.message || 'Transaction failed'));
     });
   }
 
@@ -154,9 +187,37 @@ Synth.db = (function () {
       background: '',
       facilitator_names: [],
       research_questions: [],
-      participant_groups: []
+      participant_dimensions: []
     };
     return put('frameworks', framework).then(() => framework);
+  }
+
+  // --- Sessions ---
+
+  function saveSession(session) {
+    return put('sessions', session);
+  }
+
+  function getSession(sessionId) {
+    return get('sessions', sessionId);
+  }
+
+  function getSessionsByProject(projectId) {
+    return getAllByIndex('sessions', 'project_id', projectId);
+  }
+
+  function deleteSession(sessionId) {
+    return del('sessions', sessionId);
+  }
+
+  async function getNextSessionNumber(projectId) {
+    var sessions = await getSessionsByProject(projectId);
+    var max = 0;
+    for (var i = 0; i < sessions.length; i++) {
+      var num = parseInt(sessions[i].label.replace(/^Session\s*/i, ''), 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+    return max + 1;
   }
 
   // --- Transcripts ---
@@ -249,8 +310,8 @@ Synth.db = (function () {
     return getAllByIndex('session_syntheses', 'project_id', projectId);
   }
 
-  function getSessionSynthesesByParticipant(participantId) {
-    return getAllByIndex('session_syntheses', 'participant_id', participantId);
+  function getSessionSynthesesBySession(sessionId) {
+    return getAllByIndex('session_syntheses', 'session_id', sessionId);
   }
 
   function deleteSessionSynthesis(synthesisId) {
@@ -263,8 +324,8 @@ Synth.db = (function () {
     return put('inquiries', inquiry);
   }
 
-  function getInquiriesByParticipant(participantKey) {
-    return getAllByIndex('inquiries', 'participant_key', participantKey);
+  function getInquiriesBySession(sessionKey) {
+    return getAllByIndex('inquiries', 'session_key', sessionKey);
   }
 
   function deleteInquiry(inquiryId) {
@@ -287,15 +348,126 @@ Synth.db = (function () {
     return promisify(tx(storeName, 'readwrite').clear());
   }
 
+  // --- V5 Migration: Participant-centric → Session-centric ---
+
+  async function migrateToV5() {
+    var done = await getSetting('migration_v5_done');
+    if (done) return;
+
+    var participants = await getAll('participants');
+    var hasLegacyData = participants.some(function (p) { return !!p.transcript_id; });
+    if (!hasLegacyData) {
+      await saveSetting('migration_v5_done', true);
+      return;
+    }
+
+    console.log('[migration] Starting V5 migration: participant → session');
+
+    var participantToSession = {};
+    var counter = 0;
+
+    for (var i = 0; i < participants.length; i++) {
+      var pp = participants[i];
+      if (!pp.transcript_id) continue;
+
+      counter++;
+      var sessionId = 'sess_' + Date.now() + '_' + counter;
+      var displayId = pp.display_id || pp.participant_id;
+
+      participantToSession[displayId] = sessionId;
+
+      var session = {
+        session_id: sessionId,
+        project_id: pp.project_id,
+        label: displayId,
+        transcript_id: pp.transcript_id,
+        participant_ids: [displayId],
+        synthesis_status: pp.synthesis_status || 'pending',
+        created: pp.created || new Date().toISOString()
+      };
+      await saveSession(session);
+
+      var transcript = await getTranscript(pp.transcript_id);
+      if (transcript) {
+        transcript.session_id = sessionId;
+
+        var pMap = {};
+        var roles = transcript.speaker_roles || {};
+        for (var speaker in roles) {
+          if (roles[speaker] === 'participant') {
+            pMap[speaker] = transcript.participant_id || displayId;
+          }
+        }
+        transcript.participant_map = pMap;
+
+        delete transcript.participant_id;
+        delete transcript.participant_group;
+        await saveTranscript(transcript);
+      }
+
+      delete pp.transcript_id;
+      delete pp.synthesis_status;
+      await saveParticipant(pp);
+    }
+
+    var syntheses = await getAll('session_syntheses');
+    for (var j = 0; j < syntheses.length; j++) {
+      var s = syntheses[j];
+      var oldPid = s.participant_id;
+      if (oldPid && participantToSession[oldPid]) {
+        s.session_id = participantToSession[oldPid];
+        s.participant_ids = [oldPid];
+        delete s.participant_id;
+        await saveSessionSynthesis(s);
+      }
+    }
+
+    var themes = await getAll('themes');
+    for (var k = 0; k < themes.length; k++) {
+      var theme = themes[k];
+      var changed = false;
+      var evidence = theme.supporting_evidence || [];
+      for (var m = 0; m < evidence.length; m++) {
+        var ev = evidence[m];
+        if (ev.session_id && participantToSession[ev.session_id]) {
+          ev.session_id = participantToSession[ev.session_id];
+          changed = true;
+        }
+      }
+      if (changed) {
+        await saveTheme(theme);
+      }
+    }
+
+    var inquiries = await getAll('inquiries');
+    for (var n = 0; n < inquiries.length; n++) {
+      var inq = inquiries[n];
+      if (inq.participant_key && inq.participant_id) {
+        var sessId = participantToSession[inq.participant_id];
+        if (sessId) {
+          inq.session_key = inq.project_id + '_' + sessId;
+          inq.session_id = sessId;
+          delete inq.participant_key;
+          delete inq.participant_id;
+          await saveInquiry(inq);
+        }
+      }
+    }
+
+    await saveSetting('migration_v5_done', true);
+    console.log('[migration] V5 migration complete: ' + counter + ' session(s) created');
+  }
+
   return {
-    open,
+    open, migrateToV5,
     createProject, getProjects, getProject, updateProject, deleteProject,
     getFramework, saveFramework, createDefaultFramework,
+    saveSession, getSession, getSessionsByProject, deleteSession, getNextSessionNumber,
     saveParticipant, getParticipant, getParticipantsByProject, deleteParticipant, getNextParticipantNumber,
     saveTranscript, getTranscript, getTranscriptsByProject, deleteTranscript,
     saveTheme, getTheme, getThemesByProject, deleteTheme, getNextThemeId,
-    saveSessionSynthesis, getSessionSynthesis, getSessionSynthesesByProject, getSessionSynthesesByParticipant, deleteSessionSynthesis,
-    saveInquiry, getInquiriesByParticipant, deleteInquiry,
+    saveSessionSynthesis, getSessionSynthesis, getSessionSynthesesByProject, getSessionSynthesesBySession, deleteSessionSynthesis,
+    saveInquiry, getInquiriesBySession, deleteInquiry,
     getSetting, saveSetting,
     clearStore
   };

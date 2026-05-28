@@ -5,10 +5,14 @@ Synth.deidentify = (function () {
   var state = {
     originalTurns: null,
     currentTurns: null,
+    preApplyTurns: null,
     onComplete: null,
     onCancel: null,
     facNames: [],
     projectId: null,
+    participantDimensions: [],
+    existingParticipantIds: new Set(),
+    nextParticipantNumber: 1,
     findTerm: '',
     replaceTerm: '',
     matches: [],
@@ -190,6 +194,23 @@ Synth.deidentify = (function () {
     }
   }
 
+  function refreshParticipantReplaceDropdown() {
+    var sel = document.getElementById('subpage-deid-replace-participant');
+    sel.innerHTML = '<option value="">— Select participant —</option>';
+    var rows = document.querySelectorAll('.deid-name-row');
+    rows.forEach(function (row) {
+      var roleSelect = row.querySelector('.deid-role-select');
+      if (!roleSelect || roleSelect.value !== 'participant') return;
+      var span = row.querySelector('.deid-name-replacement');
+      var ppRealname = row.querySelector('.deid-pp-realname');
+      if (!span) return;
+      var replacementName = span.textContent.trim();
+      var realName = ppRealname ? ppRealname.value.trim() : '';
+      var label = realName ? replacementName + ' (' + realName + ')' : replacementName;
+      sel.innerHTML += '<option value="' + escapeHtml(replacementName) + '">' + escapeHtml(label) + '</option>';
+    });
+  }
+
   function renderContentWithHighlights(content, turnIndex) {
     var escaped = escapeHtml(content);
     if (!state.findTerm.trim() || state.matches.length === 0) return escaped;
@@ -267,7 +288,7 @@ Synth.deidentify = (function () {
 
   // --- UI Functions ---
 
-  function show(pendingParse, facNames, projectId, onComplete, onCancel) {
+  function show(pendingParse, facNames, projectId, participantDimensions, existingParticipantIds, nextPpNum, onComplete, onCancel) {
     state.originalTurns = pendingParse.result.turns.map(function (t) {
       return { speaker: t.speaker, timestamp: t.timestamp, content: t.content };
     });
@@ -278,6 +299,10 @@ Synth.deidentify = (function () {
     state.onCancel = onCancel;
     state.facNames = (facNames || []).slice();
     state.projectId = projectId || null;
+    state.participantDimensions = (participantDimensions || []).slice();
+    state.existingParticipantIds = new Set(existingParticipantIds || []);
+    state.nextParticipantNumber = nextPpNum || 1;
+    state.preApplyTurns = null;
     state.findTerm = '';
     state.replaceTerm = '';
     state.matches = [];
@@ -287,17 +312,11 @@ Synth.deidentify = (function () {
     var card = document.getElementById('subpage-deidentify');
     document.getElementById('subpage-deid-filename').textContent = pendingParse.file.name;
 
-    var findInput = document.getElementById('subpage-deid-find-input');
-    var replaceInput = document.getElementById('subpage-deid-replace-input');
-    if (findInput) findInput.value = '';
-    if (replaceInput) replaceInput.value = '';
+    document.getElementById('subpage-deid-step1').classList.remove('hidden');
+    document.getElementById('subpage-deid-step2').classList.add('hidden');
 
     renderNameTable();
-    renderPreview();
-    updateProceedState();
-    updateMatchCount();
 
-    document.getElementById('subpage-deid-confirm-checkbox').checked = false;
     card.classList.remove('hidden');
   }
 
@@ -305,47 +324,131 @@ Synth.deidentify = (function () {
     document.getElementById('subpage-deidentify').classList.add('hidden');
   }
 
+  function getReplacementForRole(role, participantNum, totalParticipants) {
+    if (role === 'facilitator') return 'Facilitator';
+    if (role === 'observer') return 'Observer';
+    if (role === 'exclude') return '[Excluded]';
+    return totalParticipants === 1 ? 'Participant' : 'Participant ' + participantNum;
+  }
+
   function renderNameTable() {
     var detected = detectNames(state.currentTurns, state.facNames);
     var container = document.getElementById('subpage-deid-name-list');
     container.innerHTML = '';
+
+    var assignedNum = state.nextParticipantNumber;
+    var usedIds = new Set(state.existingParticipantIds);
+
+    var totalParticipants = detected.filter(function (d) { return !d.isFacilitator; }).length;
+    var participantNum = 0;
 
     detected.forEach(function (d) {
       var row = document.createElement('div');
       row.className = 'deid-name-row';
 
       var defaultRole = d.isFacilitator ? 'facilitator' : 'participant';
+      if (defaultRole === 'participant') participantNum++;
+      var replacement = getReplacementForRole(defaultRole, participantNum, totalParticipants);
 
       row.innerHTML =
-        '<span class="deid-name-original">' + escapeHtml(d.name) +
-        '<span class="deid-name-turns">' + d.turnCount + ' turns</span></span>' +
-        '<span class="deid-arrow">&rarr;</span>' +
-        '<input type="text" class="deid-name-input" data-original="' + escapeHtml(d.name) +
-        '" value="' + escapeHtml(d.defaultReplacement) + '">' +
-        '<select class="deid-role-select" data-name="' + escapeHtml(d.name) + '">' +
-          '<option value="participant"' + (defaultRole === 'participant' ? ' selected' : '') + '>Participant</option>' +
-          '<option value="facilitator"' + (defaultRole === 'facilitator' ? ' selected' : '') + '>Facilitator</option>' +
-          '<option value="observer">Observer</option>' +
-          '<option value="exclude">Exclude</option>' +
-        '</select>';
+        '<div class="deid-name-header">' +
+          '<span class="deid-name-original">' + escapeHtml(d.name) +
+          '<span class="deid-name-turns">(' + d.turnCount + ' turns)</span></span>' +
+          '<select class="deid-role-select" data-name="' + escapeHtml(d.name) + '">' +
+            '<option value="participant"' + (defaultRole === 'participant' ? ' selected' : '') + '>Participant</option>' +
+            '<option value="facilitator"' + (defaultRole === 'facilitator' ? ' selected' : '') + '>Facilitator</option>' +
+            '<option value="observer">Observer</option>' +
+            '<option value="exclude">Exclude</option>' +
+          '</select>' +
+          '<span class="deid-arrow">&rarr;</span>' +
+          '<span class="deid-name-replacement" data-original="' + escapeHtml(d.name) + '">' + escapeHtml(replacement) + '</span>' +
+        '</div>';
+
+      if (defaultRole === 'participant') {
+        var nextId = 'P-' + String(assignedNum).padStart(2, '0');
+        while (usedIds.has(nextId)) { assignedNum++; nextId = 'P-' + String(assignedNum).padStart(2, '0'); }
+        usedIds.add(nextId);
+        assignedNum++;
+        row.appendChild(buildParticipantFields(d.name, nextId));
+      }
+
       container.appendChild(row);
     });
   }
 
+  function buildParticipantFields(originalName, autoId) {
+    var div = document.createElement('div');
+    div.className = 'deid-pp-fields';
+    div.dataset.name = originalName;
+    var dimHtml = buildDimensionSelectsHtml();
+    div.innerHTML =
+      '<label class="deid-pp-label">ID</label>' +
+      '<span class="deid-pp-id">' + escapeHtml(autoId) + '</span>' +
+      '<label class="deid-pp-label">Name <span class="deid-pp-hint">(reference only — not sent to AI)</span></label>' +
+      '<input type="text" class="deid-pp-realname" value="' + escapeHtml(originalName) + '">' +
+      dimHtml;
+    return div;
+  }
+
+  function buildDimensionSelectsHtml() {
+    if (state.participantDimensions.length === 0) return '';
+    var html = '<div class="deid-pp-dimensions">';
+    state.participantDimensions.forEach(function (dim) {
+      html += '<label class="deid-pp-dim-label">' + escapeHtml(dim.label);
+      html += '<select class="deid-pp-dim" data-dim-id="' + escapeHtml(dim.dimension_id) + '">';
+      html += '<option value="">— None —</option>';
+      dim.tags.forEach(function (tag) {
+        html += '<option value="' + escapeHtml(tag.tag_id) + '">' + escapeHtml(tag.label) + '</option>';
+      });
+      html += '</select></label>';
+    });
+    html += '</div>';
+    return html;
+  }
+
   function getRoleAssignments() {
     var roleMap = {};
-    var selects = document.querySelectorAll('.deid-role-select');
-    var inputs = document.querySelectorAll('.deid-name-input');
+    var spans = document.querySelectorAll('.deid-name-replacement');
 
-    inputs.forEach(function (input) {
-      var original = input.dataset.original;
-      var replacement = input.value.trim() || original;
+    spans.forEach(function (span) {
+      var original = span.dataset.original;
+      var replacement = span.textContent.trim() || original;
       var roleSelect = document.querySelector('.deid-role-select[data-name="' + original + '"]');
       var role = roleSelect ? roleSelect.value : 'participant';
       roleMap[replacement] = role;
     });
 
     return roleMap;
+  }
+
+  function getParticipantDetails() {
+    var participants = [];
+    var rows = document.querySelectorAll('.deid-name-row');
+
+    rows.forEach(function (row) {
+      var roleSelect = row.querySelector('.deid-role-select');
+      if (!roleSelect || roleSelect.value !== 'participant') return;
+
+      var replacementSpan = row.querySelector('.deid-name-replacement');
+      var replacementName = replacementSpan ? replacementSpan.textContent.trim() : '';
+
+      var ppId = row.querySelector('.deid-pp-id');
+      var ppRealname = row.querySelector('.deid-pp-realname');
+
+      var dimTags = {};
+      row.querySelectorAll('.deid-pp-dim').forEach(function (sel) {
+        if (sel.value) dimTags[sel.dataset.dimId] = sel.value;
+      });
+
+      participants.push({
+        display_id: ppId ? ppId.textContent.trim() : '',
+        replacement_name: replacementName,
+        real_name: ppRealname ? ppRealname.value.trim() : '',
+        dimension_tags: dimTags
+      });
+    });
+
+    return participants;
   }
 
   function renderPreview() {
@@ -381,35 +484,53 @@ Synth.deidentify = (function () {
   }
 
   function readNameReplacements() {
-    var inputs = document.querySelectorAll('.deid-name-input');
+    var spans = document.querySelectorAll('.deid-name-replacement');
     var replacements = [];
-    inputs.forEach(function (input) {
+    spans.forEach(function (span) {
+      var role = '';
+      var roleSelect = document.querySelector('.deid-role-select[data-name="' + span.dataset.original + '"]');
+      if (roleSelect) role = roleSelect.value;
+      if (role === 'exclude') return;
       replacements.push({
-        original: input.dataset.original,
-        replacement: input.value.trim() || input.dataset.original
+        original: span.dataset.original,
+        replacement: span.textContent.trim() || span.dataset.original
       });
     });
     return replacements;
   }
 
-  function applyAll() {
-    if (state.editingTurnIndex >= 0) {
-      saveEditingTurn(state.editingTurnIndex);
-    }
+  function applyAndAdvance() {
+    state.preApplyTurns = state.currentTurns.map(function (t) {
+      return { speaker: t.speaker, timestamp: t.timestamp, content: t.content };
+    });
 
     var nameReplacements = readNameReplacements();
     state.currentTurns = applyNameReplacements(state.currentTurns, nameReplacements);
 
-    renderNameTable();
-    if (state.findTerm.trim()) performSearch(state.findTerm);
-    else renderPreview();
-    showDeidStatus('success', 'Name replacements applied.');
+    resetStep2State();
+    renderPreview();
+    updateProceedState();
+
+    document.getElementById('subpage-deid-step1').classList.add('hidden');
+    document.getElementById('subpage-deid-step2').classList.remove('hidden');
+    showDeidStatus('', '');
   }
 
-  function resetToOriginal() {
-    state.currentTurns = state.originalTurns.map(function (t) {
-      return { speaker: t.speaker, timestamp: t.timestamp, content: t.content };
-    });
+  function goBackToStep1() {
+    if (state.preApplyTurns) {
+      state.currentTurns = state.preApplyTurns;
+      state.preApplyTurns = null;
+    }
+    state.editingTurnIndex = -1;
+
+    renderNameTable();
+
+    document.getElementById('subpage-deid-step2').classList.add('hidden');
+    document.getElementById('subpage-deid-step1').classList.remove('hidden');
+    showDeidStatus('', '');
+  }
+
+  function resetStep2State() {
     state.findTerm = '';
     state.replaceTerm = '';
     state.matches = [];
@@ -418,14 +539,26 @@ Synth.deidentify = (function () {
 
     var findInput = document.getElementById('subpage-deid-find-input');
     var replaceInput = document.getElementById('subpage-deid-replace-input');
+    var replaceMode = document.getElementById('subpage-deid-replace-mode');
+    var replacePpSelect = document.getElementById('subpage-deid-replace-participant');
     if (findInput) findInput.value = '';
-    if (replaceInput) replaceInput.value = '';
-
+    if (replaceInput) { replaceInput.value = ''; replaceInput.classList.remove('hidden'); }
+    if (replaceMode) replaceMode.value = 'text';
+    if (replacePpSelect) { replacePpSelect.classList.add('hidden'); replacePpSelect.innerHTML = ''; }
     document.getElementById('subpage-deid-confirm-checkbox').checked = false;
-    renderNameTable();
-    renderPreview();
-    updateProceedState();
     updateMatchCount();
+  }
+
+  function resetToOriginal() {
+    state.currentTurns = state.originalTurns.map(function (t) {
+      return { speaker: t.speaker, timestamp: t.timestamp, content: t.content };
+    });
+    state.preApplyTurns = null;
+
+    renderNameTable();
+
+    document.getElementById('subpage-deid-step2').classList.add('hidden');
+    document.getElementById('subpage-deid-step1').classList.remove('hidden');
     showDeidStatus('info', 'Transcript reset to original.');
   }
 
@@ -439,11 +572,20 @@ Synth.deidentify = (function () {
       saveEditingTurn(state.editingTurnIndex);
     }
 
+    var participantDetails = getParticipantDetails();
+
     await saveFacilitatorsToFramework();
+
+    var participantMap = {};
+    participantDetails.forEach(function (pd) {
+      participantMap[pd.replacement_name] = pd.display_id;
+    });
 
     var result = {
       turns: state.currentTurns,
-      raw_text: rebuildRawText(state.currentTurns)
+      raw_text: rebuildRawText(state.currentTurns),
+      participant_map: participantMap,
+      participant_details: participantDetails
     };
 
     hide();
@@ -455,6 +597,51 @@ Synth.deidentify = (function () {
     if (state.onCancel) state.onCancel();
   }
 
+  function updateParticipantFields() {
+    var rows = document.querySelectorAll('.deid-name-row');
+    var assignedNum = state.nextParticipantNumber;
+    var usedIds = new Set(state.existingParticipantIds);
+
+    rows.forEach(function (row) {
+      var existingId = row.querySelector('.deid-pp-id');
+      if (existingId && existingId.textContent.trim()) {
+        usedIds.add(existingId.textContent.trim());
+      }
+    });
+
+    var totalParticipants = 0;
+    rows.forEach(function (row) {
+      var rs = row.querySelector('.deid-role-select');
+      if (rs && rs.value === 'participant') totalParticipants++;
+    });
+
+    var participantNum = 0;
+    rows.forEach(function (row) {
+      var roleSelect = row.querySelector('.deid-role-select');
+      var existingFields = row.querySelector('.deid-pp-fields');
+      var originalName = roleSelect ? roleSelect.dataset.name : '';
+      var role = roleSelect ? roleSelect.value : 'participant';
+
+      if (role === 'participant') participantNum++;
+      var replacementSpan = row.querySelector('.deid-name-replacement');
+      if (replacementSpan) {
+        replacementSpan.textContent = getReplacementForRole(role, participantNum, totalParticipants);
+      }
+
+      if (role === 'participant') {
+        if (!existingFields) {
+          var nextId = 'P-' + String(assignedNum).padStart(2, '0');
+          while (usedIds.has(nextId)) { assignedNum++; nextId = 'P-' + String(assignedNum).padStart(2, '0'); }
+          usedIds.add(nextId);
+          assignedNum++;
+          row.appendChild(buildParticipantFields(originalName, nextId));
+        }
+      } else {
+        if (existingFields) existingFields.remove();
+      }
+    });
+  }
+
   function showDeidStatus(type, message) {
     var el = document.getElementById('subpage-deid-status');
     el.className = 'status-msg ' + type;
@@ -464,13 +651,14 @@ Synth.deidentify = (function () {
   // --- Event Binding ---
 
   function initEvents() {
-    document.getElementById('btn-subpage-apply-names').addEventListener('click', applyAll);
+    document.getElementById('btn-subpage-apply-names').addEventListener('click', applyAndAdvance);
     document.getElementById('btn-subpage-deid-proceed').addEventListener('click', handleProceed);
     document.getElementById('btn-subpage-deid-cancel').addEventListener('click', handleCancel);
+    document.getElementById('btn-subpage-deid-cancel-step1').addEventListener('click', handleCancel);
+    document.getElementById('btn-subpage-deid-back').addEventListener('click', goBackToStep1);
     document.getElementById('btn-subpage-deid-reset').addEventListener('click', resetToOriginal);
     document.getElementById('subpage-deid-confirm-checkbox').addEventListener('change', updateProceedState);
 
-    // Role select change — update facilitator list when role changes
     document.getElementById('subpage-deid-name-list').addEventListener('change', function (e) {
       var sel = e.target.closest('.deid-role-select');
       if (!sel) return;
@@ -480,12 +668,10 @@ Synth.deidentify = (function () {
         if (!state.facNames.some(function (n) { return n.toLowerCase().trim() === lowerName; })) {
           state.facNames.push(name);
         }
-        // Update replacement to keep original name for facilitators
-        var input = document.querySelector('.deid-name-input[data-original="' + name + '"]');
-        if (input) input.value = name;
       } else {
         state.facNames = state.facNames.filter(function (n) { return n.toLowerCase().trim() !== lowerName; });
       }
+      updateParticipantFields();
     });
 
     // Find & Replace
@@ -495,6 +681,25 @@ Synth.deidentify = (function () {
 
     document.getElementById('subpage-deid-replace-input').addEventListener('input', function (e) {
       state.replaceTerm = e.target.value;
+    });
+
+    document.getElementById('subpage-deid-replace-participant').addEventListener('change', function (e) {
+      state.replaceTerm = e.target.value;
+    });
+
+    document.getElementById('subpage-deid-replace-mode').addEventListener('change', function (e) {
+      var textInput = document.getElementById('subpage-deid-replace-input');
+      var ppSelect = document.getElementById('subpage-deid-replace-participant');
+      if (e.target.value === 'participant') {
+        textInput.classList.add('hidden');
+        ppSelect.classList.remove('hidden');
+        refreshParticipantReplaceDropdown();
+        state.replaceTerm = ppSelect.value || '';
+      } else {
+        ppSelect.classList.add('hidden');
+        textInput.classList.remove('hidden');
+        state.replaceTerm = textInput.value;
+      }
     });
 
     document.getElementById('btn-subpage-deid-prev').addEventListener('click', function () {
@@ -535,5 +740,5 @@ Synth.deidentify = (function () {
     });
   }
 
-  return { show, hide, initEvents, detectNames, applyNameReplacements, applyFindReplace, rebuildRawText, getRoleAssignments };
+  return { show, hide, initEvents, detectNames, applyNameReplacements, applyFindReplace, rebuildRawText, getRoleAssignments, getParticipantDetails };
 })();

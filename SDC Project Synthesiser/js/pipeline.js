@@ -13,7 +13,7 @@ Synth.pipeline = (function () {
 
   // Process a single transcript through the full pipeline
   async function processTranscript(transcript, framework, themes, onStatus, modelOverride) {
-    var participantId = transcript.participant_id;
+    var participantMap = transcript.participant_map || {};
     var speakerRoles = transcript.speaker_roles || {};
     var startTime = Date.now();
 
@@ -36,7 +36,7 @@ Synth.pipeline = (function () {
 
       var synthesisResult;
       try {
-        synthesisResult = await callSynthesis(framework, themes, transcriptText, participantId, speakerRoles, isRetry ? fabricatedQuotes : null, synthModel, function (detail) {
+        synthesisResult = await callSynthesis(framework, themes, transcriptText, participantMap, speakerRoles, isRetry ? fabricatedQuotes : null, synthModel, function (detail) {
           onStatus(detail + ' (' + elapsed(startTime) + ')', 'update');
         });
       } catch (e) {
@@ -124,14 +124,14 @@ Synth.pipeline = (function () {
     }).join('\n\n');
   }
 
-  async function callSynthesis(framework, themes, transcriptText, participantId, speakerRoles, fabricatedQuotes, model, onProgress) {
+  async function callSynthesis(framework, themes, transcriptText, participantMap, speakerRoles, fabricatedQuotes, model, onProgress) {
     var systemPrompt = Synth.prompts.buildSynthesisSystem(framework);
     var userPrompt;
 
     if (fabricatedQuotes && fabricatedQuotes.length > 0) {
-      userPrompt = Synth.prompts.buildResynthesisUser(framework, themes, transcriptText, participantId, speakerRoles, fabricatedQuotes);
+      userPrompt = Synth.prompts.buildResynthesisUser(framework, themes, transcriptText, participantMap, speakerRoles, fabricatedQuotes);
     } else {
-      userPrompt = Synth.prompts.buildSynthesisUser(framework, themes, transcriptText, participantId, speakerRoles);
+      userPrompt = Synth.prompts.buildSynthesisUser(framework, themes, transcriptText, participantMap, speakerRoles);
     }
 
     var useModel = model || SYNTH_MODEL_DEFAULT;
@@ -247,12 +247,17 @@ Synth.pipeline = (function () {
 
   async function updateThemeDatabase(synthesisResult, transcript, existingThemes) {
     var projectId = transcript.project_id;
-    var sessionId = transcript.participant_id;
+    var sessionId = transcript.session_id;
     var stats = { themes_new: 0, themes_updated: 0, quotes_total: 0, quotes_verified: 0, quotes_fabricated: 0 };
+
+    var participants = await Synth.db.getParticipantsByProject(projectId);
+    var dimLookup = {};
+    participants.forEach(function (pp) {
+      dimLookup[pp.display_id || pp.participant_id] = pp.dimension_tags || {};
+    });
 
     var allFindings = collectAllFindings(synthesisResult);
 
-    // Build a map of rq_id for each finding by walking rq_findings
     var findingRqMap = new Map();
     (synthesisResult.rq_findings || []).forEach(function (rqGroup) {
       (rqGroup.findings || []).forEach(function (f) {
@@ -266,7 +271,7 @@ Synth.pipeline = (function () {
 
       var evidence = (finding.supporting_evidence || []).map(function (ev) {
         ev.session_id = sessionId;
-        ev.participant_group = transcript.participant_group || null;
+        ev.participant_dimensions = dimLookup[ev.participant_id] || {};
         stats.quotes_total++;
         if (ev.verification_status === 'verified' || ev.verification_status === 'confirmed') stats.quotes_verified++;
         if (ev.verification_status === 'fabricated') stats.quotes_fabricated++;
@@ -311,11 +316,18 @@ Synth.pipeline = (function () {
       stats.themes_new++;
     }
 
-    // Store session synthesis
+    var participantIds = [];
+    var pMap = transcript.participant_map || {};
+    var seen = {};
+    Object.values(pMap).forEach(function (pid) {
+      if (!seen[pid]) { seen[pid] = true; participantIds.push(pid); }
+    });
+
     var synthesis = {
       synthesis_id: projectId + '_' + sessionId,
       project_id: projectId,
-      participant_id: sessionId,
+      session_id: sessionId,
+      participant_ids: participantIds,
       rq_findings: synthesisResult.rq_findings || [],
       emergent_findings: synthesisResult.emergent_findings || [],
       synthesised_at: new Date().toISOString()
@@ -351,16 +363,17 @@ Synth.pipeline = (function () {
       var tx = unprocessed[i];
       var themes = await Synth.db.getThemesByProject(projectId);
 
-      onTranscriptStatus(i + 1, unprocessed.length, tx.participant_id, 'Starting…');
+      var txLabel = tx.session_id || tx.transcript_id;
+      onTranscriptStatus(i + 1, unprocessed.length, txLabel, 'Starting…');
 
       var result = await processTranscript(tx, framework, themes, function (msg) {
-        onTranscriptStatus(i + 1, unprocessed.length, tx.participant_id, msg);
+        onTranscriptStatus(i + 1, unprocessed.length, txLabel, msg);
       });
 
       if (result.success) {
         allStats.processed++;
         if (result.flagged) allStats.flagged++;
-        onTranscriptStatus(i + 1, unprocessed.length, tx.participant_id,
+        onTranscriptStatus(i + 1, unprocessed.length, txLabel,
           'Done. ' + (result.stats.themes_new || 0) + ' new theme(s), ' +
           (result.stats.themes_updated || 0) + ' updated, ' +
           (result.stats.quotes_total || 0) + ' quote(s).' +
@@ -368,7 +381,7 @@ Synth.pipeline = (function () {
         );
       } else {
         allStats.failed++;
-        onTranscriptStatus(i + 1, unprocessed.length, tx.participant_id,
+        onTranscriptStatus(i + 1, unprocessed.length, txLabel,
           'FAILED: ' + result.error
         );
       }

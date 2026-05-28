@@ -4,7 +4,6 @@ Synth.app = (function () {
   let currentTab = 'project';
   let activeProjectId = null;
   let pendingParse = null;
-  let pendingParticipantId = null;
   let selectedThemes = new Set();
   let cachedRqMap = {};
 
@@ -24,6 +23,7 @@ Synth.app = (function () {
 
     try {
       await Synth.db.open();
+      await Synth.db.migrateToV5();
       await loadProjectList();
     } catch (e) {
       console.error('IndexedDB failed to open:', e);
@@ -53,7 +53,7 @@ Synth.app = (function () {
       panel.classList.toggle('active', panel.id === 'tab-' + tabId);
     });
     if (tabId === 'themes') refreshThemes();
-    if (tabId === 'participants') refreshParticipantList();
+    if (tabId === 'participants') refreshSessionList();
     if (tabId === 'settings') loadSettingsTab();
     if (tabId === 'export') loadExportDefaults();
   }
@@ -209,7 +209,25 @@ Synth.app = (function () {
   function initProjectTab() {
     document.getElementById('btn-save-framework').addEventListener('click', saveFramework);
     document.getElementById('btn-add-rq').addEventListener('click', addResearchQuestion);
-    document.getElementById('btn-add-group').addEventListener('click', addParticipantGroup);
+    document.getElementById('btn-add-dimension').addEventListener('click', function () {
+      document.getElementById('dimension-add-form').classList.remove('hidden');
+      document.getElementById('btn-add-dimension').classList.add('hidden');
+      document.getElementById('new-dimension-label').focus();
+    });
+    document.getElementById('btn-cancel-dimension').addEventListener('click', function () {
+      document.getElementById('dimension-add-form').classList.add('hidden');
+      document.getElementById('btn-add-dimension').classList.remove('hidden');
+      document.getElementById('new-dimension-label').value = '';
+    });
+    document.getElementById('btn-create-dimension').addEventListener('click', addDimension);
+    document.getElementById('new-dimension-label').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addDimension(); }
+      if (e.key === 'Escape') {
+        document.getElementById('dimension-add-form').classList.add('hidden');
+        document.getElementById('btn-add-dimension').classList.remove('hidden');
+        document.getElementById('new-dimension-label').value = '';
+      }
+    });
     document.getElementById('new-rq-label').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); addResearchQuestion(); }
     });
@@ -503,7 +521,7 @@ Synth.app = (function () {
     var project = await Synth.db.getProject(activeProjectId);
     var projectName = project ? project.name : 'this project';
     if (!confirm('Permanently delete "' + projectName + '" and all its data? This cannot be undone.')) return;
-    if (!confirm('Are you sure? All participants, transcripts, themes, and syntheses will be lost.')) return;
+    if (!confirm('Are you sure? All sessions, participants, transcripts, themes, and syntheses will be lost.')) return;
 
     // Delete all themes
     var themes = await Synth.db.getThemesByProject(activeProjectId);
@@ -517,20 +535,23 @@ Synth.app = (function () {
       await Synth.db.deleteSessionSynthesis(syntheses[i].synthesis_id);
     }
 
-    // Delete all participants and their transcripts/inquiries
-    var participants = await Synth.db.getParticipantsByProject(activeProjectId);
-    for (var i = 0; i < participants.length; i++) {
-      var pp = participants[i];
-      if (pp.transcript_id) {
-        await Synth.db.deleteTranscript(pp.transcript_id);
+    var sessions = await Synth.db.getSessionsByProject(activeProjectId);
+    for (var i = 0; i < sessions.length; i++) {
+      var sess = sessions[i];
+      if (sess.transcript_id) {
+        await Synth.db.deleteTranscript(sess.transcript_id);
       }
-      var displayId = pp.display_id || pp.participant_id;
-      var participantKey = activeProjectId + '_' + displayId;
-      var inquiries = await Synth.db.getInquiriesByParticipant(participantKey);
+      var sessionKey = activeProjectId + '_' + sess.session_id;
+      var inquiries = await Synth.db.getInquiriesBySession(sessionKey);
       for (var q = 0; q < inquiries.length; q++) {
         await Synth.db.deleteInquiry(inquiries[q].inquiry_id);
       }
-      await Synth.db.deleteParticipant(pp.participant_id);
+      await Synth.db.deleteSession(sess.session_id);
+    }
+
+    var participants = await Synth.db.getParticipantsByProject(activeProjectId);
+    for (var i = 0; i < participants.length; i++) {
+      await Synth.db.deleteParticipant(participants[i].participant_id);
     }
 
     // Delete framework and project
@@ -550,9 +571,8 @@ Synth.app = (function () {
 
     document.getElementById('fw-background').value = fw.background || '';
     renderResearchQuestions(fw.research_questions || []);
-    renderParticipantGroups(fw.participant_groups || []);
+    renderParticipantDimensions(fw.participant_dimensions || []);
     updateRqDropdowns(fw.research_questions || []);
-    updateGroupDropdown(fw.participant_groups || []);
   }
 
   async function saveFramework() {
@@ -705,55 +725,120 @@ Synth.app = (function () {
     updateRqDropdowns(fw.research_questions);
   }
 
-  // --- Participant Groups ---
+  // --- Participant Dimensions ---
 
-  function renderParticipantGroups(groups) {
-    var container = document.getElementById('group-list');
+  var nextDimCounter = 1;
+  var nextTagCounter = 1;
+
+  function renderParticipantDimensions(dimensions) {
+    var container = document.getElementById('dimensions-list');
     container.innerHTML = '';
-    groups.forEach(function (g, i) {
-      var div = document.createElement('div');
-      div.className = 'fw-item';
-      div.innerHTML =
-        '<div class="fw-item-content">' +
-          '<div class="fw-item-label">' + escapeHtml(g.label) + '</div>' +
-          '<div class="fw-item-desc">' + escapeHtml(g.description || '') + '</div>' +
+    dimensions.forEach(function (dim, dimIdx) {
+      var section = document.createElement('div');
+      section.className = 'dimension-section';
+
+      var tagsHtml = dim.tags.map(function (tag, tagIdx) {
+        return '<span class="dimension-tag" data-dim="' + dimIdx + '" data-tag="' + tagIdx + '">' +
+          escapeHtml(tag.label) +
+          '<button class="dimension-tag-remove" data-dim="' + dimIdx + '" data-tag="' + tagIdx + '" title="Remove tag">&times;</button>' +
+        '</span>';
+      }).join('');
+
+      section.innerHTML =
+        '<div class="dimension-header">' +
+          '<span class="dimension-label">' + escapeHtml(dim.label) + '</span>' +
+          '<button class="btn-icon" data-action="remove-dimension" data-dim="' + dimIdx + '" title="Remove dimension">&times;</button>' +
         '</div>' +
-        '<button class="btn-icon" data-action="remove-group" data-index="' + i + '">&times;</button>';
-      container.appendChild(div);
+        '<div class="dimension-tags">' + tagsHtml + '</div>' +
+        '<div class="dimension-tag-add">' +
+          '<input type="text" class="dimension-tag-input" data-dim="' + dimIdx + '" placeholder="Add a tag...">' +
+          '<button class="btn btn-secondary btn-sm" data-action="add-tag" data-dim="' + dimIdx + '">Add</button>' +
+        '</div>';
+      container.appendChild(section);
     });
-    container.addEventListener('click', handleGroupRemove);
+
+    container.onclick = handleDimensionAction;
+    container.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.classList.contains('dimension-tag-input')) {
+        e.preventDefault();
+        var dimIdx = parseInt(e.target.dataset.dim, 10);
+        addDimensionTag(dimIdx);
+      }
+    });
   }
 
-  async function addParticipantGroup() {
-    var label = document.getElementById('new-group-label').value.trim();
-    var desc = document.getElementById('new-group-desc').value.trim();
+  async function addDimension() {
+    var label = document.getElementById('new-dimension-label').value.trim();
     if (!label || !activeProjectId) return;
 
     var fw = await Synth.db.getFramework(activeProjectId);
-    var order = fw.participant_groups.length + 1;
-    var group = {
-      group_id: 'group_' + String(order).padStart(3, '0'),
-      label: label,
-      description: desc
-    };
-    fw.participant_groups.push(group);
+    var dims = fw.participant_dimensions || [];
+    var dimId = 'dim_' + String(nextDimCounter++).padStart(3, '0');
+    while (dims.some(function (d) { return d.dimension_id === dimId; })) {
+      dimId = 'dim_' + String(nextDimCounter++).padStart(3, '0');
+    }
+
+    dims.push({ dimension_id: dimId, label: label, tags: [] });
+    fw.participant_dimensions = dims;
     await Synth.db.saveFramework(fw);
 
-    document.getElementById('new-group-label').value = '';
-    document.getElementById('new-group-desc').value = '';
-    renderParticipantGroups(fw.participant_groups);
-    updateGroupDropdown(fw.participant_groups);
+    document.getElementById('new-dimension-label').value = '';
+    document.getElementById('dimension-add-form').classList.add('hidden');
+    document.getElementById('btn-add-dimension').classList.remove('hidden');
+    renderParticipantDimensions(fw.participant_dimensions);
   }
 
-  async function handleGroupRemove(e) {
-    var btn = e.target.closest('[data-action="remove-group"]');
-    if (!btn || !activeProjectId) return;
-    var idx = parseInt(btn.dataset.index, 10);
+  async function addDimensionTag(dimIdx) {
+    if (!activeProjectId) return;
+    var input = document.querySelector('.dimension-tag-input[data-dim="' + dimIdx + '"]');
+    if (!input) return;
+    var label = input.value.trim();
+    if (!label) return;
+
     var fw = await Synth.db.getFramework(activeProjectId);
-    fw.participant_groups.splice(idx, 1);
+    var dim = (fw.participant_dimensions || [])[dimIdx];
+    if (!dim) return;
+
+    var tagId = 'tag_' + String(nextTagCounter++).padStart(3, '0');
+    while (dim.tags.some(function (t) { return t.tag_id === tagId; })) {
+      tagId = 'tag_' + String(nextTagCounter++).padStart(3, '0');
+    }
+
+    dim.tags.push({ tag_id: tagId, label: label });
     await Synth.db.saveFramework(fw);
-    renderParticipantGroups(fw.participant_groups);
-    updateGroupDropdown(fw.participant_groups);
+    renderParticipantDimensions(fw.participant_dimensions);
+  }
+
+  async function handleDimensionAction(e) {
+    var removeBtn = e.target.closest('[data-action="remove-dimension"]');
+    if (removeBtn && activeProjectId) {
+      var dimIdx = parseInt(removeBtn.dataset.dim, 10);
+      var fw = await Synth.db.getFramework(activeProjectId);
+      fw.participant_dimensions.splice(dimIdx, 1);
+      await Synth.db.saveFramework(fw);
+      renderParticipantDimensions(fw.participant_dimensions);
+      return;
+    }
+
+    var tagRemoveBtn = e.target.closest('.dimension-tag-remove');
+    if (tagRemoveBtn && activeProjectId) {
+      var dimIdx = parseInt(tagRemoveBtn.dataset.dim, 10);
+      var tagIdx = parseInt(tagRemoveBtn.dataset.tag, 10);
+      var fw = await Synth.db.getFramework(activeProjectId);
+      var dim = (fw.participant_dimensions || [])[dimIdx];
+      if (!dim) return;
+      dim.tags.splice(tagIdx, 1);
+      await Synth.db.saveFramework(fw);
+      renderParticipantDimensions(fw.participant_dimensions);
+      return;
+    }
+
+    var addTagBtn = e.target.closest('[data-action="add-tag"]');
+    if (addTagBtn) {
+      var dimIdx = parseInt(addTagBtn.dataset.dim, 10);
+      addDimensionTag(dimIdx);
+      return;
+    }
   }
 
   // --- Dropdown helpers ---
@@ -772,28 +857,27 @@ Synth.app = (function () {
     sel.value = val;
   }
 
-  function updateGroupDropdown(groups) {
-    var sel = document.getElementById('pp-detail-group');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">No group</option>';
-    groups.forEach(function (g) {
-      var opt = document.createElement('option');
-      opt.value = g.group_id;
-      opt.textContent = g.label;
-      sel.appendChild(opt);
-    });
-  }
+  // ========== Sessions Tab ==========
 
-  // ========== Participants Tab ==========
-
-  var currentParticipantId = null;
-  var isNewParticipant = false;
+  var currentSessionId = null;
+  var isNewSession = false;
+  var currentSessionParticipants = [];
 
   function initParticipantsTab() {
-    document.getElementById('btn-add-participant').addEventListener('click', addNewParticipant);
-    document.getElementById('btn-back-to-list').addEventListener('click', backToParticipantList);
-    document.getElementById('btn-save-pp-details').addEventListener('click', saveParticipantDetails);
-    document.getElementById('btn-run-pp-synthesis').addEventListener('click', runParticipantSynthesis);
+    document.getElementById('btn-add-session').addEventListener('click', addNewSession);
+    document.getElementById('btn-back-to-list').addEventListener('click', backToSessionList);
+    document.getElementById('btn-run-pp-synthesis').addEventListener('click', runSessionSynthesis);
+
+    document.getElementById('session-participants-table').addEventListener('click', function (e) {
+      var editBtn = e.target.closest('.session-pp-edit-btn');
+      if (editBtn) { toggleParticipantEdit(parseInt(editBtn.dataset.index, 10)); return; }
+      var saveBtn = e.target.closest('.session-pp-save-btn');
+      if (saveBtn) { saveParticipantRow(parseInt(saveBtn.dataset.index, 10)); return; }
+      var cancelBtn = e.target.closest('.session-pp-cancel-btn');
+      if (cancelBtn) { cancelParticipantEdit(parseInt(cancelBtn.dataset.index, 10)); return; }
+    });
+
+    initSessionMetaEditing();
     document.getElementById('btn-submit-inquiry').addEventListener('click', submitInquiry);
     document.getElementById('btn-reupload-transcript').addEventListener('click', function () {
       document.getElementById('subpage-transcript-view').classList.add('hidden');
@@ -808,7 +892,7 @@ Synth.app = (function () {
       });
     });
 
-    // Drop zone for transcript upload
+    // Drop zone for transcript upload (existing session re-upload)
     var dropZone = document.getElementById('subpage-drop-zone');
     var fileInput = document.getElementById('subpage-file-input');
 
@@ -820,6 +904,19 @@ Synth.app = (function () {
       handleFile(e.dataTransfer.files);
     });
     fileInput.addEventListener('change', function () { handleFile(fileInput.files); fileInput.value = ''; });
+
+    // Drop zone for new session creation
+    var newDropZone = document.getElementById('new-session-drop-zone');
+    var newFileInput = document.getElementById('new-session-file-input');
+
+    newDropZone.addEventListener('dragover', function (e) { e.preventDefault(); newDropZone.classList.add('drag-over'); });
+    newDropZone.addEventListener('dragleave', function () { newDropZone.classList.remove('drag-over'); });
+    newDropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      newDropZone.classList.remove('drag-over');
+      handleFile(e.dataTransfer.files);
+    });
+    newFileInput.addEventListener('change', function () { handleFile(newFileInput.files); newFileInput.value = ''; });
   }
 
   function switchSubpage(name) {
@@ -831,13 +928,13 @@ Synth.app = (function () {
     });
   }
 
-  function updateSubpageAccess(participant) {
+  function updateSubpageAccess(session) {
     var transcriptBtn = document.querySelector('.subpage-btn[data-subpage="transcript"]');
     var synthesisBtn = document.querySelector('.subpage-btn[data-subpage="synthesis"]');
     var inquiryBtn = document.querySelector('.subpage-btn[data-subpage="inquiry"]');
 
-    var detailsSaved = !!participant;
-    var hasTranscript = detailsSaved && !!participant.transcript_id;
+    var detailsSaved = !!session;
+    var hasTranscript = detailsSaved && !!session.transcript_id;
 
     transcriptBtn.classList.toggle('disabled', !detailsSaved);
     synthesisBtn.classList.toggle('disabled', !hasTranscript);
@@ -861,7 +958,7 @@ Synth.app = (function () {
     document.getElementById('pp-theme-blocks').innerHTML = '';
     document.getElementById('btn-run-pp-synthesis').textContent = 'Run Synthesis';
     showStatus('pp-synthesis-status', '', '');
-    showStatus('pp-detail-status', '', '');
+    showStatus('session-detail-status', '', '');
 
     // Reset inquiry sub-page
     document.getElementById('inquiry-input').value = '';
@@ -873,81 +970,206 @@ Synth.app = (function () {
     pendingParse = null;
   }
 
-  async function addNewParticipant() {
+  async function addNewSession() {
     if (!activeProjectId) return;
-    isNewParticipant = true;
-    currentParticipantId = null;
+    isNewSession = true;
+    currentSessionId = null;
+    currentSessionParticipants = [];
 
-    var nextNum = await Synth.db.getNextParticipantNumber(activeProjectId);
-    document.getElementById('pp-detail-id').value = 'P-' + String(nextNum).padStart(2, '0');
-    document.getElementById('pp-detail-id').disabled = true;
-    document.getElementById('pp-detail-name').value = '';
-    document.getElementById('pp-detail-desc').value = '';
-    document.getElementById('pp-detail-group').value = '';
+    var nextSessionNum = await Synth.db.getNextSessionNumber(activeProjectId);
+    document.getElementById('session-detail-label').textContent = 'Session ' + nextSessionNum;
 
-    var fw = await Synth.db.getFramework(activeProjectId);
-    if (fw) updateGroupDropdown(fw.participant_groups || []);
+    document.getElementById('new-session-upload-section').classList.remove('hidden');
+    document.getElementById('session-participants-section').classList.add('hidden');
+    document.getElementById('session-metadata-section').classList.add('hidden');
+    showStatus('new-session-upload-status', '', '');
 
-    document.getElementById('participant-subpage-title').textContent = 'New Participant';
+    document.getElementById('session-subpage-title').textContent = 'New Session';
     resetSubpageState();
     updateSubpageAccess(null);
     switchSubpage('details');
 
-    document.getElementById('participant-list-card').classList.add('hidden');
+    document.querySelector('.subpage-nav').classList.add('hidden');
+
+    document.getElementById('session-list-card').classList.add('hidden');
     document.getElementById('synthesis-controls-card').classList.add('hidden');
-    document.getElementById('participant-subpages').classList.remove('hidden');
+    document.getElementById('session-subpages').classList.remove('hidden');
   }
 
-  async function openParticipantSubpages(ppId) {
-    var participant = await Synth.db.getParticipant(ppId);
-    if (!participant) return;
+  var cachedDimensions = [];
 
-    isNewParticipant = false;
-    currentParticipantId = ppId;
-    var displayId = participant.display_id || participant.participant_id;
+  function renderParticipantTable(dimensions) {
+    cachedDimensions = dimensions;
+    var container = document.getElementById('session-participants-table');
+    container.innerHTML = '';
+    currentSessionParticipants.forEach(function (pp, idx) {
+      container.appendChild(renderParticipantRow(pp, idx, dimensions, false));
+    });
+  }
+
+  function renderParticipantRow(pp, idx, dimensions, editMode) {
+    var row = document.createElement('div');
+    row.className = 'session-pp-row';
+    row.dataset.index = idx;
+    var dimTags = pp.dimension_tags || {};
+
+    if (editMode) {
+      var dimSelectsHtml = '';
+      if (dimensions.length > 0) {
+        dimSelectsHtml = '<div class="pp-edit-dimensions">';
+        dimensions.forEach(function (dim) {
+          var opts = '<option value="">— None —</option>';
+          dim.tags.forEach(function (tag) {
+            var sel = (dimTags[dim.dimension_id] === tag.tag_id) ? ' selected' : '';
+            opts += '<option value="' + escapeHtml(tag.tag_id) + '"' + sel + '>' + escapeHtml(tag.label) + '</option>';
+          });
+          dimSelectsHtml += '<label class="pp-dim-label">' + escapeHtml(dim.label) +
+            '<select class="pp-edit-dim" data-dim-id="' + escapeHtml(dim.dimension_id) + '">' + opts + '</select></label>';
+        });
+        dimSelectsHtml += '</div>';
+      }
+      row.innerHTML =
+        '<span class="session-pp-id">' + escapeHtml(pp.display_id) + '</span>' +
+        '<div class="session-pp-edit-body">' +
+          '<div class="session-pp-edit-fields">' +
+            '<input type="text" class="pp-edit-name" value="' + escapeHtml(pp.real_name || '') + '" placeholder="Name">' +
+            '<input type="text" class="pp-edit-desc" value="' + escapeHtml(pp.description || '') + '" placeholder="Description">' +
+          '</div>' +
+          dimSelectsHtml +
+        '</div>' +
+        '<div class="session-pp-edit-actions">' +
+          '<button class="btn btn-primary btn-sm session-pp-save-btn" data-index="' + idx + '">Save</button>' +
+          '<button class="btn btn-secondary btn-sm session-pp-cancel-btn" data-index="' + idx + '">Cancel</button>' +
+        '</div>';
+    } else {
+      var tagLabels = [];
+      dimensions.forEach(function (dim) {
+        var tagId = dimTags[dim.dimension_id];
+        if (tagId) {
+          var tag = dim.tags.find(function (t) { return t.tag_id === tagId; });
+          if (tag) tagLabels.push(tag.label);
+        }
+      });
+      var displayParts = [];
+      if (pp.real_name) displayParts.push('<span class="session-pp-display-name">' + escapeHtml(pp.real_name) + '</span>');
+      if (tagLabels.length > 0) displayParts.push('<span class="session-pp-display-item">' + escapeHtml(tagLabels.join(' · ')) + '</span>');
+      if (pp.description) displayParts.push('<span class="session-pp-display-item">' + escapeHtml(pp.description) + '</span>');
+      row.innerHTML =
+        '<span class="session-pp-id">' + escapeHtml(pp.display_id) + '</span>' +
+        '<div class="session-pp-display">' + (displayParts.length > 0 ? displayParts.join('') : '<span class="session-pp-display-item">No details</span>') + '</div>' +
+        '<button class="session-pp-edit-btn" data-index="' + idx + '" title="Edit">&#9998;</button>';
+    }
+    return row;
+  }
+
+  function toggleParticipantEdit(idx) {
+    var container = document.getElementById('session-participants-table');
+    var oldRow = container.querySelector('.session-pp-row[data-index="' + idx + '"]');
+    if (!oldRow) return;
+    var newRow = renderParticipantRow(currentSessionParticipants[idx], idx, cachedDimensions, true);
+    container.replaceChild(newRow, oldRow);
+    var nameInput = newRow.querySelector('.pp-edit-name');
+    if (nameInput) nameInput.focus();
+  }
+
+  function cancelParticipantEdit(idx) {
+    var container = document.getElementById('session-participants-table');
+    var oldRow = container.querySelector('.session-pp-row[data-index="' + idx + '"]');
+    if (!oldRow) return;
+    var newRow = renderParticipantRow(currentSessionParticipants[idx], idx, cachedDimensions, false);
+    container.replaceChild(newRow, oldRow);
+  }
+
+  async function saveParticipantRow(idx) {
+    var container = document.getElementById('session-participants-table');
+    var row = container.querySelector('.session-pp-row[data-index="' + idx + '"]');
+    if (!row) return;
+
+    var pp = currentSessionParticipants[idx];
+    pp.real_name = row.querySelector('.pp-edit-name').value.trim();
+    pp.description = row.querySelector('.pp-edit-desc').value.trim();
+
+    var dimTags = {};
+    row.querySelectorAll('.pp-edit-dim').forEach(function (sel) {
+      if (sel.value) dimTags[sel.dataset.dimId] = sel.value;
+    });
+    pp.dimension_tags = dimTags;
+
+    var storageKey = activeProjectId + '_' + pp.display_id;
+    var existing = await Synth.db.getParticipant(storageKey);
+    await Synth.db.saveParticipant({
+      participant_id: storageKey,
+      display_id: pp.display_id,
+      project_id: activeProjectId,
+      real_name: pp.real_name,
+      description: pp.description,
+      dimension_tags: pp.dimension_tags,
+      created: existing ? existing.created : new Date().toISOString()
+    });
+
+    var newRow = renderParticipantRow(pp, idx, cachedDimensions, false);
+    container.replaceChild(newRow, row);
+    showStatus('session-detail-status', 'success', 'Participant updated.');
+  }
+
+  async function openSessionSubpages(sessionId) {
+    var session = await Synth.db.getSession(sessionId);
+    if (!session) return;
+
+    isNewSession = false;
+    currentSessionId = sessionId;
 
     resetSubpageState();
 
-    document.getElementById('pp-detail-id').value = displayId;
-    document.getElementById('pp-detail-id').disabled = true;
-    document.getElementById('pp-detail-name').value = participant.real_name || '';
-    document.getElementById('pp-detail-desc').value = participant.description || '';
-    document.getElementById('pp-detail-group').value = participant.group_id || '';
+    document.getElementById('new-session-upload-section').classList.add('hidden');
+    document.getElementById('session-participants-section').classList.remove('hidden');
+    document.getElementById('session-metadata-section').classList.remove('hidden');
+    document.querySelector('.subpage-nav').classList.remove('hidden');
+
+    document.getElementById('session-detail-label').textContent = session.label || '';
+
+    var allParticipants = await Synth.db.getParticipantsByProject(activeProjectId);
+    currentSessionParticipants = (session.participant_ids || []).map(function (pid) {
+      var pp = allParticipants.find(function (p) { return p.display_id === pid || p.participant_id === activeProjectId + '_' + pid; });
+      return {
+        display_id: pid,
+        real_name: pp ? pp.real_name || '' : '',
+        description: pp ? pp.description || '' : '',
+        dimension_tags: pp ? pp.dimension_tags || {} : {}
+      };
+    });
 
     var fw = await Synth.db.getFramework(activeProjectId);
-    if (fw) updateGroupDropdown(fw.participant_groups || []);
+    renderParticipantTable(fw ? fw.participant_dimensions || [] : []);
+    renderSessionMetadata(session);
 
-    document.getElementById('participant-subpage-title').textContent = displayId;
-    updateSubpageAccess(participant);
+    document.getElementById('session-subpage-title').textContent = session.label || sessionId;
+    updateSubpageAccess(session);
 
-    // Prepare transcript sub-page
-    if (participant.transcript_id) {
-      await loadTranscriptView(participant);
+    if (session.transcript_id) {
+      await loadTranscriptView(session);
     } else {
-      document.getElementById('subpage-upload-pp-id').textContent = displayId;
       document.getElementById('subpage-transcript-upload').classList.remove('hidden');
       document.getElementById('subpage-deidentify').classList.add('hidden');
       document.getElementById('subpage-transcript-view').classList.add('hidden');
     }
 
-    // Prepare synthesis sub-page
-    await loadSynthesisView(participant);
+    await loadSynthesisView(session);
 
-    // Prepare inquiry sub-page
-    if (participant.transcript_id) {
-      var participantKey = activeProjectId + '_' + (participant.display_id || participant.participant_id);
-      await loadInquiryHistory(participantKey);
+    if (session.transcript_id) {
+      var sessionKey = activeProjectId + '_' + sessionId;
+      await loadInquiryHistory(sessionKey);
     }
 
     switchSubpage('details');
 
-    document.getElementById('participant-list-card').classList.add('hidden');
+    document.getElementById('session-list-card').classList.add('hidden');
     document.getElementById('synthesis-controls-card').classList.add('hidden');
-    document.getElementById('participant-subpages').classList.remove('hidden');
+    document.getElementById('session-subpages').classList.remove('hidden');
   }
 
-  async function loadTranscriptView(participant) {
-    var tx = await Synth.db.getTranscript(participant.transcript_id);
+  async function loadTranscriptView(session) {
+    var tx = await Synth.db.getTranscript(session.transcript_id);
     if (tx) {
       document.getElementById('subpage-transcript-upload').classList.add('hidden');
       document.getElementById('subpage-deidentify').classList.add('hidden');
@@ -956,8 +1178,8 @@ Synth.app = (function () {
     }
   }
 
-  async function loadSynthesisView(participant) {
-    var displayId = participant.display_id || participant.participant_id;
+  async function loadSynthesisView(session) {
+    var sessionId = session.session_id;
     var resultsContainer = document.getElementById('pp-synthesis-results');
     var rqContainer = document.getElementById('pp-rq-findings');
     var emergentContainer = document.getElementById('pp-emergent-findings');
@@ -974,7 +1196,6 @@ Synth.app = (function () {
     var logEl = document.getElementById('pp-synthesis-log');
     if (logEl) { logEl.innerHTML = ''; logEl.classList.add('hidden'); }
 
-    // Set model dropdown to project default
     var fw = await Synth.db.getFramework(activeProjectId);
     var modelSelect = document.getElementById('pp-synth-model');
     if (fw && fw.default_synth_model) {
@@ -983,8 +1204,7 @@ Synth.app = (function () {
       modelSelect.value = 'claude-sonnet-4-6';
     }
 
-    var syntheses = await Synth.db.getSessionSynthesesByParticipant(displayId);
-    var synthesis = syntheses.find(function (s) { return s.project_id === activeProjectId; });
+    var synthesis = await Synth.db.getSessionSynthesis(activeProjectId + '_' + sessionId);
 
     if (!synthesis) {
       synthBtn.textContent = 'Run Synthesis';
@@ -994,13 +1214,11 @@ Synth.app = (function () {
 
     synthBtn.textContent = 'Re-run Synthesis';
 
-    // Build RQ label map from already-loaded framework
     var rqMap = {};
     if (fw && fw.research_questions) {
       fw.research_questions.forEach(function (rq) { rqMap[rq.rq_id] = rq.label; });
     }
 
-    // Render RQ findings
     (synthesis.rq_findings || []).forEach(function (rqGroup) {
       var section = document.createElement('div');
       section.className = 'rq-findings-section';
@@ -1012,13 +1230,12 @@ Synth.app = (function () {
       section.appendChild(header);
 
       (rqGroup.findings || []).forEach(function (f) {
-        section.appendChild(renderFindingCard(f, participant));
+        section.appendChild(renderFindingCard(f, session));
       });
 
       rqContainer.appendChild(section);
     });
 
-    // Render emergent findings
     if (synthesis.emergent_findings && synthesis.emergent_findings.length > 0) {
       var emergentSection = document.createElement('div');
       emergentSection.className = 'rq-findings-section';
@@ -1031,32 +1248,31 @@ Synth.app = (function () {
       emergentSection.appendChild(emergentHeader);
 
       synthesis.emergent_findings.forEach(function (f) {
-        emergentSection.appendChild(renderFindingCard(f, participant));
+        emergentSection.appendChild(renderFindingCard(f, session));
       });
 
       emergentContainer.appendChild(emergentSection);
     }
 
-    // Render theme blocks for this participant
     var themes = await Synth.db.getThemesByProject(activeProjectId);
-    var participantThemes = [];
+    var sessionThemes = [];
     themes.forEach(function (t) {
       if (t.supporting_evidence) {
-        var evidence = t.supporting_evidence.filter(function (ev) { return ev.participant_id === displayId; });
+        var evidence = t.supporting_evidence.filter(function (ev) { return ev.session_id === sessionId; });
         if (evidence.length > 0) {
-          participantThemes.push({ theme: t, evidence: evidence });
+          sessionThemes.push({ theme: t, evidence: evidence });
         }
       }
     });
 
-    if (participantThemes.length > 0) {
+    if (sessionThemes.length > 0) {
       themeSection.classList.remove('hidden');
-      participantThemes.forEach(function (item) {
+      sessionThemes.forEach(function (item) {
         var block = document.createElement('button');
         block.className = 'theme-block';
         block.textContent = item.theme.label;
         block.addEventListener('click', function () {
-          showQuoteInContext(currentParticipantId, item.theme, item.evidence[0]);
+          showQuoteInContextByEvidence(session, item.theme.label, item.evidence[0]);
         });
         themeBlocks.appendChild(block);
       });
@@ -1066,7 +1282,7 @@ Synth.app = (function () {
     showStatus('pp-synthesis-status', 'success', 'Synthesised ' + new Date(synthesis.synthesised_at).toLocaleString());
   }
 
-  function renderFindingCard(finding, participant) {
+  function renderFindingCard(finding, session) {
     var card = document.createElement('div');
     card.className = 'finding-card';
 
@@ -1093,7 +1309,7 @@ Synth.app = (function () {
         '<div class="evidence-meta">' + escapeHtml(ev.speaker || '') + ' at ' + escapeHtml(ev.timestamp || '') +
         '<span class="evidence-verification ' + vClass + '">' + vClass + '</span></div>';
       item.addEventListener('click', function () {
-        showQuoteInContextByEvidence(participant, finding.label, ev);
+        showQuoteInContextByEvidence(session, finding.label, ev);
       });
       evidenceContainer.appendChild(item);
     });
@@ -1101,13 +1317,12 @@ Synth.app = (function () {
     return card;
   }
 
-  async function showQuoteInContextByEvidence(participant, findingLabel, evidence) {
-    if (!participant || !participant.transcript_id) return;
-    var tx = await Synth.db.getTranscript(participant.transcript_id);
+  async function showQuoteInContextByEvidence(session, findingLabel, evidence) {
+    if (!session || !session.transcript_id) return;
+    var tx = await Synth.db.getTranscript(session.transcript_id);
     if (!tx) return;
 
-    var displayId = participant.display_id || participant.participant_id;
-    document.getElementById('quote-modal-title').textContent = findingLabel + ' — ' + displayId;
+    document.getElementById('quote-modal-title').textContent = findingLabel + ' — ' + (session.label || session.session_id);
     var body = document.getElementById('quote-modal-body');
     body.innerHTML = '';
 
@@ -1152,106 +1367,199 @@ Synth.app = (function () {
     };
   }
 
-  async function saveParticipantDetails() {
-    var ppId = document.getElementById('pp-detail-id').value.trim();
-    if (!ppId || !activeProjectId) return;
+  function renderSessionMetadata(session) {
+    var dateDisplay = document.getElementById('session-date-display');
+    var notesDisplay = document.getElementById('session-notes-display');
+    var dateInput = document.getElementById('session-date-input');
+    var notesInput = document.getElementById('session-notes-input');
 
-    if (isNewParticipant) {
-      var storageKey = activeProjectId + '_' + ppId;
-      var participant = {
-        participant_id: storageKey,
-        display_id: ppId,
-        project_id: activeProjectId,
-        real_name: document.getElementById('pp-detail-name').value.trim(),
-        description: document.getElementById('pp-detail-desc').value.trim(),
-        group_id: document.getElementById('pp-detail-group').value || null,
-        transcript_id: null,
-        synthesis_status: 'pending',
-        created: new Date().toISOString()
-      };
-      await Synth.db.saveParticipant(participant);
-      currentParticipantId = storageKey;
-      isNewParticipant = false;
-
-      document.getElementById('pp-detail-id').disabled = true;
-      document.getElementById('participant-subpage-title').textContent = ppId;
-      document.getElementById('subpage-upload-pp-id').textContent = ppId;
-      updateSubpageAccess(participant);
-      showStatus('pp-detail-status', 'success', 'Participant saved. You can now upload a transcript.');
+    if (session.session_date) {
+      dateDisplay.textContent = formatDate(session.session_date);
+      dateDisplay.classList.remove('session-meta-placeholder');
     } else {
-      var participant = await Synth.db.getParticipant(currentParticipantId);
-      if (!participant) return;
-      participant.real_name = document.getElementById('pp-detail-name').value.trim();
-      participant.description = document.getElementById('pp-detail-desc').value.trim();
-      participant.group_id = document.getElementById('pp-detail-group').value || null;
-      await Synth.db.saveParticipant(participant);
-      showStatus('pp-detail-status', 'success', 'Details updated.');
+      dateDisplay.textContent = 'Not set';
+      dateDisplay.classList.add('session-meta-placeholder');
     }
+
+    if (session.session_notes) {
+      notesDisplay.textContent = session.session_notes;
+      notesDisplay.classList.remove('session-meta-placeholder');
+    } else {
+      notesDisplay.textContent = 'No notes';
+      notesDisplay.classList.add('session-meta-placeholder');
+    }
+
+    dateInput.value = session.session_date || '';
+    notesInput.value = session.session_notes || '';
+    dateInput.classList.add('hidden');
+    notesInput.classList.add('hidden');
+    dateDisplay.classList.remove('hidden');
+    notesDisplay.classList.remove('hidden');
   }
 
-  function backToParticipantList() {
-    document.getElementById('participant-subpages').classList.add('hidden');
-    document.getElementById('participant-list-card').classList.remove('hidden');
-    currentParticipantId = null;
-    isNewParticipant = false;
+  function initSessionMetaEditing() {
+    var dateDisplay = document.getElementById('session-date-display');
+    var dateInput = document.getElementById('session-date-input');
+    var notesDisplay = document.getElementById('session-notes-display');
+    var notesInput = document.getElementById('session-notes-input');
+
+    dateDisplay.addEventListener('click', function () {
+      dateDisplay.classList.add('hidden');
+      dateInput.classList.remove('hidden');
+      dateInput.focus();
+    });
+
+    dateInput.addEventListener('change', async function () {
+      if (!currentSessionId) return;
+      var session = await Synth.db.getSession(currentSessionId);
+      if (!session) return;
+      session.session_date = dateInput.value || null;
+      await Synth.db.saveSession(session);
+      renderSessionMetadata(session);
+      showStatus('session-detail-status', 'success', 'Date updated.');
+    });
+
+    dateInput.addEventListener('blur', function () {
+      dateInput.classList.add('hidden');
+      dateDisplay.classList.remove('hidden');
+    });
+
+    notesDisplay.addEventListener('click', function () {
+      notesDisplay.classList.add('hidden');
+      notesInput.classList.remove('hidden');
+      notesInput.focus();
+    });
+
+    notesInput.addEventListener('blur', async function () {
+      if (!currentSessionId) return;
+      var session = await Synth.db.getSession(currentSessionId);
+      if (!session) return;
+      session.session_notes = notesInput.value.trim() || null;
+      await Synth.db.saveSession(session);
+      renderSessionMetadata(session);
+      showStatus('session-detail-status', 'success', 'Notes updated.');
+    });
+  }
+
+  function backToSessionList() {
+    document.getElementById('session-subpages').classList.add('hidden');
+    document.getElementById('session-list-card').classList.remove('hidden');
+    currentSessionId = null;
+    isNewSession = false;
     showSynthesisControlsIfNeeded();
-    refreshParticipantList();
+    refreshSessionList();
   }
 
   async function handleFile(fileList) {
+    var statusEl = isNewSession ? 'new-session-upload-status' : 'subpage-upload-status';
     var files = Array.from(fileList).filter(function (f) { return f.name.toLowerCase().endsWith('.docx'); });
-    if (files.length === 0) { showStatus('subpage-upload-status', 'error', 'Please select a .docx file.'); return; }
+    if (files.length === 0) { showStatus(statusEl, 'error', 'Please select a .docx file.'); return; }
 
     var file = files[0];
-    showStatus('subpage-upload-status', 'info', 'Parsing ' + file.name + '…');
+    showStatus(statusEl, 'info', 'Parsing ' + file.name + '…');
 
     try {
       var result = await Synth.parser.parseDocx(file);
 
-      var facNames = [];
-      if (activeProjectId) {
-        var fw = await Synth.db.getFramework(activeProjectId);
-        if (fw) facNames = fw.facilitator_names || [];
-      }
+      var fw = await Synth.db.getFramework(activeProjectId);
+      var facNames = fw ? fw.facilitator_names || [] : [];
+      var participantDimensions = fw ? fw.participant_dimensions || [] : [];
+
+      var existingPps = await Synth.db.getParticipantsByProject(activeProjectId);
+      var existingIds = new Set(existingPps.map(function (p) { return p.display_id; }));
+      var nextPpNum = await Synth.db.getNextParticipantNumber(activeProjectId);
 
       pendingParse = { file: file, result: result, speakers: null };
-      showStatus('subpage-upload-status', 'success', 'Parsed ' + result.turns.length + ' speaker turns. De-identify before saving.');
+      showStatus(statusEl, 'success', 'Parsed ' + result.turns.length + ' speaker turns. De-identify before saving.');
 
-      document.getElementById('subpage-transcript-upload').classList.add('hidden');
+      if (isNewSession) {
+        document.getElementById('new-session-upload-section').classList.add('hidden');
+      } else {
+        document.getElementById('subpage-transcript-upload').classList.add('hidden');
+      }
 
       Synth.deidentify.show(
         pendingParse,
         facNames,
         activeProjectId,
+        participantDimensions,
+        existingIds,
+        nextPpNum,
         async function (deidentifiedResult) {
           await finishTranscriptSave(deidentifiedResult);
         },
         function () {
           pendingParse = null;
           document.getElementById('subpage-deidentify').classList.add('hidden');
-          document.getElementById('subpage-transcript-upload').classList.remove('hidden');
-          showStatus('subpage-upload-status', 'info', 'De-identification cancelled.');
+          if (isNewSession) {
+            document.getElementById('new-session-upload-section').classList.remove('hidden');
+            showStatus('new-session-upload-status', 'info', 'De-identification cancelled.');
+          } else {
+            document.getElementById('subpage-transcript-upload').classList.remove('hidden');
+            showStatus('subpage-upload-status', 'info', 'De-identification cancelled.');
+          }
         }
       );
     } catch (e) {
-      showStatus('subpage-upload-status', 'error', 'Failed to parse ' + file.name + ': ' + e.message);
+      showStatus(statusEl, 'error', 'Failed to parse ' + file.name + ': ' + e.message);
     }
   }
 
   async function finishTranscriptSave(deidentifiedResult) {
-    var storageKey = currentParticipantId;
     var file = pendingParse.file;
-
     var roleMap = Synth.deidentify.getRoleAssignments();
-    var participant = await Synth.db.getParticipant(storageKey);
-    var displayId = participant ? (participant.display_id || storageKey) : storageKey;
+    var participantMap = deidentifiedResult.participant_map || {};
+    var participantDetails = deidentifiedResult.participant_details || [];
+
+    var newParticipantIds = [];
+    for (var i = 0; i < participantDetails.length; i++) {
+      var pd = participantDetails[i];
+      var storageKey = activeProjectId + '_' + pd.display_id;
+      var existing = await Synth.db.getParticipant(storageKey);
+      var participant = {
+        participant_id: storageKey,
+        display_id: pd.display_id,
+        project_id: activeProjectId,
+        real_name: pd.real_name || '',
+        description: '',
+        dimension_tags: pd.dimension_tags || {},
+        created: existing ? existing.created : new Date().toISOString()
+      };
+      await Synth.db.saveParticipant(participant);
+      newParticipantIds.push(pd.display_id);
+    }
+
+    var session;
+    if (isNewSession) {
+      var label = document.getElementById('session-detail-label').textContent.trim() || 'Session';
+      var sessionId = 'sess_' + Date.now();
+      session = {
+        session_id: sessionId,
+        project_id: activeProjectId,
+        label: label,
+        transcript_id: null,
+        participant_ids: newParticipantIds,
+        synthesis_status: 'pending',
+        created: new Date().toISOString()
+      };
+      currentSessionId = sessionId;
+      isNewSession = false;
+    } else {
+      session = await Synth.db.getSession(currentSessionId);
+      if (!session) return;
+      var merged = session.participant_ids || [];
+      newParticipantIds.forEach(function (pid) {
+        if (merged.indexOf(pid) === -1) merged.push(pid);
+      });
+      session.participant_ids = merged;
+    }
 
     var transcript = {
       transcript_id: 'tx_' + Date.now(),
       project_id: activeProjectId || '',
+      session_id: currentSessionId,
       filename: file.name,
-      participant_id: displayId,
-      participant_group: participant ? participant.group_id : null,
+      participant_map: participantMap,
       metadata: pendingParse.result.metadata,
       turns: deidentifiedResult.turns,
       raw_text: deidentifiedResult.raw_text,
@@ -1260,34 +1568,28 @@ Synth.app = (function () {
       created: new Date().toISOString()
     };
 
-    if (participant) {
-      participant.transcript_id = transcript.transcript_id;
-      await Synth.db.saveParticipant(participant);
-    }
-
+    session.transcript_id = transcript.transcript_id;
+    await Synth.db.saveSession(session);
     await Synth.db.saveTranscript(transcript);
     pendingParse = null;
 
-    // Update sub-page state
-    updateSubpageAccess(participant);
-    await loadTranscriptView(participant);
-    showStatus('subpage-upload-status', '', '');
+    await openSessionSubpages(currentSessionId);
   }
 
-  async function runParticipantSynthesis() {
-    if (!currentParticipantId || !activeProjectId) return;
+  async function runSessionSynthesis() {
+    if (!currentSessionId || !activeProjectId) return;
     if (!Synth.api.hasCredentials()) {
       showStatus('pp-synthesis-status', 'error', 'Configure your API credentials in Settings first.');
       return;
     }
 
-    var participant = await Synth.db.getParticipant(currentParticipantId);
-    if (!participant || !participant.transcript_id) {
+    var session = await Synth.db.getSession(currentSessionId);
+    if (!session || !session.transcript_id) {
       showStatus('pp-synthesis-status', 'error', 'No transcript found. Upload one first.');
       return;
     }
 
-    var transcript = await Synth.db.getTranscript(participant.transcript_id);
+    var transcript = await Synth.db.getTranscript(session.transcript_id);
     if (!transcript) {
       showStatus('pp-synthesis-status', 'error', 'Transcript not found in database.');
       return;
@@ -1350,8 +1652,8 @@ Synth.app = (function () {
     btn.disabled = false;
 
     if (result.success) {
-      participant.synthesis_status = 'synthesised';
-      await Synth.db.saveParticipant(participant);
+      session.synthesis_status = 'synthesised';
+      await Synth.db.saveSession(session);
       transcript.status = 'processed';
       await Synth.db.saveTranscript(transcript);
       btn.textContent = 'Re-run Synthesis';
@@ -1362,10 +1664,10 @@ Synth.app = (function () {
       if (result.flagged) summary += ' FLAGGED for review.';
       showStatus('pp-synthesis-status', 'success', summary);
 
-      await loadSynthesisView(participant);
+      await loadSynthesisView(session);
     } else {
-      participant.synthesis_status = 'failed';
-      await Synth.db.saveParticipant(participant);
+      session.synthesis_status = 'failed';
+      await Synth.db.saveSession(session);
       btn.textContent = 'Run Synthesis';
       showStatus('pp-synthesis-status', 'error', result.error);
     }
@@ -1374,7 +1676,7 @@ Synth.app = (function () {
   // ========== Inquiry ==========
 
   async function submitInquiry() {
-    if (!currentParticipantId || !activeProjectId) return;
+    if (!currentSessionId || !activeProjectId) return;
 
     var question = document.getElementById('inquiry-input').value.trim();
     if (!question) {
@@ -1387,21 +1689,21 @@ Synth.app = (function () {
       return;
     }
 
-    var participant = await Synth.db.getParticipant(currentParticipantId);
-    if (!participant || !participant.transcript_id) {
-      showStatus('inquiry-status', 'error', 'No transcript found for this participant.');
+    var session = await Synth.db.getSession(currentSessionId);
+    if (!session || !session.transcript_id) {
+      showStatus('inquiry-status', 'error', 'No transcript found for this session.');
       return;
     }
 
-    var transcript = await Synth.db.getTranscript(participant.transcript_id);
+    var transcript = await Synth.db.getTranscript(session.transcript_id);
     if (!transcript) {
       showStatus('inquiry-status', 'error', 'Transcript not found in database.');
       return;
     }
 
     var framework = await Synth.db.getFramework(activeProjectId);
-    var displayId = participant.display_id || participant.participant_id;
-    var participantKey = activeProjectId + '_' + displayId;
+    var sessionKey = activeProjectId + '_' + currentSessionId;
+    var participantMap = transcript.participant_map || {};
 
     var btn = document.getElementById('btn-submit-inquiry');
     btn.disabled = true;
@@ -1409,7 +1711,7 @@ Synth.app = (function () {
     showStatus('inquiry-status', 'info', 'Sending question…');
 
     try {
-      var userPrompt = Synth.prompts.buildInquiryUser(framework || {}, transcript.raw_text, displayId, question);
+      var userPrompt = Synth.prompts.buildInquiryUser(framework || {}, transcript.raw_text, participantMap, question);
       var result = await Synth.api.chatCompletion('claude-sonnet-4-6', [
         { role: 'system', content: Synth.prompts.INQUIRY_SYSTEM },
         { role: 'user', content: userPrompt }
@@ -1417,9 +1719,9 @@ Synth.app = (function () {
 
       var inquiry = {
         inquiry_id: 'inq_' + Date.now(),
-        participant_key: participantKey,
+        session_key: sessionKey,
         project_id: activeProjectId,
-        participant_id: displayId,
+        session_id: currentSessionId,
         question: question,
         response: result.content,
         model: result.model || 'claude-sonnet-4-6',
@@ -1429,7 +1731,7 @@ Synth.app = (function () {
       await Synth.db.saveInquiry(inquiry);
       document.getElementById('inquiry-input').value = '';
       showStatus('inquiry-status', 'success', 'Response received.');
-      await loadInquiryHistory(participantKey);
+      await loadInquiryHistory(sessionKey);
     } catch (e) {
       showStatus('inquiry-status', 'error', 'Inquiry failed: ' + e.message);
     } finally {
@@ -1438,12 +1740,12 @@ Synth.app = (function () {
     }
   }
 
-  async function loadInquiryHistory(participantKey) {
+  async function loadInquiryHistory(sessionKey) {
     var container = document.getElementById('inquiry-history');
     var emptyMsg = document.getElementById('inquiry-empty');
     container.innerHTML = '';
 
-    var inquiries = await Synth.db.getInquiriesByParticipant(participantKey);
+    var inquiries = await Synth.db.getInquiriesBySession(sessionKey);
     inquiries.sort(function (a, b) { return new Date(b.created) - new Date(a.created); });
 
     if (inquiries.length === 0) {
@@ -1475,10 +1777,8 @@ Synth.app = (function () {
     card.querySelector('.inquiry-delete-btn').addEventListener('click', async function () {
       if (confirm('Delete this inquiry?')) {
         await Synth.db.deleteInquiry(inquiry.inquiry_id);
-        var participant = await Synth.db.getParticipant(currentParticipantId);
-        var displayId = participant ? (participant.display_id || currentParticipantId) : currentParticipantId;
-        var participantKey = activeProjectId + '_' + displayId;
-        await loadInquiryHistory(participantKey);
+        var sessionKey = activeProjectId + '_' + currentSessionId;
+        await loadInquiryHistory(sessionKey);
       }
     });
 
@@ -1495,14 +1795,14 @@ Synth.app = (function () {
     return escaped;
   }
 
-  async function refreshParticipantList() {
+  async function refreshSessionList() {
     if (!activeProjectId) return;
 
-    var participants = await Synth.db.getParticipantsByProject(activeProjectId);
-    var container = document.getElementById('participant-list');
-    var empty = document.getElementById('participants-empty');
+    var sessions = await Synth.db.getSessionsByProject(activeProjectId);
+    var container = document.getElementById('session-list');
+    var empty = document.getElementById('sessions-empty');
 
-    if (participants.length === 0) {
+    if (sessions.length === 0) {
       container.innerHTML = '';
       empty.classList.remove('hidden');
       return;
@@ -1512,94 +1812,108 @@ Synth.app = (function () {
     container.innerHTML = '';
 
     var themes = await Synth.db.getThemesByProject(activeProjectId);
+    var allParticipants = await Synth.db.getParticipantsByProject(activeProjectId);
+    var ppLookup = {};
+    allParticipants.forEach(function (p) { ppLookup[p.display_id] = p; });
 
-    participants.forEach(function (p) {
-      var displayId = p.display_id || p.participant_id;
+    sessions.forEach(function (s) {
       var themeCount = 0;
       themes.forEach(function (t) {
         if (t.supporting_evidence) {
-          var hasEvidence = t.supporting_evidence.some(function (ev) { return ev.participant_id === displayId; });
+          var hasEvidence = t.supporting_evidence.some(function (ev) { return ev.session_id === s.session_id; });
           if (hasEvidence) themeCount++;
         }
       });
 
       var statusClass = 'status-pending';
       var statusText = 'No transcript';
-      if (p.synthesis_status === 'synthesised') {
+      if (s.synthesis_status === 'synthesised') {
         statusClass = 'status-synthesised';
         statusText = 'Synthesised';
-      } else if (p.synthesis_status === 'failed') {
+      } else if (s.synthesis_status === 'failed') {
         statusClass = 'status-failed';
         statusText = 'Failed';
-      } else if (p.transcript_id) {
+      } else if (s.transcript_id) {
         statusClass = 'status-uploaded';
         statusText = 'Transcript uploaded';
       }
 
-      var metaParts = [];
-      if (p.real_name) metaParts.push(p.real_name);
-      if (p.description) metaParts.push(p.description);
+      var metaLines = '';
+      if (s.session_date) {
+        metaLines += '<div class="participant-meta">' + escapeHtml(formatDate(s.session_date)) + '</div>';
+      }
+      var ppLabels = (s.participant_ids || []).map(function (pid) {
+        var p = ppLookup[pid];
+        return p && p.real_name ? pid + ' ' + p.real_name : pid;
+      });
+      if (ppLabels.length > 0) {
+        metaLines += '<div class="participant-meta">' + escapeHtml(ppLabels.join(' · ')) + '</div>';
+      }
 
       var div = document.createElement('div');
       div.className = 'participant-item';
       div.innerHTML =
-        '<div class="participant-info" data-id="' + escapeHtml(p.participant_id) + '">' +
-          '<div class="participant-id">' + escapeHtml(displayId) + '</div>' +
-          (metaParts.length ? '<div class="participant-meta">' + escapeHtml(metaParts.join(' — ')) + '</div>' : '') +
+        '<div class="participant-info" data-id="' + escapeHtml(s.session_id) + '">' +
+          '<div class="participant-id">' + escapeHtml(s.label || s.session_id) + '</div>' +
+          metaLines +
         '</div>' +
         '<span class="participant-status ' + statusClass + '">' + statusText + '</span>' +
         (themeCount > 0 ? '<span class="badge badge-count">' + themeCount + ' themes</span>' : '') +
         '<div class="participant-actions">' +
-          '<button class="btn btn-secondary btn-sm" data-action="view-participant" data-id="' + escapeHtml(p.participant_id) + '">View</button>' +
-          '<button class="btn btn-danger btn-sm" data-action="delete-participant" data-id="' + escapeHtml(p.participant_id) + '">Delete</button>' +
+          '<button class="btn btn-secondary btn-sm" data-action="view-session" data-id="' + escapeHtml(s.session_id) + '">View</button>' +
+          '<button class="btn btn-danger btn-sm" data-action="delete-session" data-id="' + escapeHtml(s.session_id) + '">Delete</button>' +
         '</div>';
       container.appendChild(div);
     });
 
-    container.onclick = handleParticipantAction;
+    container.onclick = handleSessionAction;
     showSynthesisControlsIfNeeded();
   }
 
-  async function handleParticipantAction(e) {
+  async function handleSessionAction(e) {
     var btn = e.target.closest('[data-action]');
     var infoEl = e.target.closest('.participant-info');
 
     if (btn) {
       var id = btn.dataset.id;
-      if (btn.dataset.action === 'view-participant') {
-        await openParticipantSubpages(id);
-      } else if (btn.dataset.action === 'delete-participant') {
-        if (confirm('Delete this participant? This will also delete their transcript and synthesis.')) {
-          var participant = await Synth.db.getParticipant(id);
-          if (participant && participant.transcript_id) {
-            await Synth.db.deleteTranscript(participant.transcript_id);
+      if (btn.dataset.action === 'view-session') {
+        await openSessionSubpages(id);
+      } else if (btn.dataset.action === 'delete-session') {
+        if (confirm('Delete this session? This will also delete its transcript, synthesis, and inquiries.')) {
+          var session = await Synth.db.getSession(id);
+          if (session && session.transcript_id) {
+            await Synth.db.deleteTranscript(session.transcript_id);
           }
-          var displayId = participant ? (participant.display_id || id) : id;
-          var synthId = activeProjectId + '_' + displayId;
+          var synthId = activeProjectId + '_' + id;
           await Synth.db.deleteSessionSynthesis(synthId).catch(function () {});
-          var participantKey = activeProjectId + '_' + displayId;
-          var inquiries = await Synth.db.getInquiriesByParticipant(participantKey);
+          var sessionKey = activeProjectId + '_' + id;
+          var inquiries = await Synth.db.getInquiriesBySession(sessionKey);
           for (var q = 0; q < inquiries.length; q++) {
             await Synth.db.deleteInquiry(inquiries[q].inquiry_id);
           }
-          await Synth.db.deleteParticipant(id);
-          await refreshParticipantList();
+          if (session && session.participant_ids) {
+            for (var p = 0; p < session.participant_ids.length; p++) {
+              var ppKey = activeProjectId + '_' + session.participant_ids[p];
+              await Synth.db.deleteParticipant(ppKey).catch(function () {});
+            }
+          }
+          await Synth.db.deleteSession(id);
+          await refreshSessionList();
         }
       }
     } else if (infoEl) {
-      await openParticipantSubpages(infoEl.dataset.id);
+      await openSessionSubpages(infoEl.dataset.id);
     }
   }
 
-  async function showQuoteInContext(ppId, theme, evidence) {
-    var participant = await Synth.db.getParticipant(ppId);
-    if (!participant || !participant.transcript_id) return;
+  async function showQuoteInContext(sessionId, theme, evidence) {
+    var session = await Synth.db.getSession(sessionId);
+    if (!session || !session.transcript_id) return;
 
-    var tx = await Synth.db.getTranscript(participant.transcript_id);
+    var tx = await Synth.db.getTranscript(session.transcript_id);
     if (!tx) return;
 
-    var displayId = participant.display_id || participant.participant_id;
-    document.getElementById('quote-modal-title').textContent = theme.label + ' — ' + displayId;
+    document.getElementById('quote-modal-title').textContent = theme.label + ' — ' + (session.label || sessionId);
     var body = document.getElementById('quote-modal-body');
     body.innerHTML = '';
 
@@ -1660,7 +1974,7 @@ Synth.app = (function () {
 
   async function showSynthesisControlsIfNeeded() {
     if (!activeProjectId) return;
-    if (currentParticipantId || isNewParticipant) return;
+    if (currentSessionId || isNewSession) return;
     var transcripts = await Synth.db.getTranscriptsByProject(activeProjectId);
     var hasPending = transcripts.some(function (t) { return t.status === 'uploaded'; });
     var card = document.getElementById('synthesis-controls-card');
@@ -1731,19 +2045,18 @@ Synth.app = (function () {
           showStatus('synthesis-status', stats.failed > 0 ? 'warning' : 'success', summary);
         }
 
-        // Update participant synthesis statuses
-        var participants = await Synth.db.getParticipantsByProject(activeProjectId);
+        var sessions = await Synth.db.getSessionsByProject(activeProjectId);
         var transcripts = await Synth.db.getTranscriptsByProject(activeProjectId);
-        for (var i = 0; i < participants.length; i++) {
-          var pp = participants[i];
-          if (pp.transcript_id) {
-            var ptx = transcripts.find(function (t) { return t.transcript_id === pp.transcript_id; });
-            if (ptx && ptx.status === 'processed') {
-              pp.synthesis_status = 'synthesised';
-              await Synth.db.saveParticipant(pp);
-            } else if (ptx && ptx.status === 'failed') {
-              pp.synthesis_status = 'failed';
-              await Synth.db.saveParticipant(pp);
+        for (var i = 0; i < sessions.length; i++) {
+          var sess = sessions[i];
+          if (sess.transcript_id) {
+            var stx = transcripts.find(function (t) { return t.transcript_id === sess.transcript_id; });
+            if (stx && stx.status === 'processed') {
+              sess.synthesis_status = 'synthesised';
+              await Synth.db.saveSession(sess);
+            } else if (stx && stx.status === 'failed') {
+              sess.synthesis_status = 'failed';
+              await Synth.db.saveSession(sess);
             }
           }
         }
@@ -1751,7 +2064,7 @@ Synth.app = (function () {
         synthesisRunning = false;
         btn.disabled = false;
         btn.textContent = 'Synthesise All Pending';
-        await refreshParticipantList();
+        await refreshSessionList();
 
         var allThemes = await Synth.db.getThemesByProject(activeProjectId);
         if (allThemes.length > 30) {
@@ -1780,9 +2093,72 @@ Synth.app = (function () {
 
   // ========== Themes Tab ==========
 
+  function updateDimensionFilters(dimensions) {
+    var container = document.getElementById('theme-dimension-filters');
+    if (!container) return;
+
+    var currentFilters = {};
+    container.querySelectorAll('.theme-dim-filter').forEach(function (sel) {
+      if (sel.value) currentFilters[sel.dataset.dimId] = sel.value;
+    });
+
+    container.innerHTML = '';
+    dimensions.forEach(function (dim) {
+      if (dim.tags.length === 0) return;
+      var sel = document.createElement('select');
+      sel.className = 'theme-dim-filter';
+      sel.dataset.dimId = dim.dimension_id;
+      sel.innerHTML = '<option value="">All ' + escapeHtml(dim.label) + '</option>';
+      dim.tags.forEach(function (tag) {
+        var opt = document.createElement('option');
+        opt.value = tag.tag_id;
+        opt.textContent = tag.label;
+        sel.appendChild(opt);
+      });
+      if (currentFilters[dim.dimension_id]) sel.value = currentFilters[dim.dimension_id];
+      sel.addEventListener('change', refreshThemes);
+      container.appendChild(sel);
+    });
+  }
+
+  function resolveDimensionLabels(dimTags, dimensions) {
+    var labels = [];
+    if (!dimTags) return labels;
+    dimensions.forEach(function (dim) {
+      var tagId = dimTags[dim.dimension_id];
+      if (tagId) {
+        var tag = dim.tags.find(function (t) { return t.tag_id === tagId; });
+        if (tag) labels.push(tag.label);
+      }
+    });
+    return labels;
+  }
+
+  function updateGroupByDropdown(fw) {
+    var sel = document.getElementById('theme-group-by');
+    var currentVal = sel.value;
+    sel.innerHTML = '<option value="none">No grouping</option>';
+
+    if (fw && fw.research_questions && fw.research_questions.length > 0) {
+      sel.innerHTML += '<option value="rq">Research Question</option>';
+    }
+
+    (fw ? fw.participant_dimensions || [] : []).forEach(function (dim) {
+      if (dim.tags.length > 0) {
+        sel.innerHTML += '<option value="dim_' + escapeHtml(dim.dimension_id) + '">' + escapeHtml(dim.label) + '</option>';
+      }
+    });
+
+    if (sel.querySelector('option[value="' + currentVal + '"]')) {
+      sel.value = currentVal;
+    } else {
+      sel.value = 'none';
+    }
+  }
+
   function initThemesTab() {
-    document.getElementById('theme-filter-source').addEventListener('change', refreshThemes);
     document.getElementById('theme-filter-rq').addEventListener('change', refreshThemes);
+    document.getElementById('theme-group-by').addEventListener('change', refreshThemes);
     document.getElementById('theme-sort').addEventListener('change', refreshThemes);
     document.getElementById('btn-merge-themes').addEventListener('click', mergeSelectedThemes);
     document.getElementById('btn-cancel-merge').addEventListener('click', function () {
@@ -1818,13 +2194,30 @@ Synth.app = (function () {
       return;
     }
 
+    var fw = await Synth.db.getFramework(activeProjectId);
+    cachedDimensions = fw ? fw.participant_dimensions || [] : [];
+    updateDimensionFilters(cachedDimensions);
+
+    updateGroupByDropdown(fw);
+
     var themes = await Synth.db.getThemesByProject(activeProjectId);
-    var filterSource = document.getElementById('theme-filter-source').value;
     var filterRq = document.getElementById('theme-filter-rq').value;
     var sortBy = document.getElementById('theme-sort').value;
 
-    if (filterSource) themes = themes.filter(function (t) { return t.source === filterSource; });
     if (filterRq) themes = themes.filter(function (t) { return t.rq_mappings && t.rq_mappings.includes(filterRq); });
+
+    var dimFilterEls = document.querySelectorAll('.theme-dim-filter');
+    dimFilterEls.forEach(function (sel) {
+      var dimId = sel.dataset.dimId;
+      var tagId = sel.value;
+      if (tagId) {
+        themes = themes.filter(function (t) {
+          return (t.supporting_evidence || []).some(function (ev) {
+            return ev.participant_dimensions && ev.participant_dimensions[dimId] === tagId;
+          });
+        });
+      }
+    });
 
     themes = sortThemes(themes, sortBy);
 
@@ -1841,7 +2234,6 @@ Synth.app = (function () {
     document.getElementById('theme-summary').textContent =
       themes.length + ' theme(s), ' + totalEvidence + ' piece(s) of evidence';
 
-    var fw = await Synth.db.getFramework(activeProjectId);
     renderThemeCards(themes, fw);
     updateMergeBar();
 
@@ -1854,12 +2246,10 @@ Synth.app = (function () {
     switch (sortBy) {
       case 'participants':
         return themes.sort(function (a, b) { return getParticipantCount(b) - getParticipantCount(a); });
-      case 'sessions':
-        return themes.sort(function (a, b) { return getSessionCount(b) - getSessionCount(a); });
+      case 'quotes':
+        return themes.sort(function (a, b) { return getQuoteCount(b) - getQuoteCount(a); });
       case 'label':
         return themes.sort(function (a, b) { return a.label.localeCompare(b.label); });
-      case 'first_seen':
-        return themes.sort(function (a, b) { return (a.first_seen || '').localeCompare(b.first_seen || ''); });
       default:
         return themes;
     }
@@ -1870,65 +2260,29 @@ Synth.app = (function () {
     return new Set(theme.supporting_evidence.map(function (e) { return e.participant_id; })).size;
   }
 
-  function getSessionCount(theme) {
-    if (!theme.supporting_evidence) return 0;
-    return new Set(theme.supporting_evidence.map(function (e) { return e.session_id; })).size;
+  function getQuoteCount(theme) {
+    return theme.supporting_evidence ? theme.supporting_evidence.length : 0;
   }
 
   function renderThemeCards(themes, framework) {
     var container = document.getElementById('theme-cards');
     container.innerHTML = '';
 
-    var hasRqs = framework && framework.research_questions && framework.research_questions.length > 0;
-    var filterRq = document.getElementById('theme-filter-rq').value;
-
-    if (hasRqs) {
+    if (framework && framework.research_questions && framework.research_questions.length > 0) {
       cachedRqMap = {};
       framework.research_questions.forEach(function (rq) { cachedRqMap[rq.rq_id] = rq.label; });
     }
 
-    if (hasRqs && !filterRq) {
-      var rqMap = cachedRqMap;
+    var groupBy = document.getElementById('theme-group-by').value;
 
-      var grouped = {};
-      var unmapped = [];
-      themes.forEach(function (theme) {
-        var mapped = false;
-        (theme.rq_mappings || []).forEach(function (rqId) {
-          if (!grouped[rqId]) grouped[rqId] = [];
-          grouped[rqId].push(theme);
-          mapped = true;
-        });
-        if (!mapped) unmapped.push(theme);
-      });
+    if (groupBy === 'rq') {
+      renderGroupedByRq(container, themes, framework);
+      return;
+    }
 
-      framework.research_questions.forEach(function (rq) {
-        var rqThemes = grouped[rq.rq_id];
-        if (!rqThemes || rqThemes.length === 0) return;
-
-        var header = document.createElement('div');
-        header.className = 'theme-rq-header';
-        header.innerHTML =
-          '<div class="theme-rq-label">' + escapeHtml(rq.label) + '</div>';
-        container.appendChild(header);
-
-        rqThemes.forEach(function (theme) {
-          container.appendChild(buildThemeCard(theme));
-        });
-      });
-
-      if (unmapped.length > 0) {
-        var header = document.createElement('div');
-        header.className = 'theme-rq-header';
-        header.innerHTML =
-          '<div class="theme-rq-id">Emergent</div>' +
-          '<div class="theme-rq-label">Themes not mapped to a research question</div>';
-        container.appendChild(header);
-
-        unmapped.forEach(function (theme) {
-          container.appendChild(buildThemeCard(theme));
-        });
-      }
+    if (groupBy.indexOf('dim_') === 0) {
+      var dimId = groupBy.substring(4);
+      renderGroupedByDimension(container, themes, dimId);
       return;
     }
 
@@ -1937,32 +2291,140 @@ Synth.app = (function () {
     });
   }
 
+  function renderGroupedByRq(container, themes, framework) {
+    var rqs = framework && framework.research_questions ? framework.research_questions : [];
+
+    var grouped = {};
+    var unmapped = [];
+    themes.forEach(function (theme) {
+      var mapped = false;
+      (theme.rq_mappings || []).forEach(function (rqId) {
+        if (!grouped[rqId]) grouped[rqId] = [];
+        grouped[rqId].push(theme);
+        mapped = true;
+      });
+      if (!mapped) unmapped.push(theme);
+    });
+
+    rqs.forEach(function (rq) {
+      var rqThemes = grouped[rq.rq_id];
+      if (!rqThemes || rqThemes.length === 0) return;
+      appendGroupHeader(container, rq.label);
+      rqThemes.forEach(function (theme) {
+        container.appendChild(buildThemeCard(theme));
+      });
+    });
+
+    if (unmapped.length > 0) {
+      appendGroupHeader(container, 'Themes not mapped to a research question', 'Emergent');
+      unmapped.forEach(function (theme) {
+        container.appendChild(buildThemeCard(theme));
+      });
+    }
+  }
+
+  function renderGroupedByDimension(container, themes, dimId) {
+    var dim = cachedDimensions.find(function (d) { return d.dimension_id === dimId; });
+    if (!dim) return;
+
+    var grouped = {};
+    var untagged = [];
+    var seen = {};
+
+    themes.forEach(function (theme) {
+      var themeTagIds = new Set();
+      (theme.supporting_evidence || []).forEach(function (ev) {
+        var tagId = (ev.participant_dimensions || {})[dimId];
+        if (tagId) themeTagIds.add(tagId);
+      });
+
+      if (themeTagIds.size === 0) {
+        untagged.push(theme);
+      } else {
+        themeTagIds.forEach(function (tagId) {
+          if (!grouped[tagId]) grouped[tagId] = [];
+          grouped[tagId].push(theme);
+        });
+      }
+    });
+
+    dim.tags.forEach(function (tag) {
+      var tagThemes = grouped[tag.tag_id];
+      if (!tagThemes || tagThemes.length === 0) return;
+      appendGroupHeader(container, tag.label, tagThemes.length + ' theme' + (tagThemes.length === 1 ? '' : 's'));
+      tagThemes.forEach(function (theme) {
+        container.appendChild(buildThemeCard(theme));
+      });
+    });
+
+    if (untagged.length > 0) {
+      appendGroupHeader(container, 'No ' + dim.label + ' tagged');
+      untagged.forEach(function (theme) {
+        container.appendChild(buildThemeCard(theme));
+      });
+    }
+  }
+
+  function appendGroupHeader(container, label, subtitle) {
+    var header = document.createElement('div');
+    header.className = 'theme-rq-header';
+    header.innerHTML =
+      (subtitle ? '<div class="theme-rq-id">' + escapeHtml(subtitle) + '</div>' : '') +
+      '<div class="theme-rq-label">' + escapeHtml(label) + '</div>';
+    container.appendChild(header);
+  }
+
+  function collectDimensionTags(theme) {
+    var tagIds = {};
+    (theme.supporting_evidence || []).forEach(function (ev) {
+      var dims = ev.participant_dimensions || {};
+      for (var dimId in dims) {
+        if (!tagIds[dimId]) tagIds[dimId] = new Set();
+        tagIds[dimId].add(dims[dimId]);
+      }
+    });
+    var labels = [];
+    cachedDimensions.forEach(function (dim) {
+      var ids = tagIds[dim.dimension_id];
+      if (!ids) return;
+      dim.tags.forEach(function (tag) {
+        if (ids.has(tag.tag_id)) labels.push(tag.label);
+      });
+    });
+    return labels;
+  }
+
   function buildThemeCard(theme) {
       var card = document.createElement('div');
       card.className = 'theme-card' + (selectedThemes.has(theme.theme_id) ? ' selected' : '');
       card.dataset.id = theme.theme_id;
 
       var pCount = getParticipantCount(theme);
-      var sCount = getSessionCount(theme);
       var eCount = theme.supporting_evidence ? theme.supporting_evidence.length : 0;
 
-      var badgeClass = 'badge-' + theme.source;
+      var sourceBadge = theme.source === 'merged' ? '<span class="badge badge-merged">merged</span>' : '';
       var rqLabels = (theme.rq_mappings || []).map(function (id) { return cachedRqMap[id] || id; }).join(', ');
+
+      var dimTags = collectDimensionTags(theme);
+      var dimTagsHtml = '';
+      if (dimTags.length > 0) {
+        dimTagsHtml = '<div class="theme-dim-tags">' +
+          dimTags.map(function (l) { return '<span class="theme-dim-tag">' + escapeHtml(l) + '</span>'; }).join('') +
+        '</div>';
+      }
 
       card.innerHTML =
         '<div class="theme-card-header">' +
           '<span class="theme-label">' + escapeHtml(theme.label) + '</span>' +
           '<div class="theme-badges">' +
-            '<span class="badge ' + badgeClass + '">' + theme.source + '</span>' +
-            (pCount ? '<span class="badge badge-count">' + pCount + 'P / ' + sCount + 'S</span>' : '') +
+            sourceBadge +
+            '<span class="theme-stat" title="Participants"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ' + pCount + '</span>' +
+            '<span class="theme-stat" title="Quotes"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ' + eCount + '</span>' +
           '</div>' +
         '</div>' +
         '<div class="theme-desc">' + escapeHtml(theme.current_description || '') + '</div>' +
-        '<div class="theme-meta">' +
-          '<span>' + eCount + ' quote(s)</span>' +
-          (rqLabels ? '<span>RQ: ' + escapeHtml(rqLabels) + '</span>' : '') +
-          '<span>First: ' + escapeHtml(theme.first_seen || '—') + '</span>' +
-        '</div>' +
+        (rqLabels ? '<div class="theme-meta"><span>RQ: ' + escapeHtml(rqLabels) + '</span></div>' : '') +
+        dimTagsHtml +
         '<div class="theme-evidence hidden"></div>';
 
       card.addEventListener('click', function (e) {
@@ -1991,11 +2453,14 @@ Synth.app = (function () {
         var div = document.createElement('div');
         div.className = 'evidence-item clickable';
         var vClass = ev.verification_status || 'pending';
+        var dimLabels = resolveDimensionLabels(ev.participant_dimensions, cachedDimensions);
+        var dimHtml = dimLabels.length > 0 ? ' · ' + escapeHtml(dimLabels.join(' · ')) : '';
         div.innerHTML =
           '<div class="evidence-quote">"' + escapeHtml(ev.quote) + '"</div>' +
           '<div class="evidence-attr">' +
             escapeHtml(ev.speaker || '') + ' (' + escapeHtml(ev.participant_id || '') + ')' +
             ' at ' + escapeHtml(ev.timestamp || '') +
+            dimHtml +
             '<span class="evidence-verification ' + vClass + '">' + vClass + '</span>' +
           '</div>';
         div.addEventListener('click', function (e) {
@@ -2010,19 +2475,15 @@ Synth.app = (function () {
   }
 
   async function openQuoteFromTheme(theme, evidence) {
-    if (!evidence.participant_id) return;
+    if (!evidence.session_id) return;
 
-    var participants = await Synth.db.getParticipantsByProject(activeProjectId);
-    var participant = participants.find(function (p) {
-      return (p.display_id || p.participant_id) === evidence.participant_id;
-    });
+    var session = await Synth.db.getSession(evidence.session_id);
+    if (!session || !session.transcript_id) return;
 
-    if (!participant || !participant.transcript_id) return;
-
-    var tx = await Synth.db.getTranscript(participant.transcript_id);
+    var tx = await Synth.db.getTranscript(session.transcript_id);
     if (!tx) return;
 
-    document.getElementById('quote-modal-title').textContent = theme.label + ' — ' + evidence.participant_id;
+    document.getElementById('quote-modal-title').textContent = theme.label + ' — ' + (evidence.participant_id || session.label || evidence.session_id);
     var body = document.getElementById('quote-modal-body');
     body.innerHTML = '';
 

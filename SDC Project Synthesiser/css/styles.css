@@ -1036,24 +1036,34 @@ textarea {
 
 /* --- Theme Database --- */
 
-.themes-controls {
+.themes-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.themes-filters {
+.themes-toolbar-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.themes-filters select {
+.toolbar-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.themes-toolbar-row select {
   width: auto;
-  padding: 4px 8px;
-  font-size: 0.8rem;
+  padding: 5px 10px;
+  font-size: 0.82rem;
 }
 
 .merge-bar-content {
@@ -1136,6 +1146,43 @@ textarea {
   flex-wrap: wrap;
 }
 
+/* Theme card stats (participant & quote icons) */
+
+.theme-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.theme-stat svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* Theme card dimension tags */
+
+.theme-dim-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.theme-dim-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
 /* Expanded evidence section */
 .theme-evidence {
   margin-top: 12px;
@@ -1176,29 +1223,31 @@ textarea {
 
 /* --- De-identification --- */
 
+.deid-name-row + .deid-name-row { margin-top: 12px; }
+
 .deid-name-row {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.deid-name-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.deid-name-row:last-child {
-  border-bottom: none;
 }
 
 .deid-name-original {
   font-weight: 500;
-  min-width: 160px;
   font-size: 0.9rem;
 }
 
 .deid-name-turns {
-  display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 400;
   color: var(--text-secondary);
+  margin-left: 2px;
 }
 
 .deid-arrow {
@@ -1207,11 +1256,13 @@ textarea {
   flex-shrink: 0;
 }
 
-.deid-name-input {
-  flex: 1;
-  padding: 6px 10px;
+.deid-name-replacement {
   font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
 }
+
+.deid-pp-hint { font-size: 0.7rem; color: var(--text-secondary); font-weight: 400; }
 
 /* --- Facilitator Toggle --- */
 
@@ -1266,8 +1317,21 @@ textarea {
 
 .deid-fr-input {
   flex: 1;
+  min-width: 80px;
   padding: 6px 10px;
   font-size: 0.85rem;
+}
+
+.deid-fr-replace-value {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+
+.deid-fr-mode {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  width: auto;
 }
 
 .deid-match-count {
@@ -1744,11 +1808,51 @@ textarea {
 
 .deid-role-select {
   width: auto;
-  padding: 3px 6px;
-  font-size: 0.75rem;
+  padding: 4px 8px;
+  font-size: 0.8rem;
   border-radius: 4px;
   flex-shrink: 0;
 }
+
+.deid-pp-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.deid-pp-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.deid-pp-fields input,
+.deid-pp-fields select {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.deid-pp-id {
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.deid-pp-realname {
+  flex: 1;
+  min-width: 100px;
+}
+
 
 /* --- Quote highlight in modal --- */
 
@@ -2088,4 +2192,260 @@ textarea {
 
 .evidence-item.clickable:hover {
   background-color: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+.session-label-header { margin: 0 0 8px 0; font-size: 1.1rem; }
+
+/* --- Session Participant Table --- */
+
+.session-pp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.session-pp-row + .session-pp-row { margin-top: 6px; }
+
+.session-pp-id {
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  min-width: 40px;
+}
+
+.session-pp-display {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.session-pp-display-name { font-weight: 500; }
+.session-pp-display-item { color: var(--text-secondary); font-size: 0.8rem; }
+
+.session-pp-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.session-pp-edit-btn:hover { color: var(--primary); }
+
+.session-pp-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.session-pp-edit-fields {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.session-pp-edit-fields input,
+.session-pp-edit-fields select {
+  flex: 1;
+  min-width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.session-pp-edit-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* --- Session Metadata --- */
+
+.session-meta-field { margin-bottom: 12px; }
+
+.session-meta-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.session-meta-value {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.session-meta-editable {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  display: inline-block;
+}
+
+.session-meta-editable:hover {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.session-meta-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+textarea.session-meta-input { max-width: 100%; resize: vertical; }
+
+.session-meta-placeholder { color: var(--text-secondary); font-style: italic; }
+
+/* --- Participant Dimensions (Project Info) --- */
+
+.dimension-section {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  margin-bottom: 8px;
+}
+
+.dimension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dimension-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.dimension-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.dimension-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--primary-light);
+  border: 1px solid #c7d7fe;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #1d4ed8;
+}
+
+.dimension-tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #93a3b8;
+  font-size: 0.9rem;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.dimension-tag-remove:hover {
+  color: var(--error);
+}
+
+.dimension-tag-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dimension-tag-input {
+  flex: 1;
+  padding: 4px 8px !important;
+  font-size: 0.82rem !important;
+  min-width: 120px;
+}
+
+/* --- Dimension selects in participant edit rows --- */
+
+.pp-edit-dimensions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.pp-dim-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pp-dim-label select {
+  width: auto;
+  min-width: 120px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+}
+
+/* --- Dimension selects in de-id --- */
+
+.deid-pp-dimensions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.deid-pp-dim-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.deid-pp-dim-label select {
+  width: auto;
+  min-width: 100px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+}
+
+/* --- Dimension filter dropdowns on themes page --- */
+
+#theme-dimension-filters {
+  display: contents;
+}
+
+#theme-dimension-filters select {
+  width: auto;
+  padding: 5px 10px;
+  font-size: 0.82rem;
 }

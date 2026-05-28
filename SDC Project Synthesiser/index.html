@@ -112,7 +112,7 @@
   <!-- Project workspace tab bar (hidden on projects list view) -->
   <nav id="workspace-nav" class="tab-bar hidden">
     <button class="tab-btn active" data-tab="project">Project Info</button>
-    <button class="tab-btn" data-tab="participants">Participants</button>
+    <button class="tab-btn" data-tab="participants">Sessions</button>
     <button class="tab-btn" data-tab="themes">Themes</button>
     <button class="tab-btn" data-tab="export">Export</button>
     <button class="tab-btn" data-tab="settings">Settings</button>
@@ -273,22 +273,21 @@
         </div>
       </div>
 
-      <!-- Participant Groups -->
+      <!-- Participant Dimensions -->
       <div class="card">
-        <h2>Participant Groups</h2>
-        <p>Optional. When defined, evidence is tagged by group and the final report includes cross-group analysis.</p>
-        <div id="group-list"></div>
-        <div id="group-form" class="mt-8">
+        <h2>Participant Dimensions</h2>
+        <p>Define the ways you want to categorise participants. Each dimension (e.g. Role Type, School Type) can have multiple tags. Participants are tagged during session setup, and the synthesiser uses these for cross-dimensional analysis in the final report.</p>
+        <div id="dimensions-list"></div>
+        <div id="dimension-add-form" class="mt-8 hidden">
           <div class="form-group">
-            <label for="new-group-label">Group Name</label>
-            <input type="text" id="new-group-label" placeholder="e.g. Teachers">
+            <div class="btn-row">
+              <input type="text" id="new-dimension-label" placeholder="e.g. Role Type, School Type" style="flex:1">
+              <button class="btn btn-primary" id="btn-create-dimension">Create</button>
+              <button class="btn btn-secondary" id="btn-cancel-dimension">Cancel</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="new-group-desc">Description</label>
-            <input type="text" id="new-group-desc" placeholder="e.g. Primary school teachers in metro Sydney">
-          </div>
-          <button class="btn btn-secondary" id="btn-add-group">Add Group</button>
         </div>
+        <button class="btn btn-secondary" id="btn-add-dimension">+ Add Dimension</button>
       </div>
 
     </section>
@@ -296,22 +295,22 @@
     <!-- Participants Tab -->
     <section id="tab-participants" class="tab-panel">
 
-      <!-- Participant List -->
-      <div id="participant-list-card" class="card">
+      <!-- Session List -->
+      <div id="session-list-card" class="card">
         <div class="participants-header">
-          <h2>Participants</h2>
-          <button class="btn btn-primary btn-sm" id="btn-add-participant">Add Participant</button>
+          <h2>Sessions</h2>
+          <button class="btn btn-primary btn-sm" id="btn-add-session">Add Session</button>
         </div>
-        <div id="participant-list"></div>
-        <div id="participants-empty" class="placeholder-msg">
-          <p>No participants yet. Add one to get started.</p>
+        <div id="session-list"></div>
+        <div id="sessions-empty" class="placeholder-msg">
+          <p>No sessions yet. Add one to get started.</p>
         </div>
       </div>
 
       <!-- Synthesis controls -->
       <div id="synthesis-controls-card" class="card hidden">
         <h2>Synthesis</h2>
-        <p>Run synthesis on participants with uploaded transcripts. Themes are built incrementally across participants.</p>
+        <p>Run synthesis on sessions with uploaded transcripts. Themes are built incrementally across sessions.</p>
         <div class="btn-row">
           <button class="btn btn-primary" id="btn-run-synthesis">Synthesise All Pending</button>
           <button class="btn btn-secondary hidden" id="btn-stop-synthesis">Stop</button>
@@ -331,11 +330,11 @@
       </div>
 
 
-      <!-- Participant Sub-Pages (shown when clicking a participant or adding new) -->
-      <div id="participant-subpages" class="hidden">
+      <!-- Session Sub-Pages (shown when clicking a session or adding new) -->
+      <div id="session-subpages" class="hidden">
         <div class="subpage-header">
           <button class="btn btn-secondary btn-sm" id="btn-back-to-list">&larr; Back to list</button>
-          <h2 id="participant-subpage-title">Participant</h2>
+          <h2 id="session-subpage-title">Session</h2>
         </div>
 
         <!-- Step nav -->
@@ -349,32 +348,40 @@
         <!-- Sub-page: Details -->
         <div id="subpage-details" class="subpage-panel active">
           <div class="card">
-            <h3>Participant Details</h3>
-            <div class="form-group">
-              <label for="pp-detail-id">Participant ID</label>
-              <span class="hint">Auto-assigned.</span>
-              <input type="text" id="pp-detail-id" placeholder="P-01">
+            <h3>Session Details</h3>
+            <h4 id="session-detail-label" class="session-label-header"></h4>
+
+            <div id="new-session-upload-section" class="hidden mt-16">
+              <h4>Upload Transcript</h4>
+              <p class="hint">Upload a Word document (.docx) of the interview transcript to get started.</p>
+              <div id="new-session-drop-zone" class="drop-zone">
+                <span class="drop-zone-text">Drag .docx file here or click to browse</span>
+                <input type="file" id="new-session-file-input" accept=".docx" class="drop-zone-input">
+              </div>
+              <div id="new-session-upload-status"></div>
             </div>
-            <div class="form-group">
-              <label for="pp-detail-name">Real Name (optional)</label>
-              <span class="hint">For your reference only. Never sent to AI.</span>
-              <input type="text" id="pp-detail-name" placeholder="e.g. Jane Smith">
+
+            <div id="session-participants-section" class="hidden">
+              <h4>Participants</h4>
+              <p class="hint">Assigned during transcript upload. Click the pencil icon to edit a participant's details.</p>
+              <div id="session-participants-table"></div>
             </div>
-            <div class="form-group">
-              <label for="pp-detail-group">Participant Group</label>
-              <select id="pp-detail-group">
-                <option value="">No group</option>
-              </select>
+
+            <div id="session-metadata-section" class="hidden mt-16">
+              <h4>Session Information</h4>
+              <p class="hint">Optional details for your reference. This information is not sent to AI.</p>
+              <div class="session-meta-field">
+                <label class="session-meta-label">Date of interview</label>
+                <span id="session-date-display" class="session-meta-value session-meta-editable session-meta-placeholder">Not set</span>
+                <input type="date" id="session-date-input" class="session-meta-input hidden">
+              </div>
+              <div class="session-meta-field">
+                <label class="session-meta-label">Notes</label>
+                <p id="session-notes-display" class="session-meta-value session-meta-editable session-meta-placeholder">No notes</p>
+                <textarea id="session-notes-input" class="session-meta-input hidden" rows="3" placeholder="Session context, observations, anything noteworthy…"></textarea>
+              </div>
+              <div id="session-detail-status"></div>
             </div>
-            <div class="form-group">
-              <label for="pp-detail-desc">Description (optional)</label>
-              <span class="hint">Short note about this participant. Not shared with AI.</span>
-              <input type="text" id="pp-detail-desc" placeholder="e.g. Year 3 teacher, metro Sydney">
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="btn-save-pp-details">Save Details</button>
-            </div>
-            <div id="pp-detail-status"></div>
           </div>
         </div>
 
@@ -383,64 +390,13 @@
 
           <!-- Upload state (no transcript yet) -->
           <div id="subpage-transcript-upload" class="card">
-            <h3>Upload Transcript — <span id="subpage-upload-pp-id"></span></h3>
-            <p>Upload a .docx interview transcript for this participant. The file is parsed in your browser.</p>
+            <h3>Upload Transcript</h3>
+            <p class="hint">Upload a Word document (.docx) of the interview transcript. The file is parsed in your browser — nothing is sent to a server.</p>
             <div id="subpage-drop-zone" class="drop-zone">
               <span class="drop-zone-text">Drag .docx file here or click to browse</span>
               <input type="file" id="subpage-file-input" accept=".docx" class="drop-zone-input">
             </div>
             <div id="subpage-upload-status"></div>
-          </div>
-
-          <!-- De-identification (shown after parsing) -->
-          <div id="subpage-deidentify" class="card hidden">
-            <h3>De-identify Transcript — <span id="subpage-deid-filename"></span></h3>
-            <p>Remove participant names and other identifying information before saving.</p>
-
-            <div id="subpage-deid-names-section">
-              <h4>Speakers</h4>
-              <p class="hint">Set replacement text and role for each speaker. Facilitators are typically left unchanged.</p>
-              <div id="subpage-deid-name-list"></div>
-              <div class="btn-row mt-8">
-                <button class="btn btn-primary btn-sm" id="btn-subpage-apply-names">Apply Name Replacements</button>
-              </div>
-            </div>
-
-            <div id="subpage-deid-find-replace" class="deid-find-replace mt-16">
-              <h4>Find &amp; Replace</h4>
-              <div class="deid-fr-row">
-                <input type="text" id="subpage-deid-find-input" placeholder="Find…" class="deid-fr-input">
-                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-prev">&lsaquo; Prev</button>
-                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-next">Next &rsaquo;</button>
-                <span id="subpage-deid-match-count" class="deid-match-count"></span>
-              </div>
-              <div class="deid-fr-row">
-                <input type="text" id="subpage-deid-replace-input" placeholder="Replace with…" class="deid-fr-input">
-                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-replace">Replace</button>
-                <button class="btn btn-primary btn-sm" id="btn-subpage-deid-replace-all">Replace All</button>
-              </div>
-            </div>
-
-            <div id="subpage-deid-preview-section" class="mt-16">
-              <h4>Transcript</h4>
-              <p class="hint">Hover over a turn and click the pencil icon to edit it inline.</p>
-              <div id="subpage-deid-preview" class="transcript-preview"></div>
-            </div>
-
-            <div class="deid-confirm-section mt-16">
-              <label class="deid-confirm-label">
-                <input type="checkbox" id="subpage-deid-confirm-checkbox">
-                <span>I confirm that all personally identifiable information has been removed from this transcript.</span>
-              </label>
-            </div>
-
-            <div class="btn-row mt-12">
-              <button class="btn btn-primary" id="btn-subpage-deid-proceed" disabled>Confirm &amp; Save Transcript</button>
-              <button class="btn btn-secondary" id="btn-subpage-deid-cancel">Cancel</button>
-              <button class="btn btn-secondary" id="btn-subpage-deid-reset">Reset to Original</button>
-            </div>
-
-            <div id="subpage-deid-status"></div>
           </div>
 
           <!-- Saved transcript view (shown when transcript exists) -->
@@ -483,10 +439,10 @@
             <!-- Emergent Findings -->
             <div id="pp-emergent-findings"></div>
 
-            <!-- Theme summary for this participant -->
+            <!-- Theme summary for this session -->
             <div id="pp-theme-summary" class="card hidden">
-              <h3>Themes from this Participant</h3>
-              <p class="hint">Themes identified for this participant. Click a quote to see it in context.</p>
+              <h3>Themes from this Session</h3>
+              <p class="hint">Themes identified in this session. Click a quote to see it in context.</p>
               <div id="pp-theme-blocks" class="theme-blocks"></div>
             </div>
           </div>
@@ -510,6 +466,67 @@
             <p>No inquiries yet. Ask a question above.</p>
           </div>
         </div>
+
+        <!-- De-identification (shown after parsing, overlays any sub-page) -->
+        <div id="subpage-deidentify" class="card hidden">
+          <h3>Prepare Transcript</h3>
+          <p class="hint deid-filename-hint"><span id="subpage-deid-filename"></span></p>
+
+          <div id="subpage-deid-step1">
+            <h4>Assign Speaker Roles</h4>
+            <p class="hint">Each speaker found in the transcript is listed below. Set their role — participant names will be replaced automatically to protect their identity.</p>
+            <div id="subpage-deid-name-list"></div>
+            <div class="btn-row mt-12">
+              <button class="btn btn-primary" id="btn-subpage-apply-names">Assign Roles</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-cancel-step1">Cancel</button>
+            </div>
+          </div>
+
+          <div id="subpage-deid-step2" class="hidden">
+            <h4>Review Transcript</h4>
+            <p class="hint">Check the transcript for any remaining names, locations, or other details that could identify someone. Use find &amp; replace, or click the pencil icon on any turn to edit directly.</p>
+
+            <div id="subpage-deid-find-replace" class="deid-find-replace mt-12">
+              <div class="deid-fr-row">
+                <input type="text" id="subpage-deid-find-input" placeholder="Find…" class="deid-fr-input">
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-prev">&lsaquo; Prev</button>
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-next">Next &rsaquo;</button>
+                <span id="subpage-deid-match-count" class="deid-match-count"></span>
+              </div>
+              <div class="deid-fr-row">
+                <select id="subpage-deid-replace-mode" class="deid-fr-mode">
+                  <option value="text">Free text</option>
+                  <option value="participant">Participant</option>
+                </select>
+                <input type="text" id="subpage-deid-replace-input" placeholder="Replace with…" class="deid-fr-input deid-fr-replace-value">
+                <select id="subpage-deid-replace-participant" class="deid-fr-input deid-fr-replace-value hidden"></select>
+                <button class="btn btn-secondary btn-sm" id="btn-subpage-deid-replace">Replace</button>
+                <button class="btn btn-primary btn-sm" id="btn-subpage-deid-replace-all">Replace All</button>
+              </div>
+            </div>
+
+            <div id="subpage-deid-preview-section" class="mt-16">
+              <div id="subpage-deid-preview" class="transcript-preview"></div>
+            </div>
+
+            <div class="deid-confirm-section mt-16">
+              <label class="deid-confirm-label">
+                <input type="checkbox" id="subpage-deid-confirm-checkbox">
+                <span>I've reviewed the transcript and removed all identifying information.</span>
+              </label>
+            </div>
+
+            <div class="btn-row mt-12">
+              <button class="btn btn-primary" id="btn-subpage-deid-proceed" disabled>Confirm &amp; Save Transcript</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-back">Back to Roles</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-cancel">Cancel</button>
+              <button class="btn btn-secondary" id="btn-subpage-deid-reset">Start Over</button>
+            </div>
+          </div>
+
+          <div id="subpage-deid-status"></div>
+        </div>
+
       </div>
 
     </section>
@@ -519,22 +536,25 @@
 
       <!-- Theme Database header + filters -->
       <div class="card">
-        <div class="themes-controls">
-          <h2>Theme Database</h2>
-          <div class="themes-filters">
-            <select id="theme-filter-source">
-              <option value="">All sources</option>
-              <option value="synthesised">Synthesised</option>
-              <option value="merged">Merged</option>
-            </select>
+        <h2>Theme Database</h2>
+        <div class="themes-toolbar">
+          <div class="themes-toolbar-row">
+            <span class="toolbar-label">Show</span>
             <select id="theme-filter-rq">
               <option value="">All RQs</option>
             </select>
+            <span id="theme-dimension-filters"></span>
+          </div>
+          <div class="themes-toolbar-row">
+            <span class="toolbar-label">Group by</span>
+            <select id="theme-group-by">
+              <option value="none">None</option>
+            </select>
+            <span class="toolbar-label">Sort by</span>
             <select id="theme-sort">
-              <option value="participants">Sort: Participant count</option>
-              <option value="sessions">Sort: Session count</option>
-              <option value="label">Sort: Label</option>
-              <option value="first_seen">Sort: First seen</option>
+              <option value="participants">Participants</option>
+              <option value="quotes">Quotes</option>
+              <option value="label">Label</option>
             </select>
           </div>
         </div>
