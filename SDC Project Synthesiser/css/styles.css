@@ -2661,3 +2661,41 @@ textarea.session-meta-input { max-width: 100%; resize: vertical; }
   padding: 5px 10px;
   font-size: 0.82rem;
 }
+
+/* --- Theme Export --- */
+
+.themes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.themes-header h2 {
+  margin: 0;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  transition: background 0.1s;
+}
+
+.radio-option:hover {
+  background: var(--bg);
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  accent-color: var(--primary);
+}

@@ -2553,6 +2553,15 @@ Synth.app = (function () {
     });
     document.getElementById('btn-review-themes').addEventListener('click', startThemeReview);
     document.getElementById('btn-close-review').addEventListener('click', closeThemeReview);
+
+    document.getElementById('btn-export-themes').addEventListener('click', function () { openThemeExportModal('toolbar'); });
+    document.getElementById('btn-export-selected').addEventListener('click', function () { openThemeExportModal('selected'); });
+    document.getElementById('btn-close-theme-export').addEventListener('click', closeThemeExportModal);
+    document.getElementById('btn-cancel-theme-export').addEventListener('click', closeThemeExportModal);
+    document.getElementById('btn-run-theme-export').addEventListener('click', runThemeExport);
+    document.getElementById('theme-export-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeThemeExportModal();
+    });
   }
 
   function initNudges() {
@@ -2929,7 +2938,6 @@ Synth.app = (function () {
       selectedThemes.delete(themeId);
       card.classList.remove('selected');
     } else {
-      if (selectedThemes.size >= 2) return;
       selectedThemes.add(themeId);
       card.classList.add('selected');
     }
@@ -2938,14 +2946,147 @@ Synth.app = (function () {
 
   function updateMergeBar() {
     var bar = document.getElementById('merge-bar');
-    if (selectedThemes.size === 2) {
-      document.getElementById('merge-label').textContent = '2 themes selected for merge';
-      bar.classList.remove('hidden');
-    } else if (selectedThemes.size === 1) {
-      document.getElementById('merge-label').textContent = '1 theme selected — shift-click another to merge';
+    var count = selectedThemes.size;
+    if (count > 0) {
+      document.getElementById('merge-label').textContent = count + ' theme' + (count === 1 ? '' : 's') + ' selected';
+      document.getElementById('btn-merge-themes').disabled = count !== 2;
       bar.classList.remove('hidden');
     } else {
       bar.classList.add('hidden');
+    }
+  }
+
+  // ========== Theme Export Modal ==========
+
+  function hasActiveFilters() {
+    if (document.getElementById('theme-filter-rq').value) return true;
+    if (document.getElementById('theme-filter-significance').value) return true;
+    var dimFilters = document.querySelectorAll('.theme-dim-filter');
+    for (var i = 0; i < dimFilters.length; i++) {
+      if (dimFilters[i].value) return true;
+    }
+    return false;
+  }
+
+  async function getFilteredThemes() {
+    var themes = await Synth.db.getThemesByProject(activeProjectId);
+    var filterRq = document.getElementById('theme-filter-rq').value;
+    var filterSig = document.getElementById('theme-filter-significance').value;
+
+    if (filterRq) themes = themes.filter(function (t) { return t.rq_mappings && t.rq_mappings.includes(filterRq); });
+    if (filterSig) themes = themes.filter(function (t) { return (t.significance || 'major') === filterSig; });
+
+    var dimFilterEls = document.querySelectorAll('.theme-dim-filter');
+    dimFilterEls.forEach(function (sel) {
+      var dimId = sel.dataset.dimId;
+      var tagId = sel.value;
+      if (tagId) {
+        themes = themes.filter(function (t) {
+          return (t.supporting_evidence || []).some(function (ev) {
+            return ev.participant_dimensions && ev.participant_dimensions[dimId] === tagId;
+          });
+        });
+      }
+    });
+
+    return themes;
+  }
+
+  async function openThemeExportModal(source) {
+    if (!activeProjectId) return;
+
+    var allThemes = await Synth.db.getThemesByProject(activeProjectId);
+    var filteredThemes = await getFilteredThemes();
+    var filtersActive = hasActiveFilters();
+
+    document.getElementById('export-count-all').textContent = allThemes.length;
+
+    var filteredOption = document.getElementById('export-scope-filtered-option');
+    if (filtersActive) {
+      document.getElementById('export-count-filtered').textContent = filteredThemes.length;
+      filteredOption.style.display = '';
+    } else {
+      filteredOption.style.display = 'none';
+    }
+
+    var selectedOption = document.getElementById('export-scope-selected-option');
+    if (selectedThemes.size > 0) {
+      document.getElementById('export-count-selected').textContent = selectedThemes.size;
+      selectedOption.style.display = '';
+    } else {
+      selectedOption.style.display = 'none';
+    }
+
+    var defaultScope = 'all';
+    if (source === 'selected' && selectedThemes.size > 0) {
+      defaultScope = 'selected';
+    } else if (filtersActive) {
+      defaultScope = 'filtered';
+    }
+    var radios = document.querySelectorAll('input[name="export-scope"]');
+    radios.forEach(function (r) { r.checked = r.value === defaultScope; });
+
+    document.getElementById('theme-export-status').textContent = '';
+    document.getElementById('theme-export-modal').classList.remove('hidden');
+  }
+
+  function closeThemeExportModal() {
+    document.getElementById('theme-export-modal').classList.add('hidden');
+  }
+
+  async function runThemeExport() {
+    if (!activeProjectId) return;
+
+    var scope = document.querySelector('input[name="export-scope"]:checked').value;
+    var format = document.querySelector('input[name="export-format"]:checked').value;
+    var statusEl = document.getElementById('theme-export-status');
+
+    var themes;
+    if (scope === 'selected') {
+      var allThemes = await Synth.db.getThemesByProject(activeProjectId);
+      themes = allThemes.filter(function (t) { return selectedThemes.has(t.theme_id); });
+    } else if (scope === 'filtered') {
+      themes = await getFilteredThemes();
+    } else {
+      themes = await Synth.db.getThemesByProject(activeProjectId);
+    }
+
+    if (themes.length === 0) {
+      statusEl.textContent = 'No themes to export.';
+      statusEl.className = 'status-msg error';
+      return;
+    }
+
+    var fw = await Synth.db.getFramework(activeProjectId);
+    var projectName = '';
+    if (fw && fw.project_name) {
+      projectName = fw.project_name;
+    } else {
+      var proj = await Synth.db.getProject(activeProjectId);
+      projectName = proj ? proj.name : 'themes';
+    }
+
+    var sessions = await Synth.db.getSessionsByProject(activeProjectId);
+    var sessionMap = {};
+    sessions.forEach(function (s) { sessionMap[s.session_id] = s.label || s.session_id; });
+
+    var rqMap = {};
+    if (fw && fw.research_questions) {
+      fw.research_questions.forEach(function (rq) { rqMap[rq.rq_id] = rq.label; });
+    }
+
+    try {
+      if (format === 'docx') {
+        await Synth.export.exportThemesDocx(themes, projectName, sessionMap, rqMap);
+      } else {
+        Synth.export.exportThemesXlsx(themes, projectName, sessionMap, rqMap);
+      }
+      statusEl.textContent = 'Exported ' + themes.length + ' theme' + (themes.length === 1 ? '' : 's') + '.';
+      statusEl.className = 'status-msg success';
+      setTimeout(closeThemeExportModal, 1200);
+    } catch (err) {
+      statusEl.textContent = 'Export failed: ' + err.message;
+      statusEl.className = 'status-msg error';
     }
   }
 

@@ -527,7 +527,10 @@
 
       <!-- Theme Database header + filters -->
       <div class="card">
-        <h2>Theme Database</h2>
+        <div class="themes-header">
+          <h2>Theme Database</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-export-themes">Export</button>
+        </div>
         <div class="themes-toolbar">
           <div class="themes-toolbar-row">
             <span class="toolbar-label">Show</span>
@@ -592,6 +595,7 @@
         <div class="merge-bar-content">
           <span id="merge-label">2 themes selected</span>
           <button class="btn btn-primary btn-sm" id="btn-merge-themes">Merge Selected</button>
+          <button class="btn btn-secondary btn-sm" id="btn-export-selected">Export Selected</button>
           <button class="btn btn-secondary btn-sm" id="btn-cancel-merge">Cancel</button>
         </div>
       </div>
@@ -904,7 +908,56 @@
     </div>
   </div>
 
+  <!-- Theme Export Modal -->
+  <div id="theme-export-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Export Themes</h2>
+        <button class="btn-icon" id="btn-close-theme-export">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label>Scope</label>
+        <div class="radio-group" id="export-scope-group">
+          <label class="radio-option">
+            <input type="radio" name="export-scope" value="all" checked>
+            <span>All themes (<span id="export-count-all">0</span>)</span>
+          </label>
+          <label class="radio-option" id="export-scope-filtered-option" style="display:none">
+            <input type="radio" name="export-scope" value="filtered">
+            <span>Filtered view (<span id="export-count-filtered">0</span>)</span>
+          </label>
+          <label class="radio-option" id="export-scope-selected-option" style="display:none">
+            <input type="radio" name="export-scope" value="selected">
+            <span>Selected themes (<span id="export-count-selected">0</span>)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Format</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="export-format" value="docx" checked>
+            <span>Word document (.docx)</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="export-format" value="xlsx">
+            <span>Spreadsheet (.xlsx)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="btn-row mt-12">
+        <button class="btn btn-primary" id="btn-run-theme-export">Export</button>
+        <button class="btn btn-secondary" id="btn-cancel-theme-export">Cancel</button>
+      </div>
+      <div id="theme-export-status"></div>
+    </div>
+  </div>
+
   <script src="lib/jszip.min.js"></script>
+  <script src="lib/xlsx.mini.min.js"></script>
   <script src="js/db.js"></script>
   <script src="js/api.js"></script>
   <script src="js/transcript-parser.js"></script>
