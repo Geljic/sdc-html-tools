@@ -151,143 +151,134 @@
     <!-- Project Info Tab -->
     <section id="tab-project" class="tab-panel">
 
+      <!-- Completeness indicator -->
+      <div id="project-info-status" class="project-info-status"></div>
+
       <!-- Background -->
-      <div class="card">
-        <h2>Project Background</h2>
-        <p>Describe the study so the synthesiser has context. This is used in every synthesis prompt to help the model understand the domain, research goals, and how to interpret participant responses.</p>
-        <div class="form-group">
-          <label for="fw-background">Background &amp; Methodology</label>
-          <textarea id="fw-background" rows="4" placeholder="What is this study about? What methodology are you using?"></textarea>
+      <div class="card" id="bg-section">
+        <!-- Summary view -->
+        <div id="bg-summary" class="section-summary hidden">
+          <div class="section-summary-header">
+            <h2>Project Background</h2>
+            <button class="btn btn-secondary btn-sm" id="btn-bg-edit" type="button">Edit</button>
+          </div>
+          <div id="bg-summary-text" class="section-summary-body"></div>
+          <button class="btn-text" id="btn-bg-show-more" type="button">Show more</button>
+
+          <div class="bg-method-cards mt-12">
+            <p class="hint mb-8">Regenerate using one of these options:</p>
+            <div class="bg-method-grid">
+              <button class="bg-method-card" data-bg-method="questions" type="button">
+                <span class="bg-method-icon">&#9998;</span>
+                <span class="bg-method-label">Answer a few questions</span>
+                <span class="bg-method-desc">Describe your project and the AI will write a background for you</span>
+              </button>
+              <button class="bg-method-card" data-bg-method="document" type="button">
+                <span class="bg-method-icon">&#128196;</span>
+                <span class="bg-method-label">Upload a document</span>
+                <span class="bg-method-desc">Use a research plan, brief, or slide deck to generate context</span>
+              </button>
+              <button class="bg-method-card" data-bg-method="images" type="button">
+                <span class="bg-method-icon">&#128247;</span>
+                <span class="bg-method-label">Upload screenshots</span>
+                <span class="bg-method-desc">Photos or screencaps of slides, briefs, or other project docs</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button class="btn btn-primary" id="btn-save-framework">Save</button>
-        <div id="framework-status"></div>
 
-        <button class="btn-text" id="btn-open-bg-helper" type="button">Need help writing this?</button>
-
-        <!-- AI Background Helper -->
-        <div id="bg-helper-panel" class="bg-helper hidden">
-          <div class="bg-helper-header">
-            <h3>Background Generator</h3>
-            <button class="btn-icon" id="btn-close-bg-helper" type="button">&times;</button>
+        <!-- Edit view -->
+        <div id="bg-edit">
+          <h2>Project Background</h2>
+          <p>Describe the study so the synthesiser has context. This is used in every synthesis prompt to help the model understand the domain, research goals, and how to interpret participant responses.</p>
+          <div class="form-group">
+            <label for="fw-background">Background &amp; Methodology</label>
+            <textarea id="fw-background" rows="4" placeholder="What is this study about? What methodology are you using?"></textarea>
+            <div id="bg-autosave-indicator" class="autosave-indicator hidden">Saved</div>
           </div>
-          <p class="hint">Choose a method to generate a project background. The result will be a preview you can edit before using.</p>
+          <div id="framework-status"></div>
+          <button class="btn btn-secondary btn-sm" id="btn-bg-done" type="button">Done</button>
 
-          <!-- Path selector -->
-          <div id="bg-path-selector" class="bg-path-selector">
-            <button class="bg-path-btn active" data-bg-path="questions" type="button">
-              <span class="bg-path-icon">&#9998;</span>
-              <span class="bg-path-label">Answer a few questions</span>
-              <span class="bg-path-desc">Best when starting from scratch</span>
-            </button>
-            <button class="bg-path-btn" data-bg-path="document" type="button">
-              <span class="bg-path-icon">&#128196;</span>
-              <span class="bg-path-label">Upload an existing document</span>
-              <span class="bg-path-desc">Research plan, brief, or slide deck</span>
-            </button>
-          </div>
-
-          <!-- Path A: Questionnaire -->
-          <div id="bg-path-questions" class="bg-path-panel">
-            <div class="form-group">
-              <label for="bg-q-project">What is this project about?</label>
-              <span class="hint">A brief description of the initiative, service, or product being researched. This helps the synthesiser understand the domain and interpret participant language correctly.</span>
-              <input type="text" id="bg-q-project" placeholder="e.g. Redesigning the parent portal for NSW public schools to improve access to attendance, reports, and school communications">
-            </div>
-            <div class="form-group">
-              <label for="bg-q-goal">What are you trying to learn?</label>
-              <span class="hint">The main objective of this research. Are you exploring a problem space, evaluating a design, testing a hypothesis? This shapes the depth and focus of the synthesis.</span>
-              <input type="text" id="bg-q-goal" placeholder="e.g. Understand how parents currently access school information and identify pain points with existing digital channels">
-            </div>
-            <div class="form-group">
-              <label for="bg-q-method">How are you conducting this research?</label>
-              <span class="hint">The method and format of your sessions. This helps the synthesiser interpret transcript structure and distinguish between facilitator probes and participant responses.</span>
-              <input type="text" id="bg-q-method" placeholder="e.g. Semi-structured interviews, 45 minutes each, conducted via Teams">
-            </div>
-            <div class="form-group">
-              <label for="bg-q-participants">Who are you speaking to?</label>
-              <span class="hint">A brief description of your participant cohort. Understanding who participants are helps contextualise their perspectives and language.</span>
-              <input type="text" id="bg-q-participants" placeholder="e.g. Parents and carers of primary school students across metropolitan and regional NSW">
-            </div>
-            <div class="form-group">
-              <label for="bg-q-domain">Is there anything specific the synthesiser should know?</label>
-              <span class="hint">Jargon, acronyms, internal tool names, or domain context that a general-purpose model wouldn't know. This is often the most valuable field.</span>
-              <textarea id="bg-q-domain" rows="3" placeholder="e.g. Participants may refer to 'the app' — this is the existing SchoolBytes parent app. 'SRE' means Special Religious Education."></textarea>
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="btn-bg-generate" type="button">Generate Background</button>
+          <div class="bg-method-cards mt-16">
+            <p class="text-secondary text-small mb-8">Or generate a background from your inputs:</p>
+            <div class="bg-method-grid">
+              <button class="bg-method-card" data-bg-method="questions" type="button">
+                <span class="bg-method-icon">&#9998;</span>
+                <span class="bg-method-label">Answer a few questions</span>
+                <span class="bg-method-desc">Describe your project and the AI will write a background for you</span>
+              </button>
+              <button class="bg-method-card" data-bg-method="document" type="button">
+                <span class="bg-method-icon">&#128196;</span>
+                <span class="bg-method-label">Upload a document</span>
+                <span class="bg-method-desc">Use a research plan, brief, or slide deck to generate context</span>
+              </button>
+              <button class="bg-method-card" data-bg-method="images" type="button">
+                <span class="bg-method-icon">&#128247;</span>
+                <span class="bg-method-label">Upload screenshots</span>
+                <span class="bg-method-desc">Photos or screencaps of slides, briefs, or other project docs</span>
+              </button>
             </div>
           </div>
-
-          <!-- Path B: Document Upload -->
-          <div id="bg-path-document" class="bg-path-panel hidden">
-            <div class="form-group">
-              <label>Upload a document</label>
-              <span class="hint">Upload a research plan, project brief, slide deck, or any document that describes this project. The AI will extract the relevant context and generate a project background. Supports .docx and .pptx files.</span>
-              <div class="upload-zone" id="bg-doc-dropzone">
-                <p>Drop a .docx or .pptx file here, or click to browse</p>
-                <input type="file" id="bg-doc-input" accept=".docx,.pptx" class="hidden">
-              </div>
-              <div id="bg-doc-filename" class="text-small text-secondary hidden"></div>
-            </div>
-            <div class="form-group">
-              <label for="bg-doc-note">What is this document? <span class="hint-inline">(optional)</span></label>
-              <span class="hint">Helps the AI understand what it's reading, especially for slide decks where context may be fragmented.</span>
-              <input type="text" id="bg-doc-note" placeholder="e.g. Research plan for the parent portal usability study">
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="btn-bg-extract" type="button" disabled>Extract &amp; Generate</button>
-            </div>
-          </div>
-
-          <!-- Status -->
-          <div id="bg-helper-status"></div>
-
-          <!-- Preview (shown after generation) -->
-          <div id="bg-preview-panel" class="bg-preview hidden">
-            <div class="form-group">
-              <label for="bg-preview-text">Preview</label>
-              <span class="hint">Review and edit the generated background below. Click "Use This" to copy it into the project background field.</span>
-              <textarea id="bg-preview-text" rows="8"></textarea>
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="btn-bg-use" type="button">Use This</button>
-              <button class="btn btn-secondary" id="btn-bg-regenerate" type="button">Regenerate</button>
-            </div>
-          </div>
-
         </div>
       </div>
 
       <!-- Research Questions -->
-      <div class="card">
-        <h2>Research Questions</h2>
-        <p>The questions you're trying to answer through this research. When synthesising a transcript, the model maps findings to these questions. Define them clearly so the synthesiser knows what to look for.</p>
-        <div id="rq-list"></div>
-        <div id="rq-form" class="mt-8">
-          <div class="form-group">
-            <div class="btn-row">
-              <input type="text" id="new-rq-label" placeholder="e.g. How do participants currently access and use data?" style="flex:1">
-              <button class="btn btn-secondary" id="btn-add-rq">Add</button>
+      <div class="card" id="rq-section">
+        <!-- Summary view -->
+        <div id="rq-summary" class="section-summary hidden">
+          <div class="section-summary-header">
+            <h2 id="rq-summary-heading">Research Questions</h2>
+            <button class="btn btn-secondary btn-sm" id="btn-rq-edit" type="button">Edit</button>
+          </div>
+          <ol id="rq-summary-list" class="section-summary-list"></ol>
+        </div>
+
+        <!-- Edit view -->
+        <div id="rq-edit">
+          <h2>Research Questions</h2>
+          <p>The questions you're trying to answer through this research. When synthesising a transcript, the model maps findings to these questions. Define them clearly so the synthesiser knows what to look for.</p>
+          <div id="rq-list"></div>
+          <div id="rq-form" class="mt-8">
+            <div class="form-group">
+              <div class="btn-row">
+                <input type="text" id="new-rq-label" placeholder="e.g. How do participants currently access and use data?" style="flex:1">
+                <button class="btn btn-secondary" id="btn-add-rq">Add</button>
+              </div>
             </div>
           </div>
+          <button class="btn btn-secondary btn-sm" id="btn-rq-done" type="button">Done</button>
         </div>
       </div>
 
       <!-- Participant Dimensions -->
-      <div class="card">
-        <h2>Participant Dimensions</h2>
-        <p>Define the ways you want to categorise participants. Each dimension (e.g. Role Type, School Type) can have multiple tags. Participants are tagged during session setup, and the synthesiser uses these for cross-dimensional analysis in the final report.</p>
-        <div id="dimensions-list"></div>
-        <div id="dimension-add-form" class="mt-8 hidden">
-          <div class="form-group">
-            <div class="btn-row">
-              <input type="text" id="new-dimension-label" placeholder="e.g. Role Type, School Type" style="flex:1">
-              <button class="btn btn-primary" id="btn-create-dimension">Create</button>
-              <button class="btn btn-secondary" id="btn-cancel-dimension">Cancel</button>
+      <div class="card" id="dim-section">
+        <!-- Summary view -->
+        <div id="dim-summary" class="section-summary hidden">
+          <div class="section-summary-header">
+            <h2 id="dim-summary-heading">Participant Dimensions</h2>
+            <button class="btn btn-secondary btn-sm" id="btn-dim-edit" type="button">Edit</button>
+          </div>
+          <div id="dim-summary-list" class="section-summary-body"></div>
+        </div>
+
+        <!-- Edit view -->
+        <div id="dim-edit">
+          <h2>Participant Dimensions</h2>
+          <p>Define the ways you want to categorise participants. Each dimension (e.g. Role Type, School Type) can have multiple tags. Participants are tagged during session setup, and the synthesiser uses these for cross-dimensional analysis in the final report.</p>
+          <div id="dimensions-list"></div>
+          <div id="dimension-add-form" class="mt-8 hidden">
+            <div class="form-group">
+              <div class="btn-row">
+                <input type="text" id="new-dimension-label" placeholder="e.g. Role Type, School Type" style="flex:1">
+                <button class="btn btn-primary" id="btn-create-dimension">Create</button>
+                <button class="btn btn-secondary" id="btn-cancel-dimension">Cancel</button>
+              </div>
             </div>
           </div>
+          <button class="btn btn-secondary" id="btn-add-dimension">+ Add Dimension</button>
+          <p class="hint mt-8" id="dim-optional-hint">Optional — define these if you want cross-group analysis in the final report.</p>
+          <button class="btn btn-secondary btn-sm mt-8" id="btn-dim-done" type="button">Done</button>
         </div>
-        <button class="btn btn-secondary" id="btn-add-dimension">+ Add Dimension</button>
       </div>
 
     </section>
@@ -812,6 +803,104 @@
         <button class="btn-icon" id="btn-close-quote-modal">&times;</button>
       </div>
       <div id="quote-modal-body" class="transcript-preview modal-transcript"></div>
+    </div>
+  </div>
+
+  <!-- Background Generator Modal -->
+  <div id="bg-modal" class="modal-overlay hidden">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="bg-modal-title">Generate Background</h2>
+        <button class="btn-icon" id="btn-close-bg-modal" type="button">&times;</button>
+      </div>
+
+      <!-- Path A: Questionnaire -->
+      <div id="bg-modal-questions" class="bg-modal-path hidden">
+        <div class="form-group">
+          <label for="bg-q-project">What is this project about?</label>
+          <span class="hint">A brief description of the initiative, service, or product being researched. This helps the synthesiser understand the domain and interpret participant language correctly.</span>
+          <input type="text" id="bg-q-project" placeholder="e.g. Redesigning the parent portal for NSW public schools to improve access to attendance, reports, and school communications">
+        </div>
+        <div class="form-group">
+          <label for="bg-q-goal">What are you trying to learn?</label>
+          <span class="hint">The main objective of this research. Are you exploring a problem space, evaluating a design, testing a hypothesis? This shapes the depth and focus of the synthesis.</span>
+          <input type="text" id="bg-q-goal" placeholder="e.g. Understand how parents currently access school information and identify pain points with existing digital channels">
+        </div>
+        <div class="form-group">
+          <label for="bg-q-method">How are you conducting this research?</label>
+          <span class="hint">The method and format of your sessions. This helps the synthesiser interpret transcript structure and distinguish between facilitator probes and participant responses.</span>
+          <input type="text" id="bg-q-method" placeholder="e.g. Semi-structured interviews, 45 minutes each, conducted via Teams">
+        </div>
+        <div class="form-group">
+          <label for="bg-q-participants">Who are you speaking to?</label>
+          <span class="hint">A brief description of your participant cohort. Understanding who participants are helps contextualise their perspectives and language.</span>
+          <input type="text" id="bg-q-participants" placeholder="e.g. Parents and carers of primary school students across metropolitan and regional NSW">
+        </div>
+        <div class="form-group bg-domain-highlight">
+          <label for="bg-q-domain">Is there anything specific the synthesiser should know?</label>
+          <span class="hint">Jargon, acronyms, internal tool names, or domain context that a general-purpose model wouldn't know. This is often the most useful field for synthesis quality.</span>
+          <textarea id="bg-q-domain" rows="3" placeholder="e.g. Participants may refer to 'the app' — this is the existing SchoolBytes parent app. 'SRE' means Special Religious Education."></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-bg-generate" type="button">Generate background</button>
+        </div>
+      </div>
+
+      <!-- Path B: Document Upload -->
+      <div id="bg-modal-document" class="bg-modal-path hidden">
+        <div class="form-group">
+          <label>Upload a document</label>
+          <span class="hint">Upload a research plan, project brief, slide deck, or any document that describes this project. The AI will extract the relevant context and generate a project background. Supports .docx and .pptx files.</span>
+          <div class="upload-zone" id="bg-doc-dropzone">
+            <p class="upload-zone-prompt">Drop a .docx or .pptx file here, or click to browse</p>
+            <input type="file" id="bg-doc-input" accept=".docx,.pptx" class="hidden">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bg-doc-note">What is this document? <span class="hint-inline">(optional)</span></label>
+          <span class="hint">Helps the AI understand what it's reading, especially for slide decks where context may be fragmented.</span>
+          <input type="text" id="bg-doc-note" placeholder="e.g. Research plan for the parent portal usability study">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-bg-extract" type="button" disabled>Generate background</button>
+        </div>
+      </div>
+
+      <!-- Path C: Image Upload -->
+      <div id="bg-modal-images" class="bg-modal-path hidden">
+        <div class="form-group">
+          <label>Upload screenshots</label>
+          <span class="hint">Upload photos or screenshots of slides, project briefs, or other documents. The AI will read the images and generate a project background. PNG, JPG, or WebP — up to 6 images.</span>
+          <div class="upload-zone" id="bg-img-dropzone">
+            <p class="upload-zone-prompt">Drop images here, or click to browse</p>
+            <input type="file" id="bg-img-input" accept="image/png,image/jpeg,image/webp" multiple class="hidden">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bg-img-note">Anything else the AI should know about these images? <span class="hint-inline">(optional)</span></label>
+          <span class="hint">Helpful when images show fragments of slides or context that might not be obvious from the images alone.</span>
+          <input type="text" id="bg-img-note" placeholder="e.g. These are slides from the project kickoff deck">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-bg-img-generate" type="button" disabled>Generate background</button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="bg-modal-status"></div>
+
+      <!-- Preview (shown after generation) -->
+      <div id="bg-preview-panel" class="bg-preview hidden">
+        <div class="form-group">
+          <label for="bg-preview-text">Preview</label>
+          <span class="hint">Review and edit the generated background below. Click "Use this" to save it as your project background.</span>
+          <textarea id="bg-preview-text" rows="8"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-bg-use" type="button">Use this</button>
+          <button class="btn btn-secondary" id="btn-bg-regenerate" type="button">Try again</button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -546,36 +546,105 @@ textarea {
 
 .btn-text:hover { color: var(--primary-hover); }
 
-/* --- Background Generator --- */
+/* --- Project Info: Completeness Indicator --- */
 
-.bg-helper {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+.project-info-status {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
 }
 
-.bg-helper-header {
+.project-info-status .status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-info-status .status-check {
+  color: var(--success, #16a34a);
+}
+
+.project-info-status .status-empty {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+/* --- Project Info: Section Summary/Edit --- */
+
+.section-summary-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
 
-.bg-helper-header h3 { font-size: 1rem; }
+.section-summary-header h2 { margin-bottom: 0; }
 
-.bg-path-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 12px 0 16px;
+.section-summary-body {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
-.bg-path-btn {
+.section-summary-body.truncated {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.section-summary-list {
+  padding-left: 20px;
+  margin: 4px 0;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.section-summary .dim-summary-item {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.section-summary .dim-summary-label {
+  font-weight: 600;
+}
+
+.section-summary .dim-summary-tags {
+  color: var(--text-secondary);
+}
+
+/* --- Auto-save indicator --- */
+
+.autosave-indicator {
+  font-size: 0.78rem;
+  color: var(--success, #16a34a);
+  margin-top: 4px;
+  transition: opacity 0.3s;
+}
+
+.autosave-indicator.fading {
+  opacity: 0;
+}
+
+/* --- Background Generator: Method Cards --- */
+
+.bg-method-cards { margin-top: 12px; }
+
+.bg-method-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.bg-method-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 14px 12px;
+  gap: 6px;
+  padding: 16px 12px;
   border: 2px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -584,16 +653,27 @@ textarea {
   text-align: center;
 }
 
-.bg-path-btn:hover { border-color: var(--primary); background: var(--primary-light); }
-.bg-path-btn.active { border-color: var(--primary); background: var(--primary-light); }
+.bg-method-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
 
-.bg-path-icon { font-size: 1.3rem; }
-.bg-path-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
-.bg-path-desc { font-size: 0.75rem; color: var(--text-secondary); }
+.bg-method-icon { font-size: 1.4rem; }
+.bg-method-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.bg-method-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
 
-.bg-path-panel { margin-top: 4px; }
+/* --- Background Generator: Modal --- */
+
+.bg-modal-path { margin-bottom: 8px; }
+
+.bg-domain-highlight {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+}
 
 .bg-preview { margin-top: 12px; }
+
+/* --- Upload Zone --- */
 
 .upload-zone {
   border: 2px dashed var(--border);
@@ -611,6 +691,118 @@ textarea {
   border-color: var(--primary);
   background: var(--primary-light);
 }
+
+/* Upload zone: file added state */
+.upload-zone.has-file {
+  border-style: solid;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.upload-zone.has-file:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.upload-file-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-file-icon { font-size: 1.3rem; }
+
+.upload-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-file-name {
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-file-size {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.upload-file-remove {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.upload-file-remove:hover { color: var(--text); }
+
+/* Upload zone: image thumbnails */
+.upload-thumb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.upload-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.upload-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.upload-thumb-remove:hover { background: rgba(0,0,0,0.8); }
+
+.upload-img-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.upload-img-add {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0;
+}
+
+.upload-img-add:hover { text-decoration: underline; }
 
 .hint-inline {
   font-weight: 400;

@@ -206,8 +206,12 @@ Synth.app = (function () {
 
   // ========== Project Info Tab ==========
 
+  var bgSaveTimer = null;
+  var bgDocFile = null;
+  var bgImageFiles = [];
+  var activeBgMethod = null;
+
   function initProjectTab() {
-    document.getElementById('btn-save-framework').addEventListener('click', saveFramework);
     document.getElementById('btn-add-rq').addEventListener('click', addResearchQuestion);
     document.getElementById('btn-add-dimension').addEventListener('click', function () {
       document.getElementById('dimension-add-form').classList.remove('hidden');
@@ -231,38 +235,206 @@ Synth.app = (function () {
     document.getElementById('new-rq-label').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); addResearchQuestion(); }
     });
-    initBgHelper();
+
+    // Auto-save background on typing
+    document.getElementById('fw-background').addEventListener('input', function () {
+      clearTimeout(bgSaveTimer);
+      bgSaveTimer = setTimeout(autoSaveBackground, 1500);
+    });
+
+    // Section summary/edit toggles
+    document.getElementById('btn-bg-edit').addEventListener('click', function () { setSectionView('bg', 'edit'); });
+    document.getElementById('btn-bg-done').addEventListener('click', function () { setSectionView('bg', 'summary'); });
+    document.getElementById('btn-rq-edit').addEventListener('click', function () { setSectionView('rq', 'edit'); });
+    document.getElementById('btn-rq-done').addEventListener('click', function () { setSectionView('rq', 'summary'); });
+    document.getElementById('btn-dim-edit').addEventListener('click', function () { setSectionView('dim', 'edit'); });
+    document.getElementById('btn-dim-done').addEventListener('click', function () { setSectionView('dim', 'summary'); });
+
+    // Show more/less for background summary
+    document.getElementById('btn-bg-show-more').addEventListener('click', function () {
+      var body = document.getElementById('bg-summary-text');
+      var isExpanded = !body.classList.contains('truncated');
+      body.classList.toggle('truncated', isExpanded);
+      this.textContent = isExpanded ? 'Show more' : 'Show less';
+    });
+
+    initBgModal();
   }
 
-  // ========== Background Generator ==========
+  // ========== Section Summary/Edit ==========
 
-  var bgDocFile = null;
+  function setSectionView(section, view) {
+    var summaryEl = document.getElementById(section + '-summary');
+    var editEl = document.getElementById(section + '-edit');
+    if (view === 'summary') {
+      refreshSectionSummary(section);
+      summaryEl.classList.remove('hidden');
+      editEl.classList.add('hidden');
+    } else {
+      summaryEl.classList.add('hidden');
+      editEl.classList.remove('hidden');
+    }
+  }
 
-  function initBgHelper() {
-    document.getElementById('btn-open-bg-helper').addEventListener('click', function () {
-      document.getElementById('bg-helper-panel').classList.remove('hidden');
-      this.classList.add('hidden');
-    });
-    document.getElementById('btn-close-bg-helper').addEventListener('click', closeBgHelper);
+  async function refreshSectionSummary(section) {
+    if (!activeProjectId) return;
+    var fw = await Synth.db.getFramework(activeProjectId);
+    if (!fw) return;
 
-    document.querySelectorAll('.bg-path-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        document.querySelectorAll('.bg-path-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        var path = btn.dataset.bgPath;
-        document.getElementById('bg-path-questions').classList.toggle('hidden', path !== 'questions');
-        document.getElementById('bg-path-document').classList.toggle('hidden', path !== 'document');
+    if (section === 'bg') {
+      var text = fw.background || '';
+      var summaryText = document.getElementById('bg-summary-text');
+      summaryText.textContent = text;
+      summaryText.classList.add('truncated');
+      document.getElementById('btn-bg-show-more').textContent = 'Show more';
+      document.getElementById('btn-bg-show-more').classList.toggle('hidden', text.length < 300);
+    }
+
+    if (section === 'rq') {
+      var rqs = fw.research_questions || [];
+      document.getElementById('rq-summary-heading').textContent = 'Research Questions (' + rqs.length + ')';
+      var list = document.getElementById('rq-summary-list');
+      list.innerHTML = '';
+      rqs.forEach(function (rq) {
+        var li = document.createElement('li');
+        li.textContent = rq.label;
+        list.appendChild(li);
+      });
+    }
+
+    if (section === 'dim') {
+      var dims = fw.participant_dimensions || [];
+      document.getElementById('dim-summary-heading').textContent = 'Participant Dimensions (' + dims.length + ')';
+      var container = document.getElementById('dim-summary-list');
+      container.innerHTML = '';
+      if (dims.length === 0) {
+        container.innerHTML = '<p class="text-secondary text-small">None defined (optional)</p>';
+      } else {
+        dims.forEach(function (dim) {
+          var div = document.createElement('div');
+          div.className = 'dim-summary-item';
+          var tagLabels = dim.tags.map(function (t) { return t.label; }).join(', ');
+          div.innerHTML = '<span class="dim-summary-label">' + escapeHtml(dim.label) + ':</span> ' +
+            '<span class="dim-summary-tags">' + (tagLabels ? escapeHtml(tagLabels) : '<em>no tags yet</em>') + '</span>';
+          container.appendChild(div);
+        });
+      }
+    }
+  }
+
+  function updateCompletenessIndicator(fw) {
+    var el = document.getElementById('project-info-status');
+    var hasBg = !!(fw.background && fw.background.trim());
+    var hasRq = !!(fw.research_questions && fw.research_questions.length > 0);
+    var hasDim = !!(fw.participant_dimensions && fw.participant_dimensions.length > 0);
+
+    el.innerHTML =
+      '<span class="status-item">' +
+        '<span class="' + (hasBg ? 'status-check' : 'status-empty') + '">' + (hasBg ? '&#10003;' : '&#9675;') + '</span> Background' +
+      '</span>' +
+      '<span class="status-item">' +
+        '<span class="' + (hasRq ? 'status-check' : 'status-empty') + '">' + (hasRq ? '&#10003;' : '&#9675;') + '</span> Research Questions' +
+      '</span>' +
+      '<span class="status-item">' +
+        '<span class="' + (hasDim ? 'status-check' : 'status-empty') + '">' + (hasDim ? '&#10003;' : '&mdash;') + '</span> Dimensions' +
+      '</span>';
+  }
+
+  function updateDoneButtons(fw) {
+    var hasBg = !!(fw.background && fw.background.trim());
+    var hasRq = !!(fw.research_questions && fw.research_questions.length > 0);
+    var hasDim = !!(fw.participant_dimensions && fw.participant_dimensions.length > 0);
+    document.getElementById('btn-bg-done').classList.toggle('hidden', !hasBg);
+    document.getElementById('btn-rq-done').classList.toggle('hidden', !hasRq);
+    document.getElementById('btn-dim-done').classList.toggle('hidden', !hasDim);
+  }
+
+  // ========== Auto-save ==========
+
+  async function autoSaveBackground() {
+    if (!activeProjectId) return;
+    var fw = await Synth.db.getFramework(activeProjectId);
+    fw.background = document.getElementById('fw-background').value.trim();
+    await Synth.db.saveFramework(fw);
+    updateCompletenessIndicator(fw);
+    updateDoneButtons(fw);
+
+    var indicator = document.getElementById('bg-autosave-indicator');
+    indicator.classList.remove('hidden', 'fading');
+    indicator.textContent = 'Saved';
+    setTimeout(function () {
+      indicator.classList.add('fading');
+      setTimeout(function () { indicator.classList.add('hidden'); }, 300);
+    }, 2000);
+  }
+
+  // ========== Background Generator (Modal) ==========
+
+  function initBgModal() {
+    // Method cards (both in edit and summary views)
+    document.querySelectorAll('.bg-method-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        openBgModal(card.dataset.bgMethod);
       });
     });
 
+    // Modal close
+    document.getElementById('btn-close-bg-modal').addEventListener('click', closeBgModal);
+    document.getElementById('bg-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeBgModal();
+    });
+
+    // Generation buttons
     document.getElementById('btn-bg-generate').addEventListener('click', generateBgFromQuestions);
     document.getElementById('btn-bg-extract').addEventListener('click', generateBgFromDocument);
+    document.getElementById('btn-bg-img-generate').addEventListener('click', generateBgFromImages);
     document.getElementById('btn-bg-use').addEventListener('click', useBgPreview);
     document.getElementById('btn-bg-regenerate').addEventListener('click', regenerateBg);
 
+    // Document dropzone
+    initDocDropzone();
+
+    // Image dropzone
+    initImgDropzone();
+  }
+
+  function openBgModal(method) {
+    activeBgMethod = method;
+    var modal = document.getElementById('bg-modal');
+    var titles = { questions: 'Answer a few questions', document: 'Upload a document', images: 'Upload screenshots' };
+    document.getElementById('bg-modal-title').textContent = titles[method] || 'Generate Background';
+
+    // Show the right path
+    document.querySelectorAll('.bg-modal-path').forEach(function (p) { p.classList.add('hidden'); });
+    var pathEl = document.getElementById('bg-modal-' + method);
+    if (pathEl) pathEl.classList.remove('hidden');
+
+    // Reset preview
+    document.getElementById('bg-preview-panel').classList.add('hidden');
+    document.getElementById('bg-modal-status').className = '';
+    document.getElementById('bg-modal-status').textContent = '';
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeBgModal() {
+    document.getElementById('bg-modal').classList.add('hidden');
+  }
+
+  // --- Document dropzone ---
+
+  function initDocDropzone() {
     var dropzone = document.getElementById('bg-doc-dropzone');
     var fileInput = document.getElementById('bg-doc-input');
-    dropzone.addEventListener('click', function () { fileInput.click(); });
+
+    dropzone.addEventListener('click', function (e) {
+      if (e.target.closest('.upload-file-remove')) return;
+      if (dropzone.classList.contains('has-file')) {
+        fileInput.click();
+      } else {
+        fileInput.click();
+      }
+    });
     dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
     dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
     dropzone.addEventListener('drop', function (e) {
@@ -272,43 +444,190 @@ Synth.app = (function () {
     });
     fileInput.addEventListener('change', function () {
       if (fileInput.files[0]) handleBgDocFile(fileInput.files[0]);
+      fileInput.value = '';
     });
-  }
-
-  function closeBgHelper() {
-    document.getElementById('bg-helper-panel').classList.add('hidden');
-    document.getElementById('btn-open-bg-helper').classList.remove('hidden');
   }
 
   function handleBgDocFile(file) {
     if (!file) return;
     var ext = file.name.split('.').pop().toLowerCase();
     if (ext !== 'docx' && ext !== 'pptx') {
-      showStatus('bg-helper-status', 'error', 'Unsupported file type. Please upload a .docx or .pptx file.');
+      showStatus('bg-modal-status', 'error', 'Unsupported file type. Please upload a .docx or .pptx file.');
       return;
     }
     bgDocFile = file;
-    var nameEl = document.getElementById('bg-doc-filename');
-    nameEl.textContent = file.name;
-    nameEl.classList.remove('hidden');
+    renderDocFileCard();
     document.getElementById('btn-bg-extract').disabled = false;
   }
+
+  function renderDocFileCard() {
+    var dropzone = document.getElementById('bg-doc-dropzone');
+    var sizeKb = Math.round(bgDocFile.size / 1024);
+    dropzone.classList.add('has-file');
+    dropzone.innerHTML =
+      '<div class="upload-file-card">' +
+        '<span class="upload-file-icon">&#128196;</span>' +
+        '<div class="upload-file-info">' +
+          '<div class="upload-file-name">' + escapeHtml(bgDocFile.name) + '</div>' +
+          '<div class="upload-file-size">' + sizeKb + ' KB</div>' +
+        '</div>' +
+        '<button class="upload-file-remove" type="button" title="Remove file">&times;</button>' +
+      '</div>' +
+      '<input type="file" id="bg-doc-input" accept=".docx,.pptx" class="hidden">';
+
+    // Re-bind remove
+    dropzone.querySelector('.upload-file-remove').addEventListener('click', function (e) {
+      e.stopPropagation();
+      clearDocFile();
+    });
+    // Re-bind file input
+    var newInput = dropzone.querySelector('#bg-doc-input');
+    newInput.addEventListener('change', function () {
+      if (newInput.files[0]) handleBgDocFile(newInput.files[0]);
+      newInput.value = '';
+    });
+  }
+
+  function clearDocFile() {
+    bgDocFile = null;
+    var dropzone = document.getElementById('bg-doc-dropzone');
+    dropzone.classList.remove('has-file');
+    dropzone.innerHTML =
+      '<p class="upload-zone-prompt">Drop a .docx or .pptx file here, or click to browse</p>' +
+      '<input type="file" id="bg-doc-input" accept=".docx,.pptx" class="hidden">';
+    document.getElementById('btn-bg-extract').disabled = true;
+    initDocDropzone();
+  }
+
+  // --- Image dropzone ---
+
+  function initImgDropzone() {
+    var dropzone = document.getElementById('bg-img-dropzone');
+    var fileInput = document.getElementById('bg-img-input');
+
+    dropzone.addEventListener('click', function (e) {
+      if (e.target.closest('.upload-thumb-remove') || e.target.closest('.upload-img-add')) return;
+      fileInput.click();
+    });
+    dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+    dropzone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      addBgImages(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', function () {
+      addBgImages(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+  }
+
+  function addBgImages(files) {
+    var imageFiles = files.filter(function (f) { return f.type.startsWith('image/'); });
+    if (!imageFiles.length) {
+      showStatus('bg-modal-status', 'error', 'Please upload image files (PNG, JPG, or WebP).');
+      return;
+    }
+    var remaining = 6 - bgImageFiles.length;
+    if (remaining <= 0) {
+      showStatus('bg-modal-status', 'error', 'Maximum 6 images allowed.');
+      return;
+    }
+    var toAdd = imageFiles.slice(0, remaining);
+    toAdd.forEach(function (f) {
+      bgImageFiles.push({ file: f, objectUrl: URL.createObjectURL(f) });
+    });
+    if (imageFiles.length > remaining) {
+      showStatus('bg-modal-status', 'info', 'Only added ' + toAdd.length + ' — maximum 6 images.');
+    }
+    renderImgThumbs();
+    document.getElementById('btn-bg-img-generate').disabled = bgImageFiles.length === 0;
+  }
+
+  function removeBgImage(index) {
+    var item = bgImageFiles[index];
+    if (item && item.objectUrl) URL.revokeObjectURL(item.objectUrl);
+    bgImageFiles.splice(index, 1);
+    renderImgThumbs();
+    document.getElementById('btn-bg-img-generate').disabled = bgImageFiles.length === 0;
+  }
+
+  function renderImgThumbs() {
+    var dropzone = document.getElementById('bg-img-dropzone');
+
+    if (bgImageFiles.length === 0) {
+      dropzone.classList.remove('has-file');
+      dropzone.innerHTML =
+        '<p class="upload-zone-prompt">Drop images here, or click to browse</p>' +
+        '<input type="file" id="bg-img-input" accept="image/png,image/jpeg,image/webp" multiple class="hidden">';
+      initImgDropzone();
+      return;
+    }
+
+    dropzone.classList.add('has-file');
+    var thumbsHtml = bgImageFiles.map(function (item, i) {
+      return '<div class="upload-thumb">' +
+        '<img src="' + item.objectUrl + '" alt="Image ' + (i + 1) + '">' +
+        '<button class="upload-thumb-remove" data-img-index="' + i + '" type="button" title="Remove">&times;</button>' +
+      '</div>';
+    }).join('');
+
+    var canAdd = bgImageFiles.length < 6;
+    dropzone.innerHTML =
+      '<div class="upload-thumb-grid">' + thumbsHtml + '</div>' +
+      '<div class="upload-img-meta">' +
+        '<span>' + bgImageFiles.length + ' of 6 images</span>' +
+        (canAdd ? '<button class="upload-img-add" type="button">+ Add more</button>' : '') +
+      '</div>' +
+      '<input type="file" id="bg-img-input" accept="image/png,image/jpeg,image/webp" multiple class="hidden">';
+
+    // Bind remove buttons
+    dropzone.querySelectorAll('.upload-thumb-remove').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        removeBgImage(parseInt(btn.dataset.imgIndex, 10));
+      });
+    });
+
+    // Bind add more
+    var addMoreBtn = dropzone.querySelector('.upload-img-add');
+    if (addMoreBtn) {
+      addMoreBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropzone.querySelector('#bg-img-input').click();
+      });
+    }
+
+    // Re-bind file input
+    var newInput = dropzone.querySelector('#bg-img-input');
+    newInput.addEventListener('change', function () {
+      addBgImages(Array.from(newInput.files));
+      newInput.value = '';
+    });
+  }
+
+  // --- Generation functions ---
 
   function getBgModel() {
     var sel = document.getElementById('default-synth-model');
     return (sel && sel.value) ? sel.value : 'claude-sonnet-4-6';
   }
 
+  async function getFrameworkForBg() {
+    if (!activeProjectId) return null;
+    return await Synth.db.getFramework(activeProjectId);
+  }
+
   async function generateBgFromQuestions() {
     if (!Synth.api.hasCredentials()) {
-      showStatus('bg-helper-status', 'error', 'Configure your API credentials in Settings first.');
+      showStatus('bg-modal-status', 'error', 'Configure your API credentials in Settings first.');
       return;
     }
     var project = document.getElementById('bg-q-project').value.trim();
     var goal = document.getElementById('bg-q-goal').value.trim();
     var method = document.getElementById('bg-q-method').value.trim();
     if (!project || !goal || !method) {
-      showStatus('bg-helper-status', 'error', 'Please fill in at least the first three fields.');
+      showStatus('bg-modal-status', 'error', 'Please fill in at least the first three fields.');
       return;
     }
     var answers = {
@@ -319,27 +638,28 @@ Synth.app = (function () {
       domain: document.getElementById('bg-q-domain').value.trim()
     };
 
+    var fw = await getFrameworkForBg();
     var existing = document.getElementById('fw-background').value.trim();
-    var userPrompt = Synth.prompts.buildBgFromQuestionnaire(answers);
+    var userPrompt = Synth.prompts.buildBgFromQuestionnaire(answers, fw);
     if (existing) userPrompt += '\n\nExisting background (for reference):\n' + existing;
 
-    await callBgGeneration(userPrompt);
+    await callBgGeneration([{ role: 'user', content: userPrompt }]);
   }
 
   async function generateBgFromDocument() {
     if (!Synth.api.hasCredentials()) {
-      showStatus('bg-helper-status', 'error', 'Configure your API credentials in Settings first.');
+      showStatus('bg-modal-status', 'error', 'Configure your API credentials in Settings first.');
       return;
     }
     if (!bgDocFile) {
-      showStatus('bg-helper-status', 'error', 'Please upload a document first.');
+      showStatus('bg-modal-status', 'error', 'Please upload a document first.');
       return;
     }
 
     var btn = document.getElementById('btn-bg-extract');
     btn.disabled = true;
-    btn.textContent = 'Extracting...';
-    showStatus('bg-helper-status', 'info', 'Reading document...');
+    btn.textContent = 'Reading document...';
+    showStatus('bg-modal-status', 'info', 'Extracting text from document...');
 
     try {
       var ext = bgDocFile.name.split('.').pop().toLowerCase();
@@ -351,7 +671,7 @@ Synth.app = (function () {
       }
 
       if (!text || text.trim().length < 20) {
-        showStatus('bg-helper-status', 'error', 'Could not extract enough text from the document. Try a different file.');
+        showStatus('bg-modal-status', 'error', 'Could not extract enough text from the document. Try a different file.');
         return;
       }
 
@@ -360,60 +680,114 @@ Synth.app = (function () {
         text = text.substring(0, maxChars);
       }
 
+      var fw = await getFrameworkForBg();
       var note = document.getElementById('bg-doc-note').value.trim();
-      var userPrompt = Synth.prompts.buildBgFromDocument(text, note);
+      var userPrompt = Synth.prompts.buildBgFromDocument(text, note, fw);
 
-      await callBgGeneration(userPrompt);
+      await callBgGeneration([{ role: 'user', content: userPrompt }]);
     } catch (err) {
-      showStatus('bg-helper-status', 'error', 'Failed to read document: ' + err.message);
+      showStatus('bg-modal-status', 'error', 'Failed to read document: ' + err.message);
     } finally {
       btn.disabled = false;
-      btn.innerHTML = 'Extract &amp; Generate';
+      btn.textContent = 'Generate background';
     }
   }
 
-  async function callBgGeneration(userPrompt) {
-    var genBtn = document.getElementById('btn-bg-generate');
-    var extBtn = document.getElementById('btn-bg-extract');
-    genBtn.disabled = true;
-    extBtn.disabled = true;
-    genBtn.textContent = 'Generating...';
-    showStatus('bg-helper-status', 'info', 'Generating background...');
+  async function generateBgFromImages() {
+    if (!Synth.api.hasCredentials()) {
+      showStatus('bg-modal-status', 'error', 'Configure your API credentials in Settings first.');
+      return;
+    }
+    if (bgImageFiles.length === 0) {
+      showStatus('bg-modal-status', 'error', 'Please upload at least one image.');
+      return;
+    }
+
+    var btn = document.getElementById('btn-bg-img-generate');
+    btn.disabled = true;
+    btn.textContent = 'Reading images...';
+    showStatus('bg-modal-status', 'info', 'Processing ' + bgImageFiles.length + ' image(s)...');
+
+    try {
+      var base64Promises = bgImageFiles.map(function (item) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () { resolve(reader.result); };
+          reader.onerror = reject;
+          reader.readAsDataURL(item.file);
+        });
+      });
+      var base64Images = await Promise.all(base64Promises);
+
+      var fw = await getFrameworkForBg();
+      var note = document.getElementById('bg-img-note').value.trim();
+      var textPrompt = Synth.prompts.buildBgFromImages(note, fw);
+
+      var content = [{ type: 'text', text: textPrompt }];
+      base64Images.forEach(function (b64) {
+        content.push({ type: 'image_url', image_url: { url: b64 } });
+      });
+
+      await callBgGeneration([{ role: 'user', content: content }]);
+    } catch (err) {
+      showStatus('bg-modal-status', 'error', 'Failed to process images: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Generate background';
+    }
+  }
+
+  async function callBgGeneration(userMessages) {
+    var allBtns = ['btn-bg-generate', 'btn-bg-extract', 'btn-bg-img-generate'];
+    allBtns.forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.disabled = true;
+    });
+    showStatus('bg-modal-status', 'info', 'Generating background...');
 
     try {
       var model = getBgModel();
-      var result = await Synth.api.chatCompletion(model, [
-        { role: 'system', content: Synth.prompts.BG_GENERATOR_SYSTEM },
-        { role: 'user', content: userPrompt }
-      ], { max_tokens: 1024 });
+      var messages = [{ role: 'system', content: Synth.prompts.BG_GENERATOR_SYSTEM }].concat(userMessages);
+      var result = await Synth.api.chatCompletion(model, messages, { max_tokens: 1024 });
 
       var text = result.content.trim();
       document.getElementById('bg-preview-text').value = text;
       document.getElementById('bg-preview-panel').classList.remove('hidden');
-      showStatus('bg-helper-status', 'success', 'Background generated. Review the preview below.');
+      showStatus('bg-modal-status', 'success', 'Background generated. Review the preview below.');
     } catch (err) {
-      showStatus('bg-helper-status', 'error', 'Generation failed: ' + err.message);
+      showStatus('bg-modal-status', 'error', 'Generation failed: ' + err.message);
     } finally {
-      genBtn.disabled = false;
-      genBtn.textContent = 'Generate Background';
-      extBtn.disabled = !bgDocFile;
-      extBtn.innerHTML = 'Extract &amp; Generate';
+      document.getElementById('btn-bg-generate').disabled = false;
+      document.getElementById('btn-bg-extract').disabled = !bgDocFile;
+      document.getElementById('btn-bg-img-generate').disabled = bgImageFiles.length === 0;
     }
   }
 
-  function useBgPreview() {
+  async function useBgPreview() {
     var text = document.getElementById('bg-preview-text').value.trim();
     if (!text) return;
     document.getElementById('fw-background').value = text;
-    document.getElementById('bg-preview-panel').classList.add('hidden');
-    closeBgHelper();
-    showStatus('framework-status', 'info', 'Background updated. Click Save to keep your changes.');
+    closeBgModal();
+
+    // Immediate save
+    if (activeProjectId) {
+      var fw = await Synth.db.getFramework(activeProjectId);
+      fw.background = text;
+      await Synth.db.saveFramework(fw);
+      updateCompletenessIndicator(fw);
+      updateDoneButtons(fw);
+
+      // Switch to summary view if coming from summary
+      setSectionView('bg', 'summary');
+    }
   }
 
   function regenerateBg() {
-    var activePath = document.querySelector('.bg-path-btn.active');
-    if (activePath && activePath.dataset.bgPath === 'document') {
+    document.getElementById('bg-preview-panel').classList.add('hidden');
+    if (activeBgMethod === 'document') {
       generateBgFromDocument();
+    } else if (activeBgMethod === 'images') {
+      generateBgFromImages();
     } else {
       generateBgFromQuestions();
     }
@@ -573,14 +947,17 @@ Synth.app = (function () {
     renderResearchQuestions(fw.research_questions || []);
     renderParticipantDimensions(fw.participant_dimensions || []);
     updateRqDropdowns(fw.research_questions || []);
-  }
+    updateCompletenessIndicator(fw);
+    updateDoneButtons(fw);
 
-  async function saveFramework() {
-    if (!activeProjectId) return;
-    var fw = await Synth.db.getFramework(activeProjectId);
-    fw.background = document.getElementById('fw-background').value.trim();
-    await Synth.db.saveFramework(fw);
-    showStatus('framework-status', 'success', 'Framework saved.');
+    // Set initial summary/edit state per section
+    var hasBg = !!(fw.background && fw.background.trim());
+    var hasRq = !!(fw.research_questions && fw.research_questions.length > 0);
+    var hasDim = !!(fw.participant_dimensions && fw.participant_dimensions.length > 0);
+
+    setSectionView('bg', hasBg ? 'summary' : 'edit');
+    setSectionView('rq', hasRq ? 'summary' : 'edit');
+    setSectionView('dim', hasDim ? 'summary' : 'edit');
   }
 
   async function savePrompts() {
@@ -655,6 +1032,8 @@ Synth.app = (function () {
     document.getElementById('new-rq-label').value = '';
     renderResearchQuestions(fw.research_questions);
     updateRqDropdowns(fw.research_questions);
+    updateCompletenessIndicator(fw);
+    updateDoneButtons(fw);
   }
 
   async function handleRqAction(e) {
@@ -712,6 +1091,8 @@ Synth.app = (function () {
       await Synth.db.saveFramework(fw);
       renderResearchQuestions(fw.research_questions);
       updateRqDropdowns(fw.research_questions);
+      updateCompletenessIndicator(fw);
+      updateDoneButtons(fw);
     }
   }
 
@@ -786,6 +1167,8 @@ Synth.app = (function () {
     document.getElementById('dimension-add-form').classList.add('hidden');
     document.getElementById('btn-add-dimension').classList.remove('hidden');
     renderParticipantDimensions(fw.participant_dimensions);
+    updateCompletenessIndicator(fw);
+    updateDoneButtons(fw);
   }
 
   async function addDimensionTag(dimIdx) {
@@ -817,6 +1200,8 @@ Synth.app = (function () {
       fw.participant_dimensions.splice(dimIdx, 1);
       await Synth.db.saveFramework(fw);
       renderParticipantDimensions(fw.participant_dimensions);
+      updateCompletenessIndicator(fw);
+      updateDoneButtons(fw);
       return;
     }
 

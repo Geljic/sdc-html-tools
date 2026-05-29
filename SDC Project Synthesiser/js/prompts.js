@@ -722,25 +722,54 @@ Synth.prompts = (function () {
     '- Include any domain-specific terminology, acronyms, or internal tool names mentioned',
     '- Free of filler or generic methodology descriptions — only include what is specific to this study',
     '',
+    'If research questions or participant dimensions are provided, reference them naturally to frame the study\'s analytical focus. Do not list them — they are provided separately to the synthesiser. Instead, weave relevant context into the narrative.',
+    '',
     'Do not include headings, bullet points, or markdown formatting. Write in plain flowing paragraphs.',
   ].join('\n');
 
-  function buildBgFromQuestionnaire(answers) {
+  function appendFrameworkContext(parts, framework) {
+    if (!framework) return;
+    var rqs = framework.research_questions || [];
+    if (rqs.length > 0) {
+      var labels = rqs.map(function (rq) { return rq.label; });
+      parts.push('Research questions being investigated: ' + labels.join('; '));
+    }
+    var dims = framework.participant_dimensions || [];
+    if (dims.length > 0) {
+      var dimLabels = dims.map(function (d) {
+        var tags = d.tags.map(function (t) { return t.label; }).join(', ');
+        return d.label + (tags ? ' (' + tags + ')' : '');
+      });
+      parts.push('Participant groups: ' + dimLabels.join('; '));
+    }
+  }
+
+  function buildBgFromQuestionnaire(answers, framework) {
     var parts = [];
     if (answers.project) parts.push('Project: ' + answers.project);
     if (answers.goal) parts.push('Research goal: ' + answers.goal);
     if (answers.method) parts.push('Methodology: ' + answers.method);
     if (answers.participants) parts.push('Participants: ' + answers.participants);
     if (answers.domain) parts.push('Domain context: ' + answers.domain);
+    appendFrameworkContext(parts, framework);
     return parts.join('\n');
   }
 
-  function buildBgFromDocument(documentText, note) {
+  function buildBgFromDocument(documentText, note, framework) {
     var parts = [];
     parts.push('Document type: ' + (note || 'Not specified'));
+    appendFrameworkContext(parts, framework);
     parts.push('');
     parts.push('Document content:');
     parts.push(documentText);
+    return parts.join('\n');
+  }
+
+  function buildBgFromImages(note, framework) {
+    var parts = [];
+    parts.push('Extract the project context from the image(s) below and generate a project background.');
+    if (note) parts.push('Additional context from the researcher: ' + note);
+    appendFrameworkContext(parts, framework);
     return parts.join('\n');
   }
 
@@ -756,6 +785,7 @@ Synth.prompts = (function () {
     buildInquiryUser,
     buildBgFromQuestionnaire,
     buildBgFromDocument,
+    buildBgFromImages,
     BG_GENERATOR_SYSTEM: BG_GENERATOR_SYSTEM,
     VERIFICATION_SYSTEM: VERIFICATION_SYSTEM,
     THEME_REVIEW_SYSTEM: THEME_REVIEW_SYSTEM,
