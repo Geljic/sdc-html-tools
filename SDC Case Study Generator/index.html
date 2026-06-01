@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDC Case Study Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
+  <a class="sdc-navbar__brand" href="../index.html" title="SDC AI Tools Home">
+    <span class="sdc-navbar__brand-icon">🏠</span>
+    <span>SDC AI Tools</span>
+  </a>
+  <ul class="sdc-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn active" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Synthesiser/index.html" data-page="synthesiser">
+          <span class="nav-icon">🔬</span> Research Synthesiser
+        </a>
+        <a href="../SDC Data Synthesis/index.html" data-page="data-synthesis">
+          <span class="nav-icon">🧪</span> Data Synthesis
+        </a>
+        <a href="../SDC Persona Builder/index.html" data-page="persona">
+          <span class="nav-icon">🧑</span> Persona Builder
+        </a>
+        <a href="../SDC Case Study Generator/index.html" class="active" data-page="case-study">
+          <span class="nav-icon">📖</span> Case Study Generator
+        </a>
+        <div class="nav-dropdown__divider"></div>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../SDC Project Charter/index.html" data-page="charter">
+          <span class="nav-icon">📋</span> Project Charter
+        </a>
+        <a href="../SDC Timeline Builder/index.html" data-page="timeline">
+          <span class="nav-icon">📅</span> Timeline Builder
+        </a>
+        <a href="../SDC Status Report/index.html" data-page="status-report">
+          <span class="nav-icon">📊</span> Status Report
+        </a>
+      </div>
+    </li>
+
+    <!-- Change Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Business Analyst -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="sdc-navbar__right">
+    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     TOAST CONTAINER
+============================================================ -->
+<div id="toast-container"></div>
+
+<!-- ============================================================
+     SETTINGS MODAL
+============================================================ -->
+<div class="modal-overlay" id="settings-overlay"></div>
+<div class="modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+  <div class="modal__header">
+    <h2 class="modal__title" id="settings-modal-title">⚙️ API Settings</h2>
+    <button class="modal__close" id="btn-settings-close" aria-label="Close settings">✕</button>
+  </div>
+  <form id="settings-form" autocomplete="off">
+    <div class="form-group">
+      <label for="input-endpoint">API Endpoint</label>
+      <input
+        type="url"
+        id="input-endpoint"
+        placeholder="https://v1alpha1.aigateway.ocp.dev.education.nsw.gov.au"
+        autocomplete="off"
+      />
+      <p class="hint">Leave blank to use the default DoE LiteLLM gateway.</p>
+    </div>
+    <div class="form-group">
+      <label for="input-apikey">API Key</label>
+      <input
+        type="password"
+        id="input-apikey"
+        placeholder="sk-…"
+        autocomplete="new-password"
+      />
+      <p class="hint">Your LiteLLM virtual key. Stored in browser localStorage only.</p>
+    </div>
+    <div class="form-group">
+      <label for="input-model">Model</label>
+      <input
+        type="text"
+        id="input-model"
+        placeholder="claude-sonnet-4-6"
+        autocomplete="off"
+      />
+      <p class="hint">Default: claude-sonnet-4-6</p>
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="btn btn--secondary" id="btn-settings-cancel-form">Cancel</button>
+      <button type="submit" class="btn btn--primary">Save Settings</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main class="page-body">
+
+  <!-- Page Header + Toolbar -->
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:24px;">
+    <div class="page-header" style="margin-bottom:0;">
+      <h1>📖 Case Study Generator</h1>
+      <p>Upload a completed HCD project report (.pptx) and AI will extract the content into a structured 13-slide case study template for you to review and copy.</p>
+    </div>
+    <div class="toolbar" style="margin-bottom:0;">
+      <button class="btn btn--ghost" id="btn-settings">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <!-- Credentials Banner -->
+  <div class="credentials-banner" id="credentials-banner">
+    <span class="credentials-banner__icon">⚠️</span>
+    <span>
+      API key not configured.
+      <button class="link-btn" id="btn-open-settings-from-banner">Open Settings</button>
+      to add your LiteLLM key before uploading.
+    </span>
+  </div>
+
+  <!-- How it works -->
+  <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px 20px; margin-bottom:20px; font-size:0.88rem; color:#4b5563; line-height:1.6;">
+    <strong style="color:#1a3a5c; display:block; margin-bottom:6px;">How it works</strong>
+    <ol style="padding-left:18px; margin:0; display:flex; flex-direction:column; gap:3px;">
+      <li>Upload your completed HCD project report (.pptx) — it's read entirely in your browser, nothing is uploaded to a server.</li>
+      <li>The tool extracts text from each slide, then sends it to the AI in 3 focused batches.</li>
+      <li>Review the structured output below. Fields marked <span style="color:#F0AD4E; font-weight:600;">[NOT FOUND]</span> need manual input.</li>
+      <li>Copy individual slides or the full output to paste into your case study template.</li>
+      <li><strong>Note:</strong> Slides 9–11 (About the SDC Team, Ways of Working, Vision) are standard boilerplate — fill these from your own template.</li>
+    </ol>
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Upload PPTX file">
+    <span class="drop-zone__icon">📂</span>
+    <div class="drop-zone__title">Drop your project report here</div>
+    <div class="drop-zone__subtitle">or click to browse</div>
+    <span class="drop-zone__badge">.pptx files only</span>
+  </div>
+  <input type="file" id="file-input" accept=".pptx" style="display:none;" aria-hidden="true" />
+
+  <!-- File Info Bar -->
+  <div class="file-info" id="file-info">
+    <span class="file-info__icon">📄</span>
+    <span class="file-info__name" id="file-info-name"></span>
+    <span class="file-info__slides" id="file-info-slides"></span>
+  </div>
+
+  <!-- Progress Section -->
+  <div class="progress-section" id="progress-section">
+    <div class="progress-label" id="progress-label">Starting…</div>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar__fill" id="progress-bar-fill" aria-valuenow="0"></div>
+    </div>
+  </div>
+
+  <!-- Preview Section -->
+  <section class="preview-section" id="preview-section">
+    <div class="preview-section__header">
+      <div>
+        <div class="preview-section__title">Extracted Case Study Content</div>
+        <div class="preview-section__subtitle">Review each slide below. Fields in amber need manual input. Copy individual slides or all content at once.</div>
+      </div>
+      <button class="btn btn--primary" id="btn-copy-all">📋 Copy All</button>
+    </div>
+    <div id="preview-container"></div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     SCRIPTS — load order matters
+============================================================ -->
+<script src="lib/jszip.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/state.js"></script>
+<script src="js/pptx-parser.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  // Navbar dropdown toggle (same pattern as all other tools)
+  document.querySelectorAll('.nav-group-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const li = btn.closest('li');
+      const isOpen = li.classList.contains('open');
+      document.querySelectorAll('.sdc-navbar__links > li').forEach(function (el) {
+        el.classList.remove('open');
+      });
+      if (!isOpen) li.classList.add('open');
+    });
+  });
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.sdc-navbar__links > li').forEach(function (el) {
+      el.classList.remove('open');
+    });
+  });
+
+  // Settings cancel button inside form
+  document.getElementById('btn-settings-cancel-form').addEventListener('click', function () {
+    document.getElementById('settings-modal').classList.remove('open');
+    document.getElementById('settings-overlay').classList.remove('open');
+  });
+
+  // Drop zone keyboard support
+  document.getElementById('drop-zone').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.getElementById('file-input').click();
+    }
+  });
+</script>
+
+</body>
+</html>
