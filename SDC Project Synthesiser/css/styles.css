@@ -1,185 +1,5 @@
 /* ============================================================
-   SHARED NAVBAR — SDC AI Tools
-   Matches NSW DoE / SharePoint design language
-============================================================ */
-
-.sdc-navbar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #1a3a5c;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-}
-
-.sdc-navbar__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  padding-right: 24px;
-  border-right: 1px solid rgba(255,255,255,0.18);
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.sdc-navbar__brand:hover { color: #EBF4FF; }
-.sdc-navbar__brand-icon { font-size: 1.2rem; line-height: 1; }
-
-.sdc-navbar__links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  flex: 1;
-  overflow-x: visible;
-  height: 52px;
-}
-
-.sdc-navbar__links::-webkit-scrollbar { display: none; }
-
-.sdc-navbar__links > li {
-  flex-shrink: 0;
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.sdc-navbar__links > li > .nav-group-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 6px;
-  text-decoration: none;
-  color: rgba(255,255,255,0.82);
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  height: 100%;
-}
-
-.sdc-navbar__links > li > .nav-group-btn:hover,
-.sdc-navbar__links > li:hover > .nav-group-btn {
-  background: rgba(255,255,255,0.12);
-  color: #ffffff;
-}
-
-.sdc-navbar__links > li > .nav-group-btn.active {
-  background: rgba(74,144,217,0.28);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.nav-group-btn .nav-icon { font-size: 1rem; line-height: 1; opacity: 0.9; }
-.nav-group-btn .nav-chevron {
-  font-size: 0.6rem;
-  opacity: 0.6;
-  transition: transform 0.15s;
-  margin-left: 2px;
-}
-
-.sdc-navbar__links > li:hover > .nav-group-btn .nav-chevron {
-  transform: rotate(180deg);
-}
-
-.nav-dropdown {
-  display: none;
-  position: absolute;
-  top: 50px;
-  left: 0;
-  min-width: 220px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
-  padding: 6px 0;
-  z-index: 1100;
-}
-
-.sdc-navbar__links > li:hover > .nav-dropdown { display: block; }
-
-.nav-dropdown a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 18px;
-  text-decoration: none;
-  color: #1f2937;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.12s;
-  white-space: nowrap;
-}
-
-.nav-dropdown a:hover { background: #f0f2f5; color: #1a3a5c; }
-.nav-dropdown a.active { background: #EBF4FF; color: #1a3a5c; font-weight: 600; }
-
-.nav-dropdown a.nav-disabled {
-  opacity: 0.45;
-  cursor: default;
-  pointer-events: none;
-}
-
-.nav-dropdown .nav-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; }
-
-.nav-dropdown .nav-badge {
-  margin-left: auto;
-  font-size: 0.62rem;
-  font-weight: 700;
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 1px 6px;
-  border-radius: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid #d1d5db;
-}
-
-.nav-dropdown__divider {
-  height: 1px;
-  background: #d1d5db;
-  margin: 4px 0;
-}
-
-.sdc-navbar__right {
-  margin-left: auto;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-left: 16px;
-}
-
-.sdc-navbar__tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.55);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   APP STYLES
+   APP STYLES — SDC Research Synthesiser
 ============================================================ */
 
 *, *::before, *::after {
@@ -189,22 +9,53 @@
 }
 
 :root {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --border: #e2e5ea;
-  --text: #1a1d23;
-  --text-secondary: #5f6672;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff4ff;
-  --success: #16a34a;
-  --success-bg: #dcfce7;
-  --warning: #d97706;
-  --warning-bg: #fef9c3;
-  --error: #dc2626;
-  --error-bg: #fee2e2;
-  --radius: 6px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --doe-navy:        var(--ads3-color-primary);
+  --doe-navy-light:  #1a4a8a;
+  --doe-blue:        var(--ads3-color-info);
+  --doe-blue-light:  var(--ads3-color-secondary);
+  --doe-green:       var(--ads3-color-success);
+  --doe-green-light: var(--ads3-alert-success-bg);
+  --doe-amber:       var(--ads3-color-warning);
+  --doe-amber-light: var(--ads3-alert-warning-bg);
+  --doe-red:         var(--ads3-color-error);
+  --doe-red-light:   var(--ads3-alert-error-bg);
+  --grey-50:         var(--ads3-grey-05);
+  --grey-100:        var(--ads3-grey-05);
+  --grey-200:        var(--ads3-color-border);
+  --grey-300:        var(--ads3-control-border);
+  --grey-400:        var(--ads3-grey-02);
+  --grey-500:        var(--ads3-color-text-secondary);
+  --grey-600:        var(--ads3-color-text-secondary);
+  --grey-700:        var(--ads3-color-text);
+  --grey-800:        var(--ads3-color-text);
+  --grey-900:        var(--ads3-grey-01);
+  --white:           var(--ads3-white);
+  --radius-sm:       var(--ads3-radius-sm);
+  --radius-md:       var(--ads3-radius);
+  --radius-lg:       12px;
+  --shadow-sm:       var(--ads3-shadow);
+  --shadow-md:       var(--ads3-shadow-md);
+  --shadow-lg:       0 8px 24px rgba(0,0,0,0.12);
+  --transition:      0.18s ease;
+  --muted:           var(--ads3-color-text-secondary);
+
+  /* Legacy aliases used by this file */
+  --bg:            var(--ads3-grey-05);
+  --surface:       var(--ads3-white);
+  --border:        var(--ads3-color-border);
+  --text:          var(--ads3-color-text);
+  --text-secondary: var(--ads3-color-text-secondary);
+  --primary:       var(--ads3-color-primary);
+  --primary-hover: color-mix(in srgb, var(--ads3-color-primary) 90%, black);
+  --primary-light: var(--ads3-color-secondary);
+  --success:       var(--ads3-color-success);
+  --success-bg:    var(--ads3-alert-success-bg);
+  --warning:       var(--ads3-color-warning);
+  --warning-bg:    var(--ads3-alert-warning-bg);
+  --error:         var(--ads3-color-error);
+  --error-bg:      var(--ads3-alert-error-bg);
+  --radius:        var(--ads3-radius);
+  --shadow:        var(--ads3-shadow);
 }
 
 html {
@@ -217,6 +68,8 @@ body {
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Layout --- */

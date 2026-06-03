@@ -1,20 +1,25 @@
 /* ============================================================
    SHARED NAVBAR — SDC AI Tools
-   Matches NSW DoE / SharePoint design language
+   Styled using ADS3 Design System tokens.
+   Requires: design-tokens.css loaded before this file.
 ============================================================ */
 
 :root {
-  --sdc-navy:        #1a3a5c;
-  --sdc-navy-hover:  #14304d;
-  --sdc-blue:        #4A90D9;
-  --sdc-blue-light:  #EBF4FF;
-  --sdc-bg:          #f0f2f5;
-  --sdc-white:       #ffffff;
-  --sdc-border:      #d1d5db;
-  --sdc-text:        #1f2937;
-  --sdc-text-muted:  #6b7280;
-  --sdc-active:      #4A90D9;
-  --navbar-h:        52px;
+  /* ── Local aliases → ADS3 tokens ──────────────────────────
+     These map the old --sdc-* names to the real DoE palette.
+     Existing HTML using --sdc-* vars continues to work.
+  ─────────────────────────────────────────────────────────── */
+  --sdc-navy:        var(--ads3-blue-01);       /* #002664 — DoE primary navy */
+  --sdc-navy-hover:  color-mix(in srgb, var(--ads3-blue-01) 85%, black);
+  --sdc-blue:        var(--ads3-blue-02);       /* #146CFD — DoE info blue */
+  --sdc-blue-light:  var(--ads3-blue-04);       /* #CBEDFD — DoE light blue */
+  --sdc-bg:          var(--ads3-color-bg);      /* #F2F2F2 */
+  --sdc-white:       var(--ads3-white);         /* #FFFFFF */
+  --sdc-border:      var(--ads3-color-border);  /* #EBEBEB */
+  --sdc-text:        var(--ads3-color-text);    /* #22272B */
+  --sdc-text-muted:  var(--ads3-color-text-secondary); /* #495054 */
+  --sdc-active:      var(--ads3-blue-02);       /* #146CFD */
+  --navbar-h:        56px;                      /* matches ADS3 TopBar h-14 */
 }
 
 /* ---- Top bar ---- */
@@ -22,14 +27,14 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--sdc-navy);
+  background: var(--ads3-topbar);
   height: var(--navbar-h);
   display: flex;
   align-items: center;
   padding: 0 24px;
   gap: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  box-shadow: var(--ads3-shadow-md);
+  font-family: var(--ads3-font-sans);
 }
 
 /* Brand / home link */
@@ -38,7 +43,7 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--sdc-white);
+  color: var(--ads3-white);
   font-weight: 700;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
@@ -50,7 +55,7 @@
 }
 
 .sdc-navbar__brand:hover {
-  color: var(--sdc-blue-light);
+  color: var(--ads3-blue-04);
 }
 
 .sdc-navbar__brand-icon {
@@ -90,10 +95,10 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--ads3-radius-sm);
   text-decoration: none;
   color: rgba(255,255,255,0.82);
-  font-size: 0.875rem;
+  font-size: var(--ads3-text-small);
   font-weight: 500;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
@@ -107,12 +112,12 @@
 .sdc-navbar__links > li > .nav-group-btn:hover,
 .sdc-navbar__links > li:hover > .nav-group-btn {
   background: rgba(255,255,255,0.12);
-  color: var(--sdc-white);
+  color: var(--ads3-white);
 }
 
 .sdc-navbar__links > li > .nav-group-btn.active {
-  background: rgba(74,144,217,0.28);
-  color: var(--sdc-white);
+  background: rgba(255,255,255,0.18);
+  color: var(--ads3-white);
   font-weight: 600;
 }
 
@@ -140,9 +145,9 @@
   top: calc(var(--navbar-h) - 2px);
   left: 0;
   min-width: 220px;
-  background: var(--sdc-white);
-  border: 1px solid var(--sdc-border);
-  border-radius: 0 0 8px 8px;
+  background: var(--ads3-color-surface);
+  border: 1px solid var(--ads3-color-border);
+  border-radius: 0 0 var(--ads3-radius) var(--ads3-radius);
   box-shadow: 0 8px 24px rgba(0,0,0,0.14);
   padding: 6px 0;
   z-index: 1100;
@@ -158,21 +163,21 @@
   gap: 10px;
   padding: 9px 18px;
   text-decoration: none;
-  color: var(--sdc-text);
-  font-size: 0.875rem;
+  color: var(--ads3-color-text);
+  font-size: var(--ads3-text-small);
   font-weight: 500;
   transition: background 0.12s;
   white-space: nowrap;
 }
 
 .nav-dropdown a:hover {
-  background: var(--sdc-bg);
-  color: var(--sdc-navy);
+  background: var(--ads3-color-bg);
+  color: var(--ads3-color-primary);
 }
 
 .nav-dropdown a.active {
-  background: var(--sdc-blue-light);
-  color: var(--sdc-navy);
+  background: var(--ads3-blue-04);
+  color: var(--ads3-color-primary);
   font-weight: 600;
 }
 
@@ -192,30 +197,30 @@
   margin-left: auto;
   font-size: 0.62rem;
   font-weight: 700;
-  background: #f3f4f6;
-  color: var(--sdc-text-muted);
+  background: var(--ads3-color-bg);
+  color: var(--ads3-color-text-secondary);
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: var(--ads3-radius-full);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  border: 1px solid var(--sdc-border);
+  border: 1px solid var(--ads3-color-border);
 }
 
 /* Divider inside dropdown */
 .nav-dropdown__divider {
   height: 1px;
-  background: var(--sdc-border);
+  background: var(--ads3-color-border);
   margin: 4px 0;
 }
 
-/* Badge for "coming soon" items (legacy, kept for compat) */
+/* Badge for "coming soon" items */
 .sdc-navbar__links a .nav-badge {
   font-size: 0.65rem;
   font-weight: 700;
   background: rgba(255,255,255,0.18);
   color: rgba(255,255,255,0.7);
   padding: 1px 5px;
-  border-radius: 10px;
+  border-radius: var(--ads3-radius-full);
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -249,14 +254,14 @@ body.has-sdc-navbar {
   text-align: center;
   padding: 20px 16px;
   font-size: 0.78rem;
-  color: var(--sdc-text-muted);
-  border-top: 1px solid var(--sdc-border);
-  background: var(--sdc-white);
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: var(--ads3-color-text-secondary);
+  border-top: 1px solid var(--ads3-color-border);
+  background: var(--ads3-color-surface);
+  font-family: var(--ads3-font-sans);
 }
 
 .site-footer a {
-  color: var(--sdc-blue);
+  color: var(--ads3-blue-02);
   text-decoration: none;
 }
 

@@ -6,105 +6,34 @@
   <title>SDC Case Study Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../shared/navbar.css" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
 
 <!-- ============================================================
-     SHARED NAVBAR
+     TOPBAR
 ============================================================ -->
-<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
-  <a class="sdc-navbar__brand" href="../index.html" title="SDC AI Tools Home">
-    <span class="sdc-navbar__brand-icon">🏠</span>
-    <span>SDC AI Tools</span>
+<header class="topbar" role="banner">
+  <button class="topbar__hamburger" aria-label="Toggle navigation" onclick="document.getElementById('sidenav').classList.toggle('sidenav--collapsed')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <a class="topbar__logo" href="../index.html" title="SDC AI Tools Home">
+    <svg class="topbar__waratah" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="NSW Government">
+      <circle cx="100" cy="100" r="100" fill="#E4002B"/>
+      <text x="100" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="white">NSW</text>
+    </svg>
+    <span class="topbar__title">SDC AI Tools</span>
   </a>
-  <ul class="sdc-navbar__links">
-
-    <!-- HCD Tools -->
-    <li>
-      <button class="nav-group-btn active" type="button">
-        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a href="../SDC Project Synthesiser/index.html" data-page="synthesiser">
-          <span class="nav-icon">🔬</span> Research Synthesiser
-        </a>
-        <a href="../SDC Data Synthesis/index.html" data-page="data-synthesis">
-          <span class="nav-icon">🧪</span> Data Synthesis
-        </a>
-        <a href="../SDC Persona Builder/index.html" data-page="persona">
-          <span class="nav-icon">🧑</span> Persona Builder
-        </a>
-        <a href="../SDC Case Study Generator/index.html" class="active" data-page="case-study">
-          <span class="nav-icon">📖</span> Case Study Generator
-        </a>
-        <div class="nav-dropdown__divider"></div>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
-        </a>
-      </div>
-    </li>
-
-    <!-- Project Management -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a href="../SDC Project Charter/index.html" data-page="charter">
-          <span class="nav-icon">📋</span> Project Charter
-        </a>
-        <a href="../SDC Timeline Builder/index.html" data-page="timeline">
-          <span class="nav-icon">📅</span> Timeline Builder
-        </a>
-        <a href="../SDC Status Report/index.html" data-page="status-report">
-          <span class="nav-icon">📊</span> Status Report
-        </a>
-      </div>
-    </li>
-
-    <!-- Change Management -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
-        </a>
-      </div>
-    </li>
-
-    <!-- Business Analyst -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
-        </a>
-      </div>
-    </li>
-
-  </ul>
-  <div class="sdc-navbar__right">
-    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
+  <div class="topbar__divider"></div>
+  <span class="topbar__subtitle">Case Study Generator</span>
+  <div class="topbar__right">
+    <span class="topbar__tag">NSW DoE · HCD Pilot</span>
   </div>
-</nav>
+</header>
 
 <!-- ============================================================
      TOAST CONTAINER
@@ -122,8 +51,9 @@
   </div>
   <form id="settings-form" autocomplete="off">
     <div class="form-group">
-      <label for="input-endpoint">API Endpoint</label>
+      <label class="ads3-label" for="input-endpoint">API Endpoint</label>
       <input
+        class="ads3-input"
         type="url"
         id="input-endpoint"
         placeholder="https://v1alpha1.aigateway.ocp.dev.education.nsw.gov.au"
@@ -132,8 +62,9 @@
       <p class="hint">Leave blank to use the default DoE LiteLLM gateway.</p>
     </div>
     <div class="form-group">
-      <label for="input-apikey">API Key</label>
+      <label class="ads3-label" for="input-apikey">API Key</label>
       <input
+        class="ads3-input"
         type="password"
         id="input-apikey"
         placeholder="sk-…"
@@ -142,8 +73,9 @@
       <p class="hint">Your LiteLLM virtual key. Stored in browser localStorage only.</p>
     </div>
     <div class="form-group">
-      <label for="input-model">Model</label>
+      <label class="ads3-label" for="input-model">Model</label>
       <input
+        class="ads3-input"
         type="text"
         id="input-model"
         placeholder="claude-sonnet-4-6"
@@ -159,8 +91,41 @@
 </div>
 
 <!-- ============================================================
-     MAIN CONTENT
+     APP SHELL
 ============================================================ -->
+<div class="shell">
+
+<!-- SIDENAV -->
+<nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
+  <div class="sidenav__section">
+    <div class="sidenav__label">HCD Tools</div>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+  </div>
+  <div class="sidenav__section">
+    <div class="sidenav__label">Project Governance</div>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+  </div>
+  <div class="sidenav__section">
+    <div class="sidenav__label">Change Management</div>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+  </div>
+  <div class="sidenav__section">
+    <div class="sidenav__label">Business Analyst</div>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="shell__main">
 <main class="page-body">
 
   <!-- Page Header + Toolbar -->
@@ -196,14 +161,18 @@
     </ol>
   </div>
 
-  <!-- Drop Zone -->
-  <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Upload PPTX file">
-    <span class="drop-zone__icon">📂</span>
-    <div class="drop-zone__title">Drop your project report here</div>
-    <div class="drop-zone__subtitle">or click to browse</div>
-    <span class="drop-zone__badge">.pptx files only</span>
+  <!-- Drop Zone — ADS3 FileInput -->
+  <div class="ads3-file-input ads3-field" style="margin-bottom:20px;">
+    <label class="ads3-label">Project report file</label>
+    <p class="ads3-description">Drag your .pptx file here or click to browse. Parsed entirely in your browser — nothing is uploaded.</p>
+    <button type="button" class="ads3-file-input__trigger" id="drop-zone" aria-label="Upload PPTX file">
+      <svg class="ads3-file-input__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6h-1.5v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6H16.5z" />
+      </svg>
+      <span class="ads3-file-input__text" id="drop-zone-label">Select .pptx file or drag and drop here…</span>
+    </button>
+    <input type="file" id="file-input" accept=".pptx" style="display:none;" aria-hidden="true" />
   </div>
-  <input type="file" id="file-input" accept=".pptx" style="display:none;" aria-hidden="true" />
 
   <!-- File Info Bar -->
   <div class="file-info" id="file-info">
@@ -233,6 +202,8 @@
   </section>
 
 </main>
+</div><!-- /.shell__main -->
+</div><!-- /.shell -->
 
 <!-- ============================================================
      SCRIPTS — load order matters
@@ -246,24 +217,6 @@
 <script src="js/app.js"></script>
 
 <script>
-  // Navbar dropdown toggle (same pattern as all other tools)
-  document.querySelectorAll('.nav-group-btn').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const li = btn.closest('li');
-      const isOpen = li.classList.contains('open');
-      document.querySelectorAll('.sdc-navbar__links > li').forEach(function (el) {
-        el.classList.remove('open');
-      });
-      if (!isOpen) li.classList.add('open');
-    });
-  });
-  document.addEventListener('click', function () {
-    document.querySelectorAll('.sdc-navbar__links > li').forEach(function (el) {
-      el.classList.remove('open');
-    });
-  });
-
   // Settings cancel button inside form
   document.getElementById('btn-settings-cancel-form').addEventListener('click', function () {
     document.getElementById('settings-modal').classList.remove('open');

@@ -6,76 +6,295 @@
   <title>Service Design and Change — AI Tools</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="shared/navbar.css" />
+  <link rel="stylesheet" href="shared/design-tokens.css" />
+  <link rel="stylesheet" href="shared/ads3-components.css" />
   <style>
     /* ============================================================
        RESET & BASE
     ============================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:           #eef1f5;
-      --surface:      #ffffff;
-      --border:       #dde1e7;
-      --text:         #1f2937;
-      --text-muted:   #6b7280;
-      --navy:         #1a3a5c;
-      --blue:         #4A90D9;
-      --blue-light:   #EBF4FF;
-      --radius:       8px;
-      --shadow-sm:    0 1px 3px rgba(0,0,0,0.07);
-      --shadow-md:    0 4px 14px rgba(0,0,0,0.09);
-      --transition:   0.16s ease;
-    }
-
     html { font-size: 15px; scroll-behavior: smooth; }
 
     body {
-      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: var(--ads3-font-sans);
+      background: var(--ads3-color-bg);
+      color: var(--ads3-color-text);
       line-height: 1.6;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ============================================================
-       HERO BANNER  — matches SharePoint light-blue header
+       APP SHELL — TopBar + SideNav + Main
+    ============================================================ */
+
+    /* ── TopBar ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      height: 56px;
+      background: var(--ads3-topbar);
+      box-shadow: var(--ads3-shadow-md);
+      flex-shrink: 0;
+    }
+
+    .topbar__hamburger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ads3-white);
+      font-size: 1.2rem;
+      transition: background 0.15s;
+    }
+    .topbar__hamburger:hover { background: rgba(255,255,255,0.1); }
+
+    .topbar__logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px 0 4px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    /* NSW Waratah SVG logo */
+    .topbar__waratah {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .topbar__title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ads3-white);
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .topbar__divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255,255,255,0.25);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .topbar__subtitle {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.65);
+      padding-left: 12px;
+      white-space: nowrap;
+    }
+
+    .topbar__right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-right: 12px;
+    }
+
+    .topbar__tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: var(--ads3-radius-full);
+    }
+
+    /* ── Layout shell ── */
+    .shell {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── SideNav ── */
+    .sidenav {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--ads3-color-surface);
+      border-right: 1px solid var(--ads3-color-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+    }
+
+    .sidenav__section {
+      padding: 16px 0 8px;
+    }
+
+    .sidenav__section + .sidenav__section {
+      border-top: 1px solid var(--ads3-color-border);
+    }
+
+    .sidenav__label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--ads3-color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0 16px 8px;
+    }
+
+    .sidenav__link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ads3-color-text);
+      text-decoration: none;
+      border-radius: 0;
+      transition: background 0.12s, color 0.12s;
+      position: relative;
+    }
+
+    .sidenav__link:hover {
+      background: var(--ads3-color-bg);
+      color: var(--ads3-color-primary);
+    }
+
+    .sidenav__link--active {
+      background: var(--ads3-blue-04);
+      color: var(--ads3-color-primary);
+      font-weight: 600;
+    }
+
+    .sidenav__link--active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--ads3-color-primary);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .sidenav__link--disabled {
+      opacity: 0.45;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .sidenav__icon {
+      font-size: 1rem;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidenav__badge {
+      margin-left: auto;
+      font-size: 0.6rem;
+      font-weight: 700;
+      background: var(--ads3-color-bg);
+      color: var(--ads3-color-text-secondary);
+      padding: 1px 5px;
+      border-radius: var(--ads3-radius-full);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid var(--ads3-color-border);
+    }
+
+    /* ── Main content ── */
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============================================================
+       HERO BANNER — ADS3 style: dark navy + decorative circles
     ============================================================ */
     .hero {
-      background: linear-gradient(135deg, #dce8f5 0%, #eef3fa 60%, #f0f4f8 100%);
-      padding: 48px 40px 52px;
-      border-bottom: 1px solid #c9d8ea;
+      background: var(--ads3-blue-01);
+      padding: 40px 48px 44px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* Decorative circles (matches ADS3 Storybook hero pattern) */
+    .hero::before,
+    .hero::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .hero::before {
+      width: 320px;
+      height: 320px;
+      right: -60px;
+      top: -80px;
+    }
+    .hero::after {
+      width: 200px;
+      height: 200px;
+      right: 80px;
+      top: 40px;
+    }
+
+    .hero__inner {
+      position: relative;
+      z-index: 1;
+      max-width: 640px;
     }
 
     .hero h1 {
       font-size: 2rem;
       font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.01em;
+      color: var(--ads3-white);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
     .hero p {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 0.95rem;
-      color: var(--text-muted);
-      max-width: 560px;
+      color: rgba(255,255,255,0.72);
+      max-width: 520px;
+      line-height: 1.6;
     }
 
     /* ============================================================
        PAGE BODY
     ============================================================ */
     .page-body {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 32px 64px;
+      padding: 32px 48px 64px;
+      flex: 1;
     }
 
     /* ============================================================
        SECTION BLOCK
     ============================================================ */
     .section-block {
-      padding: 40px 0 32px;
-      border-bottom: 1px solid var(--border);
+      padding: 32px 0 24px;
+      border-bottom: 1px solid var(--ads3-color-border);
     }
 
     .section-block:last-child {
@@ -83,96 +302,94 @@
     }
 
     .section-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
-      color: var(--text);
-      margin-bottom: 24px;
+      color: var(--ads3-color-text);
+      margin-bottom: 16px;
     }
 
     /* ============================================================
-       TOOL GRID  — 4-column icon+label cards like SharePoint
+       TOOL GRID — ADS3 card style
     ============================================================ */
     .tool-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      gap: 16px;
+      align-items: stretch;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
+      .tool-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 800px) {
       .tool-grid { grid-template-columns: repeat(2, 1fr); }
+      .sidenav { display: none; }
+      .page-body { padding: 24px 24px 48px; }
+      .hero { padding: 28px 24px 32px; }
     }
-    @media (max-width: 540px) {
+    @media (max-width: 480px) {
       .tool-grid { grid-template-columns: 1fr; }
-      .page-body { padding: 0 16px 48px; }
-      .hero { padding: 32px 20px 36px; }
     }
 
-    .tool-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      text-decoration: none;
-      color: var(--text);
-      transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+    /* ADS3 card hover interaction for tool cards */
+    .ads3-card--surface {
+      transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
       cursor: pointer;
     }
-
-    .tool-card:hover {
-      box-shadow: var(--shadow-md);
-      border-color: #b0c4d8;
-      transform: translateY(-1px);
+    .ads3-card--surface:hover {
+      box-shadow: var(--ads3-shadow-md);
+      border-color: var(--ads3-grey-03);
+      transform: translateY(-2px);
     }
 
-    .tool-card.disabled {
+    /* Disabled card state */
+    .ads3-card--disabled {
       opacity: 0.55;
-      cursor: default;
       pointer-events: none;
+    }
+    .ads3-card--disabled:hover {
+      transform: none;
+      box-shadow: var(--ads3-shadow);
+    }
+
+    /* Icon row inside card header */
+    .tool-card__icon-row {
+      margin-bottom: 8px;
     }
 
     .tool-card__icon {
-      width: 44px;
-      height: 44px;
-      flex-shrink: 0;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      width: 44px;
+      height: 44px;
+      background: var(--ads3-color-bg);
+      border: 1px solid var(--ads3-color-border);
+      border-radius: var(--ads3-radius-sm);
       font-size: 1.4rem;
       line-height: 1;
     }
 
-    .tool-card__label {
-      font-size: 0.9rem;
+    /* "Open tool →" link in card footer */
+    .tool-card__open-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--ads3-text-small);
       font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
+      color: var(--ads3-color-primary);
+      text-decoration: none;
+      transition: color 0.12s;
+    }
+    .tool-card__open-link:hover {
+      color: var(--ads3-blue-02);
+      text-decoration: underline;
     }
 
-    .tool-card__sub {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-      font-weight: 400;
-    }
-
-    .tool-card__badge {
-      margin-left: auto;
-      flex-shrink: 0;
-      font-size: 0.65rem;
-      font-weight: 700;
-      background: #f3f4f6;
-      color: var(--text-muted);
-      padding: 2px 7px;
-      border-radius: 10px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      border: 1px solid var(--border);
+    /* Grid gap update for vertical cards */
+    .tool-grid {
+      gap: 16px;
+      align-items: start;
     }
 
     /* ============================================================
@@ -180,9 +397,9 @@
     ============================================================ */
     .info-strip {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 4px;
     }
 
     @media (max-width: 700px) {
@@ -190,337 +407,450 @@
     }
 
     .info-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--ads3-color-surface);
+      border: 1px solid var(--ads3-color-border);
+      border-radius: var(--ads3-radius);
       padding: 20px 22px;
+      box-shadow: var(--ads3-shadow);
     }
 
     .info-card__icon {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       margin-bottom: 10px;
     }
 
     .info-card h3 {
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       font-weight: 700;
       margin-bottom: 6px;
-      color: var(--text);
+      color: var(--ads3-color-text);
     }
 
     .info-card p {
       font-size: 0.82rem;
-      color: var(--text-muted);
+      color: var(--ads3-color-text-secondary);
       line-height: 1.55;
     }
+
+    .info-card a {
+      color: var(--ads3-blue-02);
+      text-decoration: none;
+    }
+    .info-card a:hover { text-decoration: underline; }
 
     /* ============================================================
        FOOTER
     ============================================================ */
     .site-footer {
       text-align: center;
-      padding: 24px 16px;
+      padding: 20px 16px;
       font-size: 0.78rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border);
-      background: var(--surface);
+      color: var(--ads3-color-text-secondary);
+      border-top: 1px solid var(--ads3-color-border);
+      background: var(--ads3-color-surface);
+      font-family: var(--ads3-font-sans);
     }
+
+    .site-footer a {
+      color: var(--ads3-blue-02);
+      text-decoration: none;
+    }
+    .site-footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
 <!-- ============================================================
-     SHARED NAVBAR
+     TOPBAR
 ============================================================ -->
-<nav class="sdc-navbar" role="navigation" aria-label="SDC AI Tools navigation">
-  <a class="sdc-navbar__brand" href="index.html" title="SDC AI Tools Home">
-    <span class="sdc-navbar__brand-icon">🏠</span>
-    <span>SDC AI Tools</span>
+<header class="topbar" role="banner">
+  <button class="topbar__hamburger" aria-label="Toggle navigation" onclick="toggleSidenav()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  <a class="topbar__logo" href="index.html" title="SDC AI Tools Home">
+    <!-- NSW Waratah logo -->
+    <svg class="topbar__waratah" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="NSW Government">
+      <circle cx="100" cy="100" r="100" fill="#E4002B"/>
+      <text x="100" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="white">NSW</text>
+    </svg>
+    <span class="topbar__title">SDC AI Tools</span>
   </a>
-  <ul class="sdc-navbar__links">
+
+  <div class="topbar__divider"></div>
+  <span class="topbar__subtitle">Service Design and Change</span>
+
+  <div class="topbar__right">
+    <span class="topbar__tag">HCD Pilot</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div class="shell">
+
+  <!-- ── SideNav ── -->
+  <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
 
     <!-- HCD Tools -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a href="SDC Project Synthesiser/index.html" data-page="synthesiser">
-          <span class="nav-icon">🔬</span> Research Synthesiser
-        </a>
-        <a href="SDC Data Synthesis/index.html" data-page="data-synthesis">
-          <span class="nav-icon">🧪</span> Data Synthesis
-        </a>
-        <a href="SDC Persona Builder/index.html" data-page="persona">
-          <span class="nav-icon">🧑</span> Persona Builder
-        </a>
-        <a href="SDC Case Study Generator/index.html" data-page="case-study">
-          <span class="nav-icon">📖</span> Case Study Generator
-        </a>
-        <div class="nav-dropdown__divider"></div>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">💼</span> Jobs to Be Done <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🖼️</span> Concept Posters <span class="nav-badge">Soon</span>
-        </a>
-      </div>
-    </li>
+    <div class="sidenav__section">
+      <div class="sidenav__label">HCD Tools</div>
+      <a class="sidenav__link sidenav__link--active" href="SDC Project Synthesiser/index.html">
+        <span class="sidenav__icon">🔬</span> Research Synthesiser
+      </a>
+      <a class="sidenav__link" href="SDC Data Synthesis/index.html">
+        <span class="sidenav__icon">🧪</span> Data Synthesis
+      </a>
+      <a class="sidenav__link" href="SDC Persona Builder/index.html">
+        <span class="sidenav__icon">🧑</span> Persona Builder
+      </a>
+      <a class="sidenav__link" href="SDC Case Study Generator/index.html">
+        <span class="sidenav__icon">📖</span> Case Study Generator
+      </a>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">🗺️</span> Journey Map
+        <span class="sidenav__badge">Soon</span>
+      </a>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">💼</span> Jobs to Be Done
+        <span class="sidenav__badge">Soon</span>
+      </a>
+    </div>
 
-    <!-- Project Management -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a href="SDC Project Charter/index.html" data-page="charter">
-          <span class="nav-icon">📋</span> Project Charter
-        </a>
-        <a href="SDC Timeline Builder/index.html" data-page="timeline">
-          <span class="nav-icon">📅</span> Timeline Builder
-        </a>
-        <a href="SDC Status Report/index.html" data-page="status-report">
-          <span class="nav-icon">📊</span> Status Report
-        </a>
-      </div>
-    </li>
+    <!-- Project Governance -->
+    <div class="sidenav__section">
+      <div class="sidenav__label">Project Governance</div>
+      <a class="sidenav__link" href="SDC Project Charter/index.html">
+        <span class="sidenav__icon">📋</span> Project Charter
+      </a>
+      <a class="sidenav__link" href="SDC Timeline Builder/index.html">
+        <span class="sidenav__icon">📅</span> Timeline Builder
+      </a>
+      <a class="sidenav__link" href="SDC Status Report/index.html">
+        <span class="sidenav__icon">📊</span> Status Report
+      </a>
+    </div>
 
     <!-- Change Management -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📣</span> Change Management <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">📣</span> Change Impact Assessment <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🗓️</span> Engagement Planner <span class="nav-badge">Soon</span>
-        </a>
-      </div>
-    </li>
+    <div class="sidenav__section">
+      <div class="sidenav__label">Change Management</div>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">📣</span> Change Impact
+        <span class="sidenav__badge">Soon</span>
+      </a>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">🗓️</span> Engagement Planner
+        <span class="sidenav__badge">Soon</span>
+      </a>
+    </div>
 
     <!-- Business Analyst -->
-    <li>
-      <button class="nav-group-btn" type="button">
-        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
-      </button>
-      <div class="nav-dropdown">
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
-        </a>
-        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
-          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
-        </a>
+    <div class="sidenav__section">
+      <div class="sidenav__label">Business Analyst</div>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">📐</span> Requirements Mapper
+        <span class="sidenav__badge">Soon</span>
+      </a>
+      <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1">
+        <span class="sidenav__icon">🔄</span> Process Modeller
+        <span class="sidenav__badge">Soon</span>
+      </a>
+    </div>
+
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero__inner">
+        <h1>Service Design and Change</h1>
+        <p>AI-powered tools to support HCD research, project planning, and service design across NSW DoE.</p>
       </div>
-    </li>
-
-  </ul>
-  <div class="sdc-navbar__right">
-    <span class="sdc-navbar__tag">NSW DoE · HCD Pilot</span>
-  </div>
-</nav>
-
-<!-- ============================================================
-     HERO
-============================================================ -->
-<div class="hero">
-  <h1>Service Design and Change</h1>
-  <p>AI-powered tools to support HCD research, project planning, and service design across NSW DoE.</p>
-</div>
-
-<!-- ============================================================
-     PAGE BODY
-============================================================ -->
-<div class="page-body">
-
-  <!-- ── HCD Tools ── -->
-  <div class="section-block">
-    <h2 class="section-title">HCD Tools</h2>
-    <div class="tool-grid">
-
-      <a class="tool-card" href="SDC Project Synthesiser/index.html">
-        <div class="tool-card__icon">🔬</div>
-        <div>
-          <div class="tool-card__label">Research Synthesiser</div>
-          <div class="tool-card__sub">Synthesise participant transcripts</div>
-        </div>
-      </a>
-
-      <a class="tool-card" href="SDC Data Synthesis/index.html">
-        <div class="tool-card__icon">🧪</div>
-        <div>
-          <div class="tool-card__label">Data Synthesis</div>
-          <div class="tool-card__sub">Synthesise transcripts &amp; cross-cutting themes via AI</div>
-        </div>
-      </a>
-
-      <a class="tool-card" href="SDC Persona Builder/index.html">
-        <div class="tool-card__icon">🧑</div>
-        <div>
-          <div class="tool-card__label">Persona Builder</div>
-          <div class="tool-card__sub">Create HCD user persona cards with AI assistance</div>
-        </div>
-      </a>
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">🗺️</div>
-        <div>
-          <div class="tool-card__label">Journey Map</div>
-          <div class="tool-card__sub">Structure journey map outputs</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">💼</div>
-        <div>
-          <div class="tool-card__label">Jobs to Be Done</div>
-          <div class="tool-card__sub">Frame user needs as JTBD statements</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">🖼️</div>
-        <div>
-          <div class="tool-card__label">Concept Posters</div>
-          <div class="tool-card__sub">Generate concept poster outputs</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
     </div>
-  </div>
 
-  <!-- ── Project Governance Tools ── -->
-  <div class="section-block">
-    <h2 class="section-title">Project Governance Tools</h2>
-    <div class="tool-grid">
+    <!-- Page body -->
+    <div class="page-body">
 
-      <a class="tool-card" href="SDC Project Charter/index.html">
-        <div class="tool-card__icon">📋</div>
-        <div>
-          <div class="tool-card__label">Project Charter</div>
-          <div class="tool-card__sub">Generate project charters</div>
+      <!-- ── HCD Tools ── -->
+      <div class="section-block" id="hcd">
+        <h2 class="section-title">HCD Tools</h2>
+        <div class="tool-grid">
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🔬</span></div>
+                <h3 class="ads3-card__title">Research Synthesiser</h3>
+                <p class="ads3-card__description">Synthesise participant transcripts</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Project Synthesiser/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🧪</span></div>
+                <h3 class="ads3-card__title">Data Synthesis</h3>
+                <p class="ads3-card__description">Synthesise transcripts &amp; cross-cutting themes via AI</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Data Synthesis/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🧑</span></div>
+                <h3 class="ads3-card__title">Persona Builder</h3>
+                <p class="ads3-card__description">Create HCD user persona cards with AI assistance</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Persona Builder/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📖</span></div>
+                <h3 class="ads3-card__title">Case Study Generator</h3>
+                <p class="ads3-card__description">Generate structured case study documents</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Case Study Generator/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🗺️</span></div>
+                <h3 class="ads3-card__title">Journey Map</h3>
+                <p class="ads3-card__description">Structure journey map outputs</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">💼</span></div>
+                <h3 class="ads3-card__title">Jobs to Be Done</h3>
+                <p class="ads3-card__description">Frame user needs as JTBD statements</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🖼️</span></div>
+                <h3 class="ads3-card__title">Concept Posters</h3>
+                <p class="ads3-card__description">Generate concept poster outputs</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
         </div>
-      </a>
-
-      <a class="tool-card" href="SDC Timeline Builder/index.html">
-        <div class="tool-card__icon">📅</div>
-        <div>
-          <div class="tool-card__label">Timeline Builder</div>
-          <div class="tool-card__sub">Generate Gantt timeline PPTX slides</div>
-        </div>
-      </a>
-
-      <a class="tool-card" href="SDC Status Report/index.html">
-        <div class="tool-card__icon">📊</div>
-        <div>
-          <div class="tool-card__label">Weekly Status Report</div>
-          <div class="tool-card__sub">Generate project update PPTX slides</div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-
-  <!-- ── Change Management Tools ── -->
-  <div class="section-block">
-    <h2 class="section-title">Change Management Tools</h2>
-    <div class="tool-grid">
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">📣</div>
-        <div>
-          <div class="tool-card__label">Change Impact Assessment</div>
-          <div class="tool-card__sub">Assess and communicate change impacts</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">🗓️</div>
-        <div>
-          <div class="tool-card__label">Engagement Planner</div>
-          <div class="tool-card__sub">Plan stakeholder engagement activities</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-    </div>
-  </div>
-
-  <!-- ── Business Analyst Tools ── -->
-  <div class="section-block">
-    <h2 class="section-title">Business Analyst Tools</h2>
-    <div class="tool-grid">
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">📐</div>
-        <div>
-          <div class="tool-card__label">Requirements Mapper</div>
-          <div class="tool-card__sub">Map user needs to business requirements</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-      <a class="tool-card disabled" href="#" tabindex="-1" aria-disabled="true">
-        <div class="tool-card__icon">🔄</div>
-        <div>
-          <div class="tool-card__label">Process Modeller</div>
-          <div class="tool-card__sub">Document and analyse business processes</div>
-        </div>
-        <span class="tool-card__badge">Soon</span>
-      </a>
-
-    </div>
-  </div>
-
-  <!-- ── About ── -->
-  <div class="section-block">
-    <h2 class="section-title">About This Pilot</h2>
-    <div class="info-strip">
-
-      <div class="info-card">
-        <div class="info-card__icon">🎯</div>
-        <h3>Purpose</h3>
-        <p>These tools support the Service Design and Change team's HCD Pilot — helping practitioners move faster from research to insight to action.</p>
       </div>
 
-      <div class="info-card">
-        <div class="info-card__icon">🔒</div>
-        <h3>Privacy &amp; Data</h3>
-        <p>All tools run entirely in your browser. No data is sent to external servers unless you explicitly connect an AI API key. Transcripts stay on your device.</p>
+      <!-- ── Project Governance Tools ── -->
+      <div class="section-block" id="project">
+        <h2 class="section-title">Project Governance Tools</h2>
+        <div class="tool-grid">
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📋</span></div>
+                <h3 class="ads3-card__title">Project Charter</h3>
+                <p class="ads3-card__description">Generate project charters</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Project Charter/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📅</span></div>
+                <h3 class="ads3-card__title">Timeline Builder</h3>
+                <p class="ads3-card__description">Generate Gantt timeline PPTX slides</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Timeline Builder/index.html">Open tool →</a>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📊</span></div>
+                <h3 class="ads3-card__title">Weekly Status Report</h3>
+                <p class="ads3-card__description">Generate project update PPTX slides</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <a class="ads3-btn ads3-btn--secondary ads3-btn--compact" href="SDC Status Report/index.html">Open tool →</a>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      <div class="info-card">
-        <div class="info-card__icon">📁</div>
-        <h3>Sharing &amp; Handoff</h3>
-        <p>Each tool has an <strong>Export JSON</strong> button. Upload exports to the team's <a href="#" title="Open SDC AI Tools — Project Data on SharePoint" style="color:inherit;text-decoration:underline;">SharePoint project folder</a> so teammates can pick up where you left off. See the <a href="../docs/sharepoint-team-convention.md" style="color:inherit;text-decoration:underline;">team convention guide</a> for the full workflow.</p>
+      <!-- ── Change Management Tools ── -->
+      <div class="section-block" id="change">
+        <h2 class="section-title">Change Management Tools</h2>
+        <div class="tool-grid">
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📣</span></div>
+                <h3 class="ads3-card__title">Change Impact Assessment</h3>
+                <p class="ads3-card__description">Assess and communicate change impacts</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🗓️</span></div>
+                <h3 class="ads3-card__title">Engagement Planner</h3>
+                <p class="ads3-card__description">Plan stakeholder engagement activities</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      <div class="info-card">
-        <div class="info-card__icon">🚀</div>
-        <h3>Getting Started</h3>
-        <p>Select a tool above to begin. Each tool includes built-in guidance. For questions or feedback, contact the SDC team on SharePoint.</p>
+      <!-- ── Business Analyst Tools ── -->
+      <div class="section-block" id="ba">
+        <h2 class="section-title">Business Analyst Tools</h2>
+        <div class="tool-grid">
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">📐</span></div>
+                <h3 class="ads3-card__title">Requirements Mapper</h3>
+                <p class="ads3-card__description">Map user needs to business requirements</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+          <div class="ads3-card ads3-card--surface ads3-card--disabled">
+            <div class="ads3-card__header">
+              <div class="ads3-card__header-content">
+                <div class="tool-card__icon-row"><span class="tool-card__icon">🔄</span></div>
+                <h3 class="ads3-card__title">Process Modeller</h3>
+                <p class="ads3-card__description">Document and analyse business processes</p>
+              </div>
+            </div>
+            <div class="ads3-card__footer">
+              <span class="ads3-badge ads3-badge--neutral">Coming soon</span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-    </div>
-  </div>
+      <!-- ── About ── -->
+      <div class="section-block" id="about">
+        <h2 class="section-title">About This Pilot</h2>
+        <div class="info-strip">
 
-</div><!-- /page-body -->
+          <div class="info-card">
+            <div class="info-card__icon">🎯</div>
+            <h3>Purpose</h3>
+            <p>These tools support the Service Design and Change team's HCD Pilot — helping practitioners move faster from research to insight to action.</p>
+          </div>
 
-<!-- ============================================================
-     FOOTER
-============================================================ -->
-<footer class="site-footer">
-  NSW Department of Education · Service Design and Change · HCD AI Pilot
-  &nbsp;·&nbsp; <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=muagBYpBwUecJZOHJhv5kXxf32_ZmJZMuTpvDowi52BUODVEM0MyUjhZVDNLOTFKSVJTRllYOEJPSCQlQCN0PWcu" target="_blank" rel="noopener" style="color:#4A90D9;text-decoration:none;">Share feedback or report a bug</a>
-</footer>
+          <div class="info-card">
+            <div class="info-card__icon">🔒</div>
+            <h3>Privacy &amp; Data</h3>
+            <p>All tools run entirely in your browser. No data is sent to external servers unless you explicitly connect an AI API key. Transcripts stay on your device.</p>
+          </div>
+
+          <div class="info-card">
+            <div class="info-card__icon">📁</div>
+            <h3>Sharing &amp; Handoff</h3>
+            <p>Each tool has an <strong>Export JSON</strong> button. Upload exports to the team's <a href="#" title="Open SDC AI Tools — Project Data on SharePoint">SharePoint project folder</a> so teammates can pick up where you left off. See the <a href="../docs/sharepoint-team-convention.md">team convention guide</a> for the full workflow.</p>
+          </div>
+
+          <div class="info-card">
+            <div class="info-card__icon">🚀</div>
+            <h3>Getting Started</h3>
+            <p>Select a tool above to begin. Each tool includes built-in guidance. For questions or feedback, contact the SDC team on SharePoint.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      NSW Department of Education · Service Design and Change · HCD AI Pilot
+      &nbsp;·&nbsp;
+      <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=muagBYpBwUecJZOHJhv5kXxf32_ZmJZMuTpvDowi52BUODVEM0MyUjhZVDNLOTFKSVJTRllYOEJPSCQlQCN0PWcu" target="_blank" rel="noopener">Share feedback or report a bug</a>
+    </footer>
+
+  </div><!-- /main -->
+
+</div><!-- /shell -->
+
+<script>
+  // Hamburger toggle for sidenav on mobile
+  function toggleSidenav() {
+    const nav = document.getElementById('sidenav');
+    nav.style.display = nav.style.display === 'none' ? '' : 'none';
+  }
+
+  // Highlight active sidenav link based on current page
+  document.querySelectorAll('.sidenav__link').forEach(link => {
+    if (link.href === window.location.href) {
+      link.classList.add('sidenav__link--active');
+    }
+  });
+</script>
 
 </body>
 </html>

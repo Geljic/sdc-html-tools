@@ -1,0 +1,212 @@
+/* ============================================================
+   ADS3 Design Tokens — adapted for static HTML tools
+   Source: design-system/src/tokens/tokens.css
+   Manually maintained — run scripts/adapt-tokens.js to regenerate
+   See: plans/ads3-design-system-pipeline.md
+============================================================ */
+
+:root {
+  /* ── Typography ─────────────────────────────────────────── */
+  --ads3-font-sans: 'Public Sans', 'Public Sans Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --ads3-text-h1:        48px;
+  --ads3-text-h2:        32px;
+  --ads3-text-h3:        24px;
+  --ads3-text-h4:        20px;
+  --ads3-text-h5:        16px;
+  --ads3-text-h6:        14px;
+  --ads3-text-body:      16px;
+  --ads3-text-small:     14px;
+  --ads3-text-caption:   12px;
+
+  --ads3-text-h1-lh:     1.25;
+  --ads3-text-h2-lh:     1.25;
+  --ads3-text-h3-lh:     1.333;
+  --ads3-text-h4-lh:     1.4;
+  --ads3-text-h5-lh:     1.5;
+  --ads3-text-body-lh:   1.5;
+  --ads3-text-small-lh:  1.357;
+  --ads3-text-caption-lh: 1.5;
+
+  /* Responsive headings */
+  --ads3-text-h1-responsive: 2.25rem;
+  --ads3-text-h2-responsive: 1.75rem;
+  --ads3-text-h3-responsive: 1.375rem;
+  --ads3-text-h4-responsive: 1.125rem;
+
+  /* ── Palette ─────────────────────────────────────────────── */
+
+  /* Blues */
+  --ads3-blue-01: #002664;
+  --ads3-blue-02: #146CFD;
+  --ads3-blue-03: #8CE0FF;
+  --ads3-blue-04: #CBEDFD;
+
+  /* Reds */
+  --ads3-red-01: #630019;
+  --ads3-red-02: #D7153A;
+  --ads3-red-03: #FFB8C1;
+  --ads3-red-04: #FFE6EA;
+
+  /* Oranges */
+  --ads3-orange-01: #941B00;
+  --ads3-orange-02: #F3631B;
+  --ads3-orange-03: #FFCE99;
+  --ads3-orange-04: #FDEDDF;
+
+  /* Greens */
+  --ads3-green-01: #004000;
+  --ads3-green-02: #00AA45;
+  --ads3-green-03: #A8EDB3;
+  --ads3-green-04: #DBFADF;
+
+  /* Teals */
+  --ads3-teal-01: #0B3F47;
+  --ads3-teal-02: #2E808E;
+  --ads3-teal-03: #8CDBE5;
+  --ads3-teal-04: #D1EEEA;
+
+  /* Browns */
+  --ads3-brown-01: #523719;
+  --ads3-brown-02: #B68D5D;
+  --ads3-brown-03: #E8D0B5;
+  --ads3-brown-04: #EDE3D7;
+
+  /* Purples */
+  --ads3-purple-01: #441170;
+  --ads3-purple-02: #8055F1;
+  --ads3-purple-03: #CEBFFF;
+  --ads3-purple-04: #E6E1FD;
+
+  /* Fuchsias */
+  --ads3-fuchsia-01: #65004D;
+  --ads3-fuchsia-02: #D912AE;
+  --ads3-fuchsia-03: #F4B5E6;
+  --ads3-fuchsia-04: #FDDEF2;
+
+  /* Yellows */
+  --ads3-yellow-01: #694800;
+  --ads3-yellow-02: #FAAF05;
+  --ads3-yellow-03: #FDE79A;
+  --ads3-yellow-04: #FFF4CF;
+
+  /* Greys */
+  --ads3-grey-01: #22272B;
+  --ads3-grey-02: #495054;
+  --ads3-grey-03: #CDD3D6;
+  --ads3-grey-04: #EBEBEB;
+  --ads3-grey-05: #F2F2F2;
+  --ads3-white:   #FFFFFF;
+
+  /* ── Semantic Aliases ────────────────────────────────────── */
+  /* Named to match usage in ads3-components.css              */
+  --ads3-color-primary:        #002664;   /* blue-01 */
+  --ads3-color-info:           #146CFD;   /* blue-02 */
+  --ads3-color-secondary:      #CBEDFD;   /* blue-04 */
+  --ads3-color-error:          #D7153A;   /* red-02  */
+  --ads3-color-success:        #00AA45;   /* green-02 */
+  --ads3-color-warning:        #F3631B;   /* orange-02 */
+  --ads3-color-text:           #22272B;   /* grey-01 */
+  --ads3-color-text-secondary: #495054;   /* grey-02 */
+  --ads3-color-border:         #EBEBEB;   /* grey-04 */
+  --ads3-color-bg:             #F2F2F2;   /* grey-05 */
+  --ads3-color-surface:        #FFFFFF;   /* white   */
+
+  /* ── Form Controls ───────────────────────────────────────── */
+  --ads3-control-border:        #CDD3D6;  /* grey-03 */
+  --ads3-control-border-hover:  #22272B;  /* grey-01 */
+  --ads3-control-checked:       #002664;  /* blue-01 */
+  --ads3-control-focus-ring:    #CBEDFD;  /* blue-04 */
+  --ads3-control-label:         #002664;  /* blue-01 */
+  --ads3-control-description:   #495054;  /* grey-02 */
+  --ads3-control-error:         #D7153A;  /* red-02  */
+  --ads3-control-bg:            #FFFFFF;
+  --ads3-control-bg-readonly:   #F2F2F2;
+
+  /* ── Button ──────────────────────────────────────────────── */
+  --ads3-button-default:     #002664;   /* blue-01 */
+  --ads3-button-danger:      #D7153A;   /* red-02  */
+  --ads3-button-neutral:     #22272B;   /* grey-01 */
+  --ads3-button-subtle-bg:   #CBEDFD;   /* blue-04 */
+  --ads3-button-subtle-text: #002664;   /* blue-01 */
+
+  /* ── Badge ───────────────────────────────────────────────── */
+  --ads3-badge-navy:              #002664;
+  --ads3-badge-info:              #146CFD;
+  --ads3-badge-info-light:        #CBEDFD;
+  --ads3-badge-success:           #00AA45;
+  --ads3-badge-success-light:     #DBFADF;
+  --ads3-badge-error:             #D7153A;
+  --ads3-badge-error-light:       #FFE6EA;
+  --ads3-badge-warning:           #F3631B;
+  --ads3-badge-warning-light:     #FDEDDF;
+  --ads3-badge-neutral:           #EBEBEB;
+  --ads3-badge-on-success-light:  #004000;
+  --ads3-badge-on-error-light:    #630019;
+  --ads3-badge-on-warning-light:  #941B00;
+
+  /* ── Tag ─────────────────────────────────────────────────── */
+  --ads3-tag-navy:         #002664;
+  --ads3-tag-blue:         #146CFD;
+  --ads3-tag-blue-light:   #CBEDFD;
+  --ads3-tag-green:        #004000;
+  --ads3-tag-green-light:  #DBFADF;
+  --ads3-tag-red:          #D7153A;
+  --ads3-tag-red-light:    #FFE6EA;
+  --ads3-tag-orange:       #F3631B;
+  --ads3-tag-orange-light: #FDEDDF;
+  --ads3-tag-grey:         #495054;
+  --ads3-tag-grey-light:   #EBEBEB;
+  --ads3-tag-teal:         #0B3F47;
+  --ads3-tag-teal-light:   #D1EEEA;
+  --ads3-tag-purple:       #441170;
+  --ads3-tag-purple-light: #E6E1FD;
+  --ads3-tag-yellow:       #694800;
+  --ads3-tag-yellow-light: #FFF4CF;
+
+  /* ── Alert ───────────────────────────────────────────────── */
+  --ads3-alert-info-bg:        #CBEDFD;
+  --ads3-alert-info-border:    #146CFD;
+  --ads3-alert-info-icon:      #146CFD;
+  --ads3-alert-warning-bg:     #FDEDDF;
+  --ads3-alert-warning-border: #F3631B;
+  --ads3-alert-warning-icon:   #F3631B;
+  --ads3-alert-error-bg:       #FFE6EA;
+  --ads3-alert-error-border:   #D7153A;
+  --ads3-alert-error-icon:     #D7153A;
+  --ads3-alert-success-bg:     #DBFADF;
+  --ads3-alert-success-border: #00AA45;
+  --ads3-alert-success-icon:   #00AA45;
+  --ads3-alert-neutral-bg:     #F2F2F2;
+  --ads3-alert-neutral-border: #CDD3D6;
+  --ads3-alert-neutral-icon:   #002664;
+
+  /* ── Navigation ──────────────────────────────────────────── */
+  --ads3-topbar:       #002664;   /* blue-01 — DoE primary navy */
+  --ads3-nav-bg:       #FFFFFF;
+  --ads3-nav-text:     #22272B;
+  --ads3-nav-icon:     #002664;
+  --ads3-nav-active:   #146CFD;
+  --ads3-nav-divider:  #CDD3D6;
+
+  /* ── Radius ──────────────────────────────────────────────── */
+  --ads3-radius-sm:   4px;
+  --ads3-radius:      8px;
+  --ads3-radius-lg:   16px;
+  --ads3-radius-xl:   24px;
+  --ads3-radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --ads3-shadow:    0 1px 3px rgba(0, 0, 0, 0.08);
+  --ads3-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive heading sizes */
+@media (min-width: 960px) {
+  :root {
+    --ads3-text-h1-responsive: 3rem;
+    --ads3-text-h2-responsive: 2rem;
+    --ads3-text-h3-responsive: 1.5rem;
+    --ads3-text-h4-responsive: 1.25rem;
+  }
+}

@@ -7,43 +7,48 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --navy:         #1A3A5C;
-  --blue:         #4A90D9;
-  --blue-lite:    #EBF4FF;
-  --blue-mid:     #D0E8FF;
-  --red:          #D7153A;
-  --white:        #FFFFFF;
-  --dark:         #22272B;
-  --text:         #1f2937;
-  --text-muted:   #6b7280;
-  --bg:           #eef1f5;
-  --surface:      #ffffff;
-  --border:       #dde1e7;
-  --radius:       8px;
-  --shadow-sm:    0 1px 3px rgba(0,0,0,0.07);
-  --shadow-md:    0 4px 14px rgba(0,0,0,0.10);
+  --navy:         var(--ads3-color-primary);
+  --blue:         var(--ads3-color-info);
+  --blue-lite:    var(--ads3-color-secondary);
+  --blue-mid:     var(--ads3-color-secondary);
+  --red:          var(--ads3-color-error);
+  --white:        var(--ads3-white);
+  --dark:         var(--ads3-grey-01);
+  --text:         var(--ads3-color-text);
+  --text-muted:   var(--ads3-color-text-secondary);
+  --bg:           var(--ads3-color-bg);
+  --surface:      var(--ads3-color-surface);
+  --border:       var(--ads3-color-border);
+  --radius:       var(--ads3-radius);
+  --shadow-sm:    var(--ads3-shadow);
+  --shadow-md:    var(--ads3-shadow-md);
   --transition:   0.15s ease;
-  --yellow:       #F5C842;
-  --green:        #5CB85C;
-  --amber:        #F0AD4E;
+  --yellow:       var(--ads3-yellow-02);
+  --green:        var(--ads3-color-success);
+  --amber:        var(--ads3-color-warning);
 }
 
 html { font-size: 15px; scroll-behavior: smooth; }
 
 body {
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--ads3-font-sans);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+
+/* Shell__main is overflow:hidden for full-viewport editor tools */
+.shell__main { overflow: hidden; }
 
 /* ── WELCOME SCREEN ───────────────────────────────────────── */
 #welcome-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--navbar-h, 52px));
+  min-height: calc(100vh - 56px);
   padding: 40px 24px;
   background: var(--bg);
 }
@@ -245,48 +250,49 @@ body {
 }
 #save-dot { font-size: 0.6rem; color: #5CB85C; }
 
-/* ── TOOLBAR BUTTONS — base style (light background) ─────── */
+/* ── TOOLBAR BUTTONS — ADS3 pill style ───────────────────── */
 .toolbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  font-size: 0.76rem;
-  font-family: inherit;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface);
-  color: var(--text);
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  font-size: var(--ads3-text-small);
+  font-family: var(--ads3-font-sans);
+  font-weight: 600;
+  border: 2px solid var(--ads3-control-border);
+  border-radius: var(--ads3-radius-full);
+  background: transparent;
+  color: var(--ads3-color-text);
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition), color var(--transition);
   white-space: nowrap;
   text-decoration: none;
 }
-.toolbar-btn:hover { background: var(--bg); border-color: #bbb; }
-.toolbar-btn.primary { background: var(--blue); color: white; border-color: var(--blue); }
-.toolbar-btn.primary:hover { background: #3a7bc8; border-color: #3a7bc8; }
-.toolbar-btn.danger { color: var(--red); border-color: #f5c6cb; background: transparent; }
-.toolbar-btn.danger:hover { background: #fff0f2; }
+.toolbar-btn:hover { background: var(--ads3-color-bg); border-color: var(--ads3-control-border-hover); }
+.toolbar-btn.primary { background: var(--ads3-button-default); color: var(--ads3-white); border-color: var(--ads3-button-default); }
+.toolbar-btn.primary:hover { background: color-mix(in srgb, var(--ads3-button-default) 90%, black); border-color: color-mix(in srgb, var(--ads3-button-default) 90%, black); }
+.toolbar-btn.danger { color: var(--ads3-color-error); border-color: var(--ads3-alert-error-border); background: transparent; }
+.toolbar-btn.danger:hover { background: var(--ads3-alert-error-bg); }
 .toolbar-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Dark header context — override to white-on-dark style */
 #app-header .toolbar-btn {
-  border-color: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.30);
   background: rgba(255,255,255,0.12);
-  color: white;
+  color: var(--ads3-white);
 }
 #app-header .toolbar-btn:hover {
   background: rgba(255,255,255,0.22);
-  border-color: rgba(255,255,255,0.4);
-  color: white;
+  border-color: rgba(255,255,255,0.45);
+  color: var(--ads3-white);
 }
 #app-header .toolbar-btn.primary {
-  background: var(--blue);
-  color: white;
-  border-color: var(--blue);
+  background: var(--ads3-color-info);
+  color: var(--ads3-white);
+  border-color: var(--ads3-color-info);
 }
-#app-header .toolbar-btn.primary:hover { background: #3a7bc8; }
+#app-header .toolbar-btn.primary:hover { background: color-mix(in srgb, var(--ads3-color-info) 85%, black); }
 #app-header .toolbar-btn.danger {
   background: rgba(215,21,58,0.25);
   color: #ffaaaa;
@@ -381,9 +387,9 @@ body {
 
 .field-label {
   display: block;
-  font-size: 0.78rem;
+  font-size: var(--ads3-text-small);
   font-weight: 600;
-  color: var(--text);
+  color: var(--ads3-control-label);
   margin-bottom: 5px;
 }
 
@@ -405,19 +411,20 @@ body {
 .field-input, .field-textarea {
   width: 100%;
   padding: 8px 10px;
-  font-size: 0.82rem;
-  font-family: inherit;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  transition: border-color var(--transition);
+  font-size: var(--ads3-text-small);
+  font-family: var(--ads3-font-sans);
+  border: 1.5px solid var(--ads3-control-border);
+  border-radius: var(--ads3-radius-sm);
+  background: var(--ads3-control-bg);
+  color: var(--ads3-color-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
   resize: vertical;
-}
-.field-input:focus, .field-textarea:focus {
   outline: none;
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
+}
+.field-input:hover, .field-textarea:hover { border-color: var(--ads3-control-border-hover); }
+.field-input:focus, .field-textarea:focus {
+  border-color: var(--ads3-control-checked);
+  box-shadow: 0 0 0 3px var(--ads3-control-focus-ring);
 }
 
 .field-hint {
@@ -1385,7 +1392,7 @@ body {
    DE-IDENTIFICATION SCREEN
 ============================================================ */
 #deid-screen {
-  min-height: calc(100vh - var(--navbar-h, 52px));
+  min-height: calc(100vh - 56px);
   background: var(--bg);
   display: flex;
   flex-direction: column;
