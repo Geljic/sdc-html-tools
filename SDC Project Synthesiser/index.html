@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -44,33 +45,41 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
 <!-- MAIN CONTENT -->
 <div class="shell__main">
+
+<!-- Page header -->
+<div class="tool-page-header">
+  <div>
+    <div class="tool-page-header__title">Research Synthesiser</div>
+    <div class="tool-page-header__desc">Synthesise qualitative research data from multiple transcripts</div>
+  </div>
+</div>
 
   <header class="app-header">
     <button id="btn-back-projects" class="btn-back hidden" title="Back to projects">&larr;</button>
@@ -960,5 +969,6 @@
   <script src="js/pipeline.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
+  <script src="../shared/icons-init.js"></script>
 </body>
 </html>

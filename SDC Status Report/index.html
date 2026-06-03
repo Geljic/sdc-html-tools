@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -49,33 +50,41 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
 <!-- MAIN CONTENT -->
 <div class="shell__main">
+
+<!-- Page header -->
+<div class="tool-page-header">
+  <div>
+    <div class="tool-page-header__title">Status Report</div>
+    <div class="tool-page-header__desc">Generate AI-assisted project status reports with RAG indicators</div>
+  </div>
+</div>
 
 <!-- ============================================================
      WELCOME / SPLASH SCREEN
@@ -89,7 +98,7 @@
   <div class="welcome-inner">
 
     <div class="welcome-brand">
-      <span class="welcome-brand-icon">📊</span>
+      <span class="welcome-brand-icon"><i data-lucide="bar-chart-3"></i></span>
       <div class="welcome-brand-text">
         <h2>Weekly Status Report</h2>
         <p>NSW Department of Education · Q+ SD&amp;C</p>
@@ -103,7 +112,7 @@
 
       <!-- Card 1: AI from free text -->
       <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
-        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-icon"><i data-lucide="sparkles"></i></span>
         <span class="welcome-card-title">Generate from notes</span>
         <span class="welcome-card-desc">Paste or type your tasks and dates in plain English. AI will identify what happened this week and what's planned next, then populate the work streams for you.</span>
         <span class="welcome-card-hint">Best when you have meeting notes, a to-do list, or a quick brain-dump ready</span>
@@ -111,7 +120,7 @@
 
       <!-- Card 2: Manual -->
       <button class="welcome-card" onclick="welcomeChooseManual()">
-        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-icon"><i data-lucide="pencil"></i></span>
         <span class="welcome-card-title">Build manually</span>
         <span class="welcome-card-desc">Start with a blank form and fill in each work stream yourself. AI is still available to help with individual fields at any point.</span>
         <span class="welcome-card-hint">Good when you already know the content and just need the slide</span>
@@ -119,7 +128,7 @@
 
       <!-- Card 3: Load JSON -->
       <button class="welcome-card" onclick="document.getElementById('welcome-json-input').click()">
-        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-icon"><i data-lucide="folder-open"></i></span>
         <span class="welcome-card-title">Load a saved report</span>
         <span class="welcome-card-desc">Import a JSON file from a previous session to update last week's report, or adapt it for a new week.</span>
         <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
@@ -137,8 +146,8 @@
         onchange="aiLoadPrevJson(this.files[0]); this.value=''" />
 
       <div class="ai-prompt-header">
-        <button class="btn-back" onclick="hideAiPanel()">← Back</button>
-        <h3>✨ Generate from notes</h3>
+        <button class="btn-back" onclick="hideAiPanel()"><i data-lucide="arrow-left"></i> Back</button>
+        <h3><i data-lucide="sparkles"></i> Generate from notes</h3>
       </div>
 
       <!-- API not configured warning -->
@@ -195,7 +204,7 @@ Project: Q+ Service Design and Change"></textarea>
 
         <div class="ai-prompt-actions">
           <button class="btn btn-primary" id="btn-ai-generate" onclick="runAiGenerate()">
-            ✨ Generate report
+            <i data-lucide="sparkles"></i> Generate report
           </button>
           <span class="ai-prompt-hint">AI will draft the streams — you can review and edit everything before exporting.</span>
         </div>
@@ -243,7 +252,7 @@ Project: Q+ Service Design and Change"></textarea>
 
     <!-- Continue editing saved session -->
     <div class="welcome-secondary">
-      <button class="welcome-example-btn" onclick="welcomeLoadExample()">💡 Load example report</button>
+      <button class="welcome-example-btn" onclick="welcomeLoadExample()"><i data-lucide="lightbulb"></i> Load example report</button>
       <span class="welcome-sep" id="welcome-sep" style="display:none">·</span>
       <button class="welcome-continue" id="welcome-continue-btn" style="display:none" onclick="welcomeContinue()">
         Continue editing <span id="welcome-continue-name"></span> →
@@ -261,15 +270,15 @@ Project: Q+ Service Design and Change"></textarea>
   <!-- ── PAGE HEADER ──────────────────────────────────────── -->
   <header class="page-header">
     <div class="page-header-left">
-      <button class="btn btn-ghost btn-sm" onclick="backToWelcome()" title="Back to start screen">← Back</button>
-      <h1>📊 Weekly Status Report</h1>
+      <button class="btn btn-ghost btn-sm" onclick="backToWelcome()" title="Back to start screen"><i data-lucide="arrow-left"></i> Back</button>
+      <h1>Weekly Status Report</h1>
       <p>Generate Q+ SD&amp;C project update slides — DoE format</p>
     </div>
     <div class="page-header-actions">
-      <button class="btn btn-secondary" onclick="exportJSON()" title="Save report data as JSON">💾 Save JSON</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('json-import-input').click()" title="Load report data from JSON">📂 Load JSON</button>
+      <button class="btn btn-secondary" onclick="exportJSON()" title="Save report data as JSON"><i data-lucide="save"></i> Save JSON</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('json-import-input').click()" title="Load report data from JSON"><i data-lucide="folder-open"></i> Load JSON</button>
       <input type="file" id="json-import-input" accept=".json" onchange="importJSON(event)" />
-      <button class="btn btn-primary" onclick="exportPPTX()">⬇ Export PPTX</button>
+      <button class="btn btn-primary" onclick="exportPPTX()"><i data-lucide="download"></i> Export PPTX</button>
     </div>
   </header>
 
@@ -350,6 +359,7 @@ Project: Q+ Service Design and Change"></textarea>
 <script src="js/api.js"></script>
 <script src="js/prompts.js"></script>
 <script src="js/app.js"></script>
+<script src="../shared/icons-init.js"></script>
 
 </body>
 </html>

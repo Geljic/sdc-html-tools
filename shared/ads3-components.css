@@ -207,7 +207,41 @@
   flex-shrink: 0;
   width: 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* Lucide icons inside SideNav — sized to 18px, ADS3 info blue */
+.sidenav__icon svg.lucide {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+  color: var(--ads3-color-info);
+  flex-shrink: 0;
+}
+
+/* Lucide icons in welcome cards */
+.welcome-card-icon svg.lucide {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.5;
+  color: var(--ads3-color-info);
+}
+
+/* Lucide icons in toolbar buttons (inline with text) */
+.toolbar-btn svg.lucide,
+.btn svg.lucide {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* Generic icon helper class */
+.icon-sm svg.lucide { width: 16px; height: 16px; stroke-width: 2; }
+.icon-md svg.lucide { width: 20px; height: 20px; stroke-width: 1.75; }
+.icon-lg svg.lucide { width: 24px; height: 24px; stroke-width: 1.5; }
 
 .sidenav__badge {
   margin-left: auto;
@@ -701,12 +735,21 @@
 
 /* ============================================================
    INPUT / FORM CONTROLS
+   ADS3 stacked variant — label above input
 ============================================================ */
+
+/* Field wrapper — stacked layout */
+.ads3-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
 
 .ads3-label {
   display: block;
-  font-size: var(--ads3-text-small);
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--ads3-control-label);
   margin-bottom: 4px;
 }
@@ -720,64 +763,76 @@
 .ads3-input {
   display: block;
   width: 100%;
-  height: 44px;
+  height: 48px;
   padding: 0 12px;
   font-family: var(--ads3-font-sans);
-  font-size: var(--ads3-text-body);
-  color: var(--ads3-color-text);
+  font-size: 16px;
+  color: var(--ads3-text-default, var(--ads3-color-text));
   background: var(--ads3-control-bg);
-  border: 1.5px solid var(--ads3-control-border);
-  border-radius: var(--ads3-radius-sm);
+  border: 1px solid var(--ads3-control-border);
+  border-radius: 4px;
+  box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
 }
 .ads3-input:hover  { border-color: var(--ads3-control-border-hover); }
-.ads3-input:focus  { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 3px var(--ads3-control-focus-ring); }
+.ads3-input:focus  { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 1px var(--ads3-control-checked); }
 .ads3-input:disabled,
 .ads3-input[readonly] { background: var(--ads3-control-bg-readonly); cursor: not-allowed; }
 .ads3-input--error { border-color: var(--ads3-control-error); }
+.ads3-input--compact { height: 40px; font-size: 14px; }
 
 .ads3-textarea {
   display: block;
   width: 100%;
-  min-height: 100px;
-  padding: 10px 12px;
+  height: auto;
+  min-height: 80px;
+  padding: 12px;
   font-family: var(--ads3-font-sans);
-  font-size: var(--ads3-text-body);
-  color: var(--ads3-color-text);
+  font-size: 16px;
+  color: var(--ads3-text-default, var(--ads3-color-text));
   background: var(--ads3-control-bg);
-  border: 1.5px solid var(--ads3-control-border);
-  border-radius: var(--ads3-radius-sm);
+  border: 1px solid var(--ads3-control-border);
+  border-radius: 4px;
+  box-sizing: border-box;
   resize: vertical;
   transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
 }
 .ads3-textarea:hover { border-color: var(--ads3-control-border-hover); }
-.ads3-textarea:focus { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 3px var(--ads3-control-focus-ring); }
+.ads3-textarea:focus { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 1px var(--ads3-control-checked); }
 
 .ads3-select {
   display: block;
   width: 100%;
-  height: 44px;
+  height: 48px;
   padding: 0 36px 0 12px;
   font-family: var(--ads3-font-sans);
-  font-size: var(--ads3-text-body);
-  color: var(--ads3-color-text);
+  font-size: 16px;
+  color: var(--ads3-text-default, var(--ads3-color-text));
   background: var(--ads3-control-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2322272B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
-  border: 1.5px solid var(--ads3-control-border);
-  border-radius: var(--ads3-radius-sm);
+  border: 1px solid var(--ads3-control-border);
+  border-radius: 4px;
+  box-sizing: border-box;
   appearance: none;
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .ads3-select:hover { border-color: var(--ads3-control-border-hover); }
-.ads3-select:focus { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 3px var(--ads3-control-focus-ring); }
+.ads3-select:focus { border-color: var(--ads3-control-checked); box-shadow: 0 0 0 1px var(--ads3-control-checked); }
+.ads3-select--compact { height: 40px; font-size: 14px; }
+
+.ads3-field-hint {
+  font-size: 12px;
+  color: var(--ads3-text-subtle, var(--ads3-color-text-secondary));
+  margin-top: 2px;
+}
 
 .ads3-field-error {
-  font-size: var(--ads3-text-small);
-  color: var(--ads3-control-error);
-  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ads3-status-red, var(--ads3-color-error));
+  margin-top: 2px;
 }
 
 /* ============================================================
@@ -878,14 +933,8 @@
 
 /* ============================================================
    FORM GROUP (label + input + error)
+   Note: .ads3-field is defined above in INPUT / FORM CONTROLS
 ============================================================ */
-
-.ads3-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-bottom: 16px;
-}
 
 /* ============================================================
    CHIP (filter/toggle chip)

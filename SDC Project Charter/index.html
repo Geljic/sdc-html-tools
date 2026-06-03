@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -79,28 +80,28 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
@@ -121,7 +122,7 @@
   <div class="welcome-inner">
 
     <div class="welcome-brand">
-      <span class="welcome-brand-icon">📋</span>
+      <span class="welcome-brand-icon"><i data-lucide="clipboard-list"></i></span>
       <div class="welcome-brand-text">
         <h2>Project Charter Generator</h2>
         <p>NSW Department of Education · HCD Pilot</p>
@@ -133,21 +134,21 @@
     <div class="welcome-cards">
 
       <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
-        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-icon"><i data-lucide="sparkles"></i></span>
         <span class="welcome-card-title">Generate from research notes</span>
         <span class="welcome-card-desc">Upload a .md synthesis or notes file and AI will draft the charter sections for you to review and refine. You stay in control of the final content.</span>
         <span class="welcome-card-hint">Best when you have a synthesis or discovery notes file ready</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseManual()">
-        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-icon"><i data-lucide="pencil"></i></span>
         <span class="welcome-card-title">Build manually</span>
         <span class="welcome-card-desc">Start with a blank form and fill in each section yourself. AI is still available to help populate individual sections at any point.</span>
         <span class="welcome-card-hint">Good for workshop outputs or when you already know the content</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseLoad()">
-        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-icon"><i data-lucide="folder-open"></i></span>
         <span class="welcome-card-title">Load a saved charter</span>
         <span class="welcome-card-desc">Import a JSON file exported from a previous session to continue editing, or adapt an existing charter for a new project.</span>
         <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
@@ -174,7 +175,7 @@
     <div class="deid-header">
       <button class="toolbar-btn" onclick="backToWelcome()">Back</button>
       <div class="deid-title">
-        <h2>🔒 Remove personal information</h2>
+        <h2><i data-lucide="lock"></i> Remove personal information</h2>
         <p>Replace names or other identifying details before your notes are sent to AI. All replacements happen in your browser — nothing is stored or sent until you click Apply.</p>
       </div>
     </div>
@@ -226,7 +227,7 @@
   <!-- HEADER -->
   <header id="app-header">
     <div class="brand">
-      <div class="brand-icon">📋</div>
+      <div class="brand-icon"><i data-lucide="clipboard-list"></i></div>
       <div class="brand-text">
         <h1>Project Charter Generator</h1>
         <p>NSW Department of Education · HCD Pilot</p>
@@ -256,34 +257,34 @@
     </div>
 
     <button class="toolbar-btn" onclick="importJSON()" title="Restore from a previously exported JSON file">
-      📂 Import
+      <i data-lucide="folder-open"></i> Import
     </button>
     <button class="toolbar-btn" onclick="exportJSON()" title="Save all form data as JSON backup">
-      💾 Export JSON
+      <i data-lucide="save"></i> Export JSON
     </button>
     <button class="toolbar-btn danger" onclick="confirmClear()">
-      🗑️ Clear All
+      <i data-lucide="trash-2"></i> Clear All
     </button>
     <button class="toolbar-btn success" onclick="exportPPTX()">
-      📊 Export PPTX
+      <i data-lucide="bar-chart-3"></i> Export PPTX
     </button>
     <button class="toolbar-btn primary" onclick="exportPDF()">
-      🖨️ Print / PDF
+      <i data-lucide="printer"></i> Print / PDF
     </button>
 
     <!-- AI controls -->
     <span class="toolbar-divider"></span>
     <span id="md-file-indicator" class="md-indicator"></span>
     <label class="toolbar-btn" title="Import research notes (.md or .txt file)">
-      📄 Import notes
+      <i data-lucide="file-text"></i> Import notes
       <input type="file" accept=".md,.txt" style="display:none"
         onchange="importMarkdownForCharter(this.files[0]); this.value=''" />
     </label>
     <button class="toolbar-btn" id="btn-ai-setup-toggle" onclick="toggleAiSetup()" title="Configure AI gateway settings">
-      ⚙️ AI Setup
+      <i data-lucide="settings-2"></i> AI Setup
     </button>
     <button class="toolbar-btn primary" id="btn-ai-generate" onclick="openAiDialog()" title="Use AI to fill charter sections from imported research notes">
-      ✨ AI Generate
+      <i data-lucide="sparkles"></i> AI Generate
     </button>
   </div>
 
@@ -403,6 +404,7 @@
 <script src="js/export-pptx.js"></script>
 <script src="js/export-pdf.js"></script>
 <script src="js/app.js"></script>
+<script src="../shared/icons-init.js"></script>
 
 <footer class="site-footer">
   NSW Department of Education · Service Design and Change · HCD AI Pilot

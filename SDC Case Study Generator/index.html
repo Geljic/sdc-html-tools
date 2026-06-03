@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -46,7 +47,7 @@
 <div class="modal-overlay" id="settings-overlay"></div>
 <div class="modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
   <div class="modal__header">
-    <h2 class="modal__title" id="settings-modal-title">⚙️ API Settings</h2>
+    <h2 class="modal__title" id="settings-modal-title"><i data-lucide="settings-2"></i> API Settings</h2>
     <button class="modal__close" id="btn-settings-close" aria-label="Close settings">✕</button>
   </div>
   <form id="settings-form" autocomplete="off">
@@ -99,28 +100,28 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
@@ -131,11 +132,11 @@
   <!-- Page Header + Toolbar -->
   <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:24px;">
     <div class="page-header" style="margin-bottom:0;">
-      <h1>📖 Case Study Generator</h1>
+      <h1>Case Study Generator</h1>
       <p>Upload a completed HCD project report (.pptx) and AI will extract the content into a structured 13-slide case study template for you to review and copy.</p>
     </div>
     <div class="toolbar" style="margin-bottom:0;">
-      <button class="btn btn--ghost" id="btn-settings">⚙️ Settings</button>
+      <button class="btn btn--ghost" id="btn-settings"><i data-lucide="settings-2"></i> Settings</button>
     </div>
   </div>
 
@@ -176,7 +177,7 @@
 
   <!-- File Info Bar -->
   <div class="file-info" id="file-info">
-    <span class="file-info__icon">📄</span>
+    <span class="file-info__icon"><i data-lucide="file-text"></i></span>
     <span class="file-info__name" id="file-info-name"></span>
     <span class="file-info__slides" id="file-info-slides"></span>
   </div>
@@ -196,7 +197,7 @@
         <div class="preview-section__title">Extracted Case Study Content</div>
         <div class="preview-section__subtitle">Review each slide below. Fields in amber need manual input. Copy individual slides or all content at once.</div>
       </div>
-      <button class="btn btn--primary" id="btn-copy-all">📋 Copy All</button>
+      <button class="btn btn--primary" id="btn-copy-all"><i data-lucide="copy"></i> Copy All</button>
     </div>
     <div id="preview-container"></div>
   </section>
@@ -231,6 +232,7 @@
     }
   });
 </script>
+<script src="../shared/icons-init.js"></script>
 
 </body>
 </html>

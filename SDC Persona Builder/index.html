@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -92,28 +93,28 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
@@ -129,7 +130,7 @@
     <div class="deid-header">
       <button class="toolbar-btn" onclick="backToWelcome()">Back</button>
       <div class="deid-title">
-        <h2>🔒 Remove personal information</h2>
+        <h2><i data-lucide="lock"></i> Remove personal information</h2>
         <p>Replace names or other identifying details before your notes are sent to AI. All replacements happen in your browser — nothing is stored or sent until you click Apply.</p>
       </div>
     </div>
@@ -187,7 +188,7 @@
   <div class="welcome-inner">
 
     <div class="welcome-brand">
-      <span class="welcome-brand-icon">🧑</span>
+      <span class="welcome-brand-icon"><i data-lucide="user-round"></i></span>
       <div class="welcome-brand-text">
         <h2>Persona Builder</h2>
         <p>NSW Department of Education · HCD Pilot</p>
@@ -199,21 +200,21 @@
     <div class="welcome-cards">
 
       <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
-        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-icon"><i data-lucide="sparkles"></i></span>
         <span class="welcome-card-title">Generate from research notes</span>
         <span class="welcome-card-desc">Upload a .md summary from your research and AI will draft the persona fields for you to review and refine. You stay in control of the final content.</span>
         <span class="welcome-card-hint">Best when you have a synthesis or transcript file ready</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseManual()">
-        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-icon"><i data-lucide="pencil"></i></span>
         <span class="welcome-card-title">Build manually</span>
         <span class="welcome-card-desc">Start with a blank form and fill in the persona yourself, section by section. AI is still available to help populate individual fields at any point.</span>
         <span class="welcome-card-hint">Good for workshop outputs or when you already know the content</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseLoad()">
-        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-icon"><i data-lucide="folder-open"></i></span>
         <span class="welcome-card-title">Load a saved persona</span>
         <span class="welcome-card-desc">Import a JSON file exported from a previous session to continue editing, or adapt an existing persona for a new project or context.</span>
         <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
@@ -222,7 +223,7 @@
     </div>
 
     <div class="welcome-secondary">
-      <button class="welcome-example-btn" onclick="welcomeLoadExample()">💡 Load example persona</button>
+      <button class="welcome-example-btn" onclick="welcomeLoadExample()"><i data-lucide="lightbulb"></i> Load example persona</button>
       <span class="welcome-sep" id="welcome-sep" style="display:none"></span>
       <button class="welcome-continue" id="welcome-continue-btn" style="display:none" onclick="welcomeContinue()">
         Continue editing <span id="welcome-continue-name"></span> →
@@ -240,7 +241,7 @@
   <!-- HEADER — brand left, all actions right (matches other tools) -->
   <header id="app-header">
     <div class="brand">
-      <div class="brand-icon">🧑</div>
+      <div class="brand-icon"><i data-lucide="user-round"></i></div>
       <div class="brand-text">
         <h1>Persona Builder</h1>
         <p>NSW Department of Education · HCD Pilot</p>
@@ -249,12 +250,12 @@
     <div class="header-actions">
       <!-- Import group -->
       <label class="toolbar-btn" title="Import persona from JSON file">
-        📥 Import JSON
+        <i data-lucide="folder-open"></i> Import JSON
         <input type="file" accept=".json" style="display:none"
           onchange="importJSON(this.files[0]); this.value=''" />
       </label>
       <label class="toolbar-btn" title="Import research notes or transcript (.md file)">
-        📄 Import .md
+        <i data-lucide="file-text"></i> Import .md
         <input type="file" accept=".md,.txt" style="display:none"
           onchange="importMarkdown(this.files[0]); this.value=''" />
       </label>
@@ -263,16 +264,16 @@
       <span class="header-divider"></span>
 
       <!-- Export group -->
-      <button class="toolbar-btn" onclick="exportJSON()" title="Export persona as JSON">📤 Export JSON</button>
-      <button class="toolbar-btn" onclick="exportPPTX()" title="Export as PowerPoint slide">📊 PPTX</button>
-      <button class="toolbar-btn" onclick="exportPDF()" title="Print / Save as PDF">🖨️ PDF</button>
+      <button class="toolbar-btn" onclick="exportJSON()" title="Export persona as JSON"><i data-lucide="share-2"></i> Export JSON</button>
+      <button class="toolbar-btn" onclick="exportPPTX()" title="Export as PowerPoint slide"><i data-lucide="bar-chart-3"></i> PPTX</button>
+      <button class="toolbar-btn" onclick="exportPDF()" title="Print / Save as PDF"><i data-lucide="printer"></i> PDF</button>
 
       <span class="header-divider"></span>
 
       <!-- AI + utility -->
-      <button class="toolbar-btn primary" id="btn-generate-ai" onclick="openAiDialog()" title="Use AI to fill fields from imported .md file">✨ AI Generate</button>
-      <button class="toolbar-btn" onclick="loadExample()" title="Load example persona (Dave Castillo)">💡 Example</button>
-      <button class="toolbar-btn danger" onclick="clearAll()" title="Clear all fields">🗑️</button>
+      <button class="toolbar-btn primary" id="btn-generate-ai" onclick="openAiDialog()" title="Use AI to fill fields from imported .md file"><i data-lucide="sparkles"></i> AI Generate</button>
+      <button class="toolbar-btn" onclick="loadExample()" title="Load example persona (Dave Castillo)"><i data-lucide="lightbulb"></i> Example</button>
+      <button class="toolbar-btn danger" onclick="clearAll()" title="Clear all fields"><i data-lucide="trash-2"></i></button>
 
       <span class="header-divider"></span>
 
@@ -308,7 +309,7 @@
             <input type="text" id="field-name" class="field-input"
               placeholder="e.g. Dave Castillo"
               oninput="setField('name', this.value)" />
-            <button type="button" class="toolbar-btn" onclick="randomiseName()" title="Generate a random persona name">🎲 Random</button>
+            <button type="button" class="toolbar-btn" onclick="randomiseName()" title="Generate a random persona name"><i data-lucide="shuffle"></i> Random</button>
           </div>
         </div>
 
@@ -553,5 +554,6 @@ function selectModel(modelId) {
 </div><!-- /.shell__main -->
 </div><!-- /.shell -->
 
+<script src="../shared/icons-init.js"></script>
 </body>
 </html>

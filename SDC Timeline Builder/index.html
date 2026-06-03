@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../shared/design-tokens.css" />
   <link rel="stylesheet" href="../shared/ads3-components.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -46,28 +47,28 @@
 <nav class="sidenav" id="sidenav" role="navigation" aria-label="Tool navigation">
   <div class="sidenav__section">
     <div class="sidenav__label">HCD Tools</div>
-    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon">🔬</span> Research Synthesiser</a>
-    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon">🧪</span> Data Synthesis</a>
-    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon">🧑</span> Persona Builder</a>
-    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon">📖</span> Case Study Generator</a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗺️</span> Journey Map<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">💼</span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link" href="../SDC Project Synthesiser/index.html"><span class="sidenav__icon"><i data-lucide="microscope"></i></span> Research Synthesiser</a>
+    <a class="sidenav__link" href="../SDC Data Synthesis/index.html"><span class="sidenav__icon"><i data-lucide="flask-conical"></i></span> Data Synthesis</a>
+    <a class="sidenav__link" href="../SDC Persona Builder/index.html"><span class="sidenav__icon"><i data-lucide="user-round"></i></span> Persona Builder</a>
+    <a class="sidenav__link" href="../SDC Case Study Generator/index.html"><span class="sidenav__icon"><i data-lucide="book-open"></i></span> Case Study Generator</a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="map"></i></span> Journey Map<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="briefcase"></i></span> Jobs to Be Done<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Project Governance</div>
-    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon">📋</span> Project Charter</a>
-    <a class="sidenav__link sidenav__link--active" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon">📅</span> Timeline Builder</a>
-    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon">📊</span> Status Report</a>
+    <a class="sidenav__link" href="../SDC Project Charter/index.html"><span class="sidenav__icon"><i data-lucide="clipboard-list"></i></span> Project Charter</a>
+    <a class="sidenav__link sidenav__link--active" href="../SDC Timeline Builder/index.html"><span class="sidenav__icon"><i data-lucide="calendar-range"></i></span> Timeline Builder</a>
+    <a class="sidenav__link" href="../SDC Status Report/index.html"><span class="sidenav__icon"><i data-lucide="bar-chart-3"></i></span> Status Report</a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Change Management</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📣</span> Change Impact<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🗓️</span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="megaphone"></i></span> Change Impact<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="calendar-days"></i></span> Engagement Planner<span class="sidenav__badge">Soon</span></a>
   </div>
   <div class="sidenav__section">
     <div class="sidenav__label">Business Analyst</div>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">📐</span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
-    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon">🔄</span> Process Modeller<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="ruler"></i></span> Requirements Mapper<span class="sidenav__badge">Soon</span></a>
+    <a class="sidenav__link sidenav__link--disabled" href="#" tabindex="-1"><span class="sidenav__icon"><i data-lucide="workflow"></i></span> Process Modeller<span class="sidenav__badge">Soon</span></a>
   </div>
 </nav>
 
@@ -86,7 +87,7 @@
   <div class="welcome-inner">
 
     <div class="welcome-brand">
-      <span class="welcome-brand-icon">📅</span>
+      <span class="welcome-brand-icon"><i data-lucide="calendar-range"></i></span>
       <div class="welcome-brand-text">
         <h2>Timeline Builder</h2>
         <p>NSW Department of Education · HCD Pilot</p>
@@ -98,21 +99,21 @@
     <div class="welcome-cards">
 
       <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()">
-        <span class="welcome-card-icon">✨</span>
+        <span class="welcome-card-icon"><i data-lucide="sparkles"></i></span>
         <span class="welcome-card-title">Generate from plain text</span>
         <span class="welcome-card-desc">Describe your tasks and dates in plain English and AI will convert them into a structured timeline ready to review and export.</span>
         <span class="welcome-card-hint">Best when you have a list of tasks, owners, and rough dates</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseManual()">
-        <span class="welcome-card-icon">✏️</span>
+        <span class="welcome-card-icon"><i data-lucide="pencil"></i></span>
         <span class="welcome-card-title">Build manually</span>
         <span class="welcome-card-desc">Start with a blank form and add swim lanes, bars, and milestones yourself. Quick-add chips make it fast to set up common lane types.</span>
         <span class="welcome-card-hint">Good when you already know your swim lanes and dates</span>
       </button>
 
       <button class="welcome-card" onclick="welcomeChooseLoad()">
-        <span class="welcome-card-icon">📥</span>
+        <span class="welcome-card-icon"><i data-lucide="folder-open"></i></span>
         <span class="welcome-card-title">Load a saved timeline</span>
         <span class="welcome-card-desc">Import a JSON file exported from a previous session to continue editing or adapt an existing timeline for a new project.</span>
         <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
@@ -130,9 +131,9 @@
   <div class="ai-screen-inner">
 
     <div class="ai-screen-header">
-      <button class="tl-btn" onclick="backToWelcome()">← Back</button>
+      <button class="tl-btn" onclick="backToWelcome()"><i data-lucide="arrow-left"></i> Back</button>
       <div class="ai-screen-title">
-        <h2>✨ Generate timeline from plain text</h2>
+        <h2><i data-lucide="sparkles"></i> Generate timeline from plain text</h2>
         <p>Describe your project tasks, swim lanes, and dates. AI will structure them into a timeline you can review and edit.</p>
       </div>
     </div>
@@ -198,7 +199,7 @@
 
     <div class="ai-screen-actions">
       <button class="tl-btn" onclick="backToWelcome()">Cancel</button>
-      <button class="tl-btn tl-btn--primary" id="ai-generate-btn" onclick="runAiImport()">✨ Generate timeline</button>
+      <button class="tl-btn tl-btn--primary" id="ai-generate-btn" onclick="runAiImport()"><i data-lucide="sparkles"></i> Generate timeline</button>
       <span id="ai-status-msg" class="ai-status-msg"></span>
     </div>
 
@@ -347,9 +348,9 @@
       <span style="font-size:12px;color:var(--muted);">Save your work as a JSON file and reload it later — nothing is stored in the browser.</span>
     </div>
     <div style="display:flex;gap:10px;margin-left:auto;margin-top:8px;">
-      <button type="button" class="btn-save-load" onclick="saveTimeline()">💾 Save</button>
+      <button type="button" class="btn-save-load" onclick="saveTimeline()"><i data-lucide="save"></i> Save</button>
       <label class="btn-save-load btn-load-label">
-        📂 Load
+        <i data-lucide="folder-open"></i> Load
         <input type="file" id="load-input" accept=".json" onchange="loadTimeline(event)" style="display:none;">
       </label>
     </div>
@@ -359,8 +360,8 @@
   <div class="generate-section">
     <div id="overflow-warn" class="overflow-warn-box"></div>
     <div class="generate-actions">
-      <button type="button" id="generate-btn" onclick="generatePPTX()">⬇ Generate PPTX</button>
-      <button type="button" class="btn-save-load" onclick="exportJiraCSV()" style="font-size:14px;padding:10px 20px;">⬇ Export Jira CSV</button>
+      <button type="button" id="generate-btn" onclick="generatePPTX()"><i data-lucide="download"></i> Generate PPTX</button>
+      <button type="button" class="btn-save-load" onclick="exportJiraCSV()" style="font-size:14px;padding:10px 20px;"><i data-lucide="download"></i> Export Jira CSV</button>
       <span id="status-msg"></span>
     </div>
   </div>
@@ -374,5 +375,6 @@
 <script src="lib/pptxgen.bundle.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
+<script src="../shared/icons-init.js"></script>
 </body>
 </html>

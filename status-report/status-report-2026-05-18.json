@@ -1,0 +1,56 @@
+{
+  "projectName": "Q+ Service Design and Change",
+  "weekDate": "2026-05-18",
+  "nextWeekDate": "2026-05-25",
+  "streams": [
+    {
+      "id": "sol1-digital-walkthrough",
+      "name": "Solution 1 – Digital walk through",
+      "rag": "green",
+      "subSections": false,
+      "achieved": "Final functional testing before go live approvals",
+      "next": "Ongoing development team standups (x2 per week)\nGo live approvals for Release 1\nPrepare final communications for release window",
+      "achievedProjectDev": "",
+      "achievedGovernance": "",
+      "nextProjectDev": "",
+      "nextGovernance": ""
+    },
+    {
+      "id": "sol1-awareness-video",
+      "name": "Solution 1 – Awareness Video",
+      "rag": "navy",
+      "subSections": false,
+      "achieved": "Video testing on UAT and accessibility completed",
+      "next": "Approve video without encoded captions for release",
+      "achievedProjectDev": "",
+      "achievedGovernance": "",
+      "nextProjectDev": "",
+      "nextGovernance": ""
+    },
+    {
+      "id": "sol2-additional-workspaces",
+      "name": "Solution 2 – Additional Workspaces (uplift Maintaining Proficiency Workspace, create new Supervisors Workspace)",
+      "rag": "green",
+      "subSections": true,
+      "achieved": "",
+      "next": "",
+      "achievedProjectDev": "Content on PAS tracker for final approvals\nRick to complete updated prototype designs with content by 21.05\nEmails have been sent to users for testing supervisor and supervisee nominations.\n    o Support required from PAS as currently only 1 nomination has confirmed and booked\nNick continues drafting the Business Requirements Document (BRD)",
+      "achievedGovernance": "N/A",
+      "nextProjectDev": "Nick to continue the Business Requirements Documents (BRD)\nNick and Richie to walkthrough Solution 2 designs with Di\nUser research plan prepared and ready for endorsement\n    o Sessions commence from 25 May 2026",
+      "nextGovernance": "N/A"
+    },
+    {
+      "id": "sol3-achieving-proficiency",
+      "name": "Solution 3 – Achieving Proficiency / Conditional & Provisional Workspace With Evidence Collection",
+      "rag": "green",
+      "subSections": false,
+      "achieved": "Stakeholder engagements for feature codesign, desirability and feasibility testing has been successful with PAS team\nService Designers drafting feature list and concept posters to visualise Solution 3 and testing with stakeholders and TRG",
+      "next": "Service Designers continue feature list and concept posters to start prioritisation and technical feasibility\nWorkshop planning for SLI and Curriculum stakeholder engagements",
+      "achievedProjectDev": "",
+      "achievedGovernance": "",
+      "nextProjectDev": "",
+      "nextGovernance": ""
+    }
+  ],
+  "supportText": "Confirm go live approvals and CAB for Solution 1 aiming for 03/04 June 2026 technical release followed by communications Tuesday 9 June 2026 (to account for Kings Birthday Public Holiday)\nSupport required from PAS as currently only 1 nomination has confirmed and booked"
+}

@@ -19,43 +19,43 @@ const IMAGE_MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', we
 const SKILLS = [
   {
     slug: 'meeting-summary',
-    icon: '📋',
+    icon: 'clipboard-list',
     name: 'Meeting Summary',
     desc: 'Overview, key points, decisions & action items from a single meeting.',
   },
   {
     slug: 'action-items',
-    icon: '✅',
+    icon: 'list-checks',
     name: 'Action Items',
     desc: 'Extract every action, owner & due date — nothing else.',
   },
   {
     slug: 'pain-points',
-    icon: '😤',
+    icon: 'triangle-alert',
     name: 'Pain Points & Opportunities',
     desc: 'Surface friction, unmet needs & opportunities with evidence quotes.',
   },
   {
     slug: 'key-decisions',
-    icon: '⚖️',
+    icon: 'scale',
     name: 'Key Decisions',
     desc: 'Decisions made, rationale, who decided, and what was deferred.',
   },
   {
     slug: 'stakeholder-positions',
-    icon: '🧭',
+    icon: 'users-round',
     name: 'Stakeholder Positions',
     desc: 'Map who said what — useful for alignment & conflict mapping.',
   },
   {
     slug: 'hcd-synthesis',
-    icon: '🔬',
+    icon: 'microscope',
     name: 'HCD Synthesis',
     desc: 'Full HCD synthesis: themes, pain points, actions & data quality notes.',
   },
   {
     slug: 'custom',
-    icon: '✏️',
+    icon: 'pen-line',
     name: 'Custom Prompt',
     desc: 'Write your own system prompt — full control over the output.',
   },
@@ -379,12 +379,13 @@ function renderSkillGrid() {
     btn.className = 'skill-btn' + (skill.slug === currentSkill ? ' active' : '');
     btn.dataset.skill = skill.slug;
     btn.innerHTML = `
-      <span class="skill-icon">${skill.icon}</span>
+      <span class="skill-icon"><i data-lucide="${skill.icon}"></i></span>
       <span class="skill-name">${skill.name}</span>
       <span class="skill-desc">${skill.desc}</span>`;
     btn.addEventListener('click', () => selectSkill(skill.slug));
     grid.appendChild(btn);
   });
+  if (window.lucide) lucide.createIcons({ el: grid });
   updateCustomPromptVisibility();
 }
 
