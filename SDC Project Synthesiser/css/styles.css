@@ -75,6 +75,7 @@ body {
 /* --- Layout --- */
 
 .app-header {
+  display: none; /* replaced by .tool-page-header in ADS3 AppShell */
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 12px 24px;
