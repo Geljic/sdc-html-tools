@@ -881,18 +881,23 @@ async function synthesise() {
 function showOutput(text) {
   const el = document.getElementById('output-area');
   el.classList.remove('empty');
-  el.textContent = text;
+  el.value = text;
 }
 
 function clearOutput() {
   const el = document.getElementById('output-area');
   el.classList.add('empty');
-  el.textContent = 'Your output will appear here after you click Run…';
+  el.value = '';
   lastOutput = '';
   document.getElementById('download-btn').disabled = true;
   document.getElementById('download-docx-btn').disabled = true;
   document.getElementById('copy-btn').disabled = true;
   document.getElementById('sharepoint-hint').classList.remove('show');
+}
+
+// Called whenever the user edits the output textarea directly
+function onOutputEdit(value) {
+  lastOutput = value;
 }
 
 function downloadMd() {

@@ -251,9 +251,7 @@
       <button class="btn btn-secondary" onclick="copyOutput()" id="copy-btn" disabled>📋 Copy</button>
       <button class="btn btn-secondary" onclick="clearOutput()">✕ Clear</button>
     </div>
-    <div id="output-area" class="empty">
-      Your output will appear here after you click Run…
-    </div>
+    <textarea id="output-area" class="empty" spellcheck="true" oninput="onOutputEdit(this.value)" placeholder="Your output will appear here after you click Run…"></textarea>
     <div id="sharepoint-hint">
       <strong>📤 SharePoint:</strong> <span id="sharepoint-hint-text"></span>
     </div>

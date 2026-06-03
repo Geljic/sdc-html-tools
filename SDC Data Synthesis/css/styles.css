@@ -380,9 +380,16 @@ main {
   line-height: 1.7;
   white-space: pre-wrap;
   min-height: 400px;
-  max-height: 70vh;
-  overflow-y: auto;
+  height: 60vh;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
   color: var(--grey-800);
+  outline: none;
+}
+#output-area:focus {
+  border-color: var(--doe-blue);
+  box-shadow: 0 0 0 2px rgba(0,85,179,0.15);
 }
 #output-area.empty { color: var(--grey-400); font-style: italic; font-family: inherit; }
 
