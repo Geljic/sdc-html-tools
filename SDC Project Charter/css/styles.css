@@ -998,13 +998,13 @@
     }
 
     .welcome-card--ai {
-      border-color: var(--doe-purple);
-      background: linear-gradient(135deg, #faf8ff 0%, #f0edff 100%);
+      border-color: var(--ads3-blue-02);
+      background: linear-gradient(135deg, var(--ads3-blue-04) 0%, #e8f4ff 100%);
     }
 
     .welcome-card--ai:hover {
-      border-color: var(--doe-purple);
-      box-shadow: 0 4px 16px rgba(123, 104, 238, 0.18);
+      border-color: var(--ads3-color-primary);
+      box-shadow: 0 4px 16px rgba(0, 38, 100, 0.15);
     }
 
     .welcome-card-icon { font-size: 1.8rem; }

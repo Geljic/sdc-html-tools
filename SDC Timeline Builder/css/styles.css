@@ -204,13 +204,13 @@
 }
 
 .welcome-card--ai {
-  border-color: #7B5EA7;
-  background: linear-gradient(135deg, #faf8ff 0%, #f0ebff 100%);
+  border-color: var(--ads3-blue-02);
+  background: linear-gradient(135deg, var(--ads3-blue-04) 0%, #e8f4ff 100%);
 }
 
 .welcome-card--ai:hover {
-  border-color: #5a3d8a;
-  box-shadow: 0 4px 20px rgba(123,94,167,0.2);
+  border-color: var(--ads3-color-primary);
+  box-shadow: 0 4px 20px rgba(0,38,100,0.15);
 }
 
 .welcome-card-icon { font-size: 1.8rem; margin-bottom: 2px; }
