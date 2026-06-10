@@ -458,14 +458,15 @@
   --success:    #00A651;
   --radius:     8px;
 
-  --c-sd:    #7B5EA7;
-  --c-proto: #F5C318;
-  --c-dev:   #2E5EAA;
-  --c-ur:    #E87722;
-  --c-pas:   #4AAF78;
-  --c-live:  #00A651;
-  --c-care:  #00A693;
-  --c-change:#E87722;
+  /* DoE brand palette bar-type colours */
+  --c-sd:    #7B68EE;
+  --c-proto: #F0AD4E;
+  --c-dev:   #4A90D9;
+  --c-ur:    #1a3a5c;
+  --c-pas:   #5CB85C;
+  --c-live:  #5CB85C;
+  --c-care:  #4A90D9;
+  --c-change:#d9534f;
 }
 
 body { font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }

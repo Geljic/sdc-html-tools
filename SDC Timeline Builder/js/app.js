@@ -36,15 +36,17 @@ const CLR = {
 };
 
 // ── Bar type defaults & customisation ─────────────────────────────────────────
+// Colours use the DoE brand palette:
+//   Navy #1a3a5c · Blue #4A90D9 · Purple #7B68EE · Amber #F0AD4E · Green #5CB85C · Red #d9534f
 const BAR_TYPE_DEFAULTS = {
-  servicedesign: { color:'7B5EA7', textColor:'FFFFFF', label:'Service Design'        },
-  prototype:     { color:'F5C318', textColor:'1F2D5A', label:'Prototype / Content'   },
-  development:   { color:'2E5EAA', textColor:'FFFFFF', label:'Development / SD'      },
-  userresearch:  { color:'E87722', textColor:'FFFFFF', label:'User Research'         },
-  change:        { color:'E87722', textColor:'FFFFFF', label:'Change / Comms'        },
-  pas:           { color:'4AAF78', textColor:'FFFFFF', label:'Actions'               },
-  golive:        { color:'00A651', textColor:'FFFFFF', label:'Go Live'               },
-  hypercare:     { color:'00A693', textColor:'FFFFFF', label:'Hyper Care'            },
+  servicedesign: { color:'7B68EE', textColor:'FFFFFF', label:'Service Design'        },
+  prototype:     { color:'F0AD4E', textColor:'1a3a5c', label:'Prototype / Content'   },
+  development:   { color:'4A90D9', textColor:'FFFFFF', label:'Development / SD'      },
+  userresearch:  { color:'1a3a5c', textColor:'FFFFFF', label:'User Research'         },
+  change:        { color:'d9534f', textColor:'FFFFFF', label:'Change / Comms'        },
+  pas:           { color:'5CB85C', textColor:'FFFFFF', label:'Actions'               },
+  golive:        { color:'5CB85C', textColor:'FFFFFF', label:'Go Live'               },
+  hypercare:     { color:'4A90D9', textColor:'FFFFFF', label:'Hyper Care'            },
 };
 
 let customTypes = {};
@@ -264,6 +266,17 @@ function renderPreview() {
   // Title bar
   svgAppend(g, svgRect(0, 0, SW, TITLE_H, '#1F2D5A'));
   svgAppend(g, svgText(data.title || 'Timeline', 0.2, TITLE_H/2, { sz:16, bold:true, fill:'#FFFFFF' }));
+  // NSW DoE logo — top-right of title bar (hidden when badge is shown to avoid overlap)
+  if (typeof NSW_LOGO_B64 !== 'undefined' && NSW_LOGO_B64 && !(data.showBadge && data.badgeText?.trim())) {
+    const logoW = 0.58, logoH = 0.43;
+    const img = svgCreate('image', {
+      href: NSW_LOGO_B64,
+      x: SW - logoW - 0.08, y: (TITLE_H - logoH) / 2,
+      width: logoW, height: logoH,
+      preserveAspectRatio: 'xMidYMid meet',
+    });
+    g.appendChild(img);
+  }
 
   // Badge
   if (data.showBadge && data.badgeText?.trim()) {
@@ -496,6 +509,11 @@ function buildPPTX(data) {
   // Header
   filledRect(slide, 0, 0, SW, TITLE_H, CLR.NAVY);
   txtBox(slide, data.title, 0.2, 0.02, 10.8, TITLE_H-0.04, { sz:16, bold:true, col:CLR.WHITE, va:'middle' });
+  // NSW DoE logo — top-right of title bar (hidden when badge is shown to avoid overlap)
+  if (typeof NSW_LOGO_B64 !== 'undefined' && NSW_LOGO_B64 && !(data.showBadge && data.badgeText?.trim())) {
+    const logoW = 0.58, logoH = 0.43;
+    slide.addImage({ data: NSW_LOGO_B64, x: SW - logoW - 0.08, y: (TITLE_H - logoH) / 2, w: logoW, h: logoH });
+  }
   if (data.showBadge && data.badgeText?.trim()) {
     slide.addText(data.badgeText.trim(), {
       shape:'roundRect', rectRadius:0.1,
