@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mermaid Diagram Builder — HCD Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="hcd-navbar" role="navigation" aria-label="HCD Tools navigation">
+  <a class="hcd-navbar__brand" href="../../index.html" title="HCD Tools Home">
+    <span class="hcd-navbar__brand-icon">🏠</span>
+    <span>HCD Tools</span>
+  </a>
+  <ul class="hcd-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../research-synthesiser/index.html"><span class="nav-icon">🔬</span> Research Synthesiser</a>
+        <a href="../data-synthesis/index.html"><span class="nav-icon">🧪</span> Data Synthesis</a>
+        <a href="../persona-builder/index.html"><span class="nav-icon">🧑</span> Persona Builder</a>
+        <a href="../ideation-scanner/index.html"><span class="nav-icon">💡</span> Ideation Scanner</a>
+        <div class="nav-dropdown__divider"></div>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🗺️</span> Journey Map <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../project-charter/index.html"><span class="nav-icon">📋</span> Project Charter</a>
+        <a href="../timeline-builder/index.html"><span class="nav-icon">📅</span> Timeline Builder</a>
+        <a href="../status-report/index.html"><span class="nav-icon">📊</span> Status Report</a>
+        <a href="index.html" class="active"><span class="nav-icon">📐</span> Diagram Builder</a>
+      </div>
+    </li>
+
+    <!-- Business Analyst -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📐</span> Business Analyst <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">📐</span> Requirements Mapper <span class="nav-badge">Soon</span>
+        </a>
+        <a class="nav-disabled" href="#" tabindex="-1" aria-disabled="true">
+          <span class="nav-icon">🔄</span> Process Modeller <span class="nav-badge">Soon</span>
+        </a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="hcd-navbar__right">
+    <button class="btn-icon" onclick="settingsOpen()" title="API Settings" style="color:#fff;font-size:18px">⚙️</button>
+    <span class="hcd-navbar__tag">HCD Tools</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     TOAST
+============================================================ -->
+<div id="toast"></div>
+
+<!-- ============================================================
+     SETTINGS MODAL
+============================================================ -->
+<div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)settingsClose()">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-header">
+      <h3 id="settings-title">⚙️ API Settings</h3>
+      <button class="modal-close" onclick="settingsClose()" aria-label="Close settings">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label for="settings-endpoint">API Endpoint URL</label>
+      <input type="url" id="settings-endpoint" placeholder="https://your-litellm-proxy.example.com" autocomplete="off" />
+      <span class="hint">LiteLLM or OpenAI-compatible endpoint (no trailing slash)</span>
+    </div>
+
+    <div class="form-group">
+      <label for="settings-key">API Key</label>
+      <input type="password" id="settings-key" placeholder="sk-…" autocomplete="off" />
+      <span class="hint">Stored in browser localStorage only — never sent anywhere except your endpoint</span>
+    </div>
+
+    <div class="form-group">
+      <label for="settings-model">Model</label>
+      <input type="text" id="settings-model" placeholder="claude-sonnet-4-6" autocomplete="off" />
+      <span class="hint">Any model supported by your endpoint (e.g. claude-sonnet-4-6, gpt-4o)</span>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="settingsClose()">Cancel</button>
+      <button class="btn btn-primary" onclick="settingsSave()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WELCOME / SPLASH SCREEN
+============================================================ -->
+<div id="welcome-screen" style="display:flex">
+
+  <!-- Hidden file input for JSON load card -->
+  <input type="file" id="welcome-json-input" accept=".json" style="display:none"
+    onchange="welcomeJsonSelected(this.files[0]); this.value=''" />
+
+  <div class="welcome-inner">
+
+    <!-- Brand block -->
+    <div class="welcome-brand">
+      <div class="welcome-brand-icon">📐</div>
+      <div class="welcome-brand-text">
+        <h2>Mermaid Diagram Builder</h2>
+        <p>NSW Department of Education · HCD Pilot</p>
+      </div>
+    </div>
+
+    <p class="welcome-prompt" id="welcome-prompt">How would you like to create your diagram?</p>
+
+    <!-- ── FOUR ENTRY CARDS ──────────────────────────────── -->
+    <div class="welcome-cards" id="welcome-cards">
+
+      <!-- Card 1: AI generation -->
+      <button class="welcome-card welcome-card--ai" onclick="welcomeChooseAi()" tabindex="0">
+        <div class="welcome-card-icon">✨</div>
+        <span class="welcome-card-title">Generate with AI</span>
+        <span class="welcome-card-desc">Describe your diagram in plain English and AI will write the Mermaid code and render it instantly.</span>
+        <span class="welcome-card-hint">Best when you know what you want but not the syntax</span>
+      </button>
+
+      <!-- Card 2: Form builder -->
+      <button class="welcome-card" onclick="welcomeChooseForm()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">🧩</div>
+        <span class="welcome-card-title">Build with form</span>
+        <span class="welcome-card-desc">Choose a diagram type and fill in structured fields. No Mermaid syntax knowledge needed.</span>
+        <span class="welcome-card-hint">Good for flowcharts, sequence diagrams, journey maps, and Gantt charts</span>
+      </button>
+
+      <!-- Card 3: Code editor -->
+      <button class="welcome-card" onclick="welcomeChooseCode()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">✏️</div>
+        <span class="welcome-card-title">Edit Mermaid code</span>
+        <span class="welcome-card-desc">Write or paste Mermaid syntax directly with a live preview updating as you type.</span>
+        <span class="welcome-card-hint">For power users who know Mermaid syntax</span>
+      </button>
+
+      <!-- Card 4: Load JSON -->
+      <button class="welcome-card" onclick="document.getElementById('welcome-json-input').click()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">📥</div>
+        <span class="welcome-card-title">Load saved diagram</span>
+        <span class="welcome-card-desc">Import a JSON file from a previous session to continue editing or adapt an existing diagram.</span>
+        <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
+      </button>
+
+    </div>
+
+    <!-- ── AI PROMPT PANEL ───────────────────────────────── -->
+    <div id="ai-prompt-panel" style="display:none">
+
+      <div class="ai-prompt-header">
+        <button class="btn-back" onclick="hideAiPanel()">← Back</button>
+        <h3>✨ Generate with AI</h3>
+      </div>
+
+      <!-- API not configured warning -->
+      <div id="ai-creds-warn" class="ai-creds-warn" style="display:none">
+        <span>⚠️ AI not configured.</span>
+        <button class="btn-link" onclick="settingsOpen()">Set up API credentials →</button>
+      </div>
+
+      <!-- Diagram type selector -->
+      <div class="ai-type-row">
+        <label for="ai-type-select">Diagram type</label>
+        <select id="ai-type-select" class="ai-type-select">
+          <option value="auto">Auto-detect (let AI choose)</option>
+          <option value="flowchart">Flowchart</option>
+          <option value="sequence">Sequence Diagram</option>
+          <option value="journey">User Journey</option>
+          <option value="gantt">Gantt Chart</option>
+          <option value="mindmap">Mindmap</option>
+          <option value="quadrant">Quadrant Chart</option>
+          <option value="er">Entity Relationship</option>
+        </select>
+      </div>
+
+      <label class="ai-prompt-label" for="ai-notes-input">
+        Describe your diagram in plain English. Be specific about the steps, actors, or items you want to include.
+      </label>
+      <textarea
+        id="ai-notes-input"
+        class="ai-notes-textarea"
+        rows="8"
+        placeholder="Examples:
+
+Flowchart: 'Show the process for approving a leave request: employee submits, manager reviews, HR checks, approved or rejected'
+
+Sequence: 'Show how a user logs in: browser sends credentials to auth service, auth service checks database, returns JWT token, browser stores token'
+
+Journey: 'Map a student applying for a scholarship: discovers program (3), reads requirements (4), fills form (2), submits (3), waits (2), receives outcome (4)'
+
+Gantt: 'Project timeline for HCD discovery phase: stakeholder interviews 2 weeks, synthesis 1 week, persona development 1 week, starting June 2024'"></textarea>
+
+      <div class="ai-prompt-actions">
+        <button class="btn btn-primary" id="btn-ai-generate" onclick="runAiGenerate()">
+          ✨ Generate diagram
+        </button>
+        <span style="font-size:12px;color:var(--muted)">AI will write the Mermaid code and render a live preview</span>
+      </div>
+
+    </div>
+    <!-- /ai-prompt-panel -->
+
+  </div>
+  <!-- /welcome-inner -->
+</div>
+<!-- /welcome-screen -->
+
+<!-- ============================================================
+     EDITOR SCREEN
+============================================================ -->
+<div id="editor-screen">
+
+  <!-- ── Toolbar ──────────────────────────────────────────── -->
+  <div class="editor-toolbar">
+    <button class="btn btn-ghost btn-sm" onclick="editorBackToSplash()" title="Back to start">← Home</button>
+    <div class="editor-toolbar__sep"></div>
+    <span class="editor-toolbar__title" id="editor-toolbar-title">Diagram Builder</span>
+    <div class="editor-toolbar__sep"></div>
+
+    <!-- Diagram type selector -->
+    <select id="diagram-type-select" class="theme-select" onchange="editorChangeDiagramType(this.value)" title="Diagram type">
+      <option value="flowchart">Flowchart</option>
+      <option value="sequence">Sequence</option>
+      <option value="journey">User Journey</option>
+      <option value="gantt">Gantt</option>
+      <option value="mindmap">Mindmap</option>
+      <option value="quadrant">Quadrant</option>
+      <option value="er">ER Diagram</option>
+    </select>
+
+    <div class="editor-toolbar__spacer"></div>
+
+    <!-- Diagram title -->
+    <div class="diagram-title-row" style="padding:0;border:none;background:none">
+      <label for="diagram-title-input" style="font-size:12px;font-weight:600;color:var(--muted)">Title:</label>
+      <input type="text" id="diagram-title-input" placeholder="Untitled diagram" style="max-width:220px" />
+    </div>
+
+    <div class="editor-toolbar__sep"></div>
+
+    <!-- Theme selector -->
+    <select id="theme-select" class="theme-select" onchange="onThemeChange(this.value)" title="Preview theme">
+      <option value="default">Theme: Default</option>
+      <option value="neutral">Theme: Neutral</option>
+      <option value="dark">Theme: Dark</option>
+      <option value="forest">Theme: Forest</option>
+      <option value="base">Theme: Base</option>
+    </select>
+
+    <!-- Export dropdown -->
+    <div class="export-dropdown">
+      <button class="btn btn-secondary btn-sm" id="export-btn" aria-haspopup="true" aria-expanded="false">
+        Export ▾
+      </button>
+      <div class="export-menu" id="export-menu" role="menu">
+        <button onclick="exportCopyCode(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">📋</span> Copy Mermaid code
+        </button>
+        <button onclick="exportDownloadMmd(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">📄</span> Download .mmd file
+        </button>
+        <div class="export-menu__divider"></div>
+        <button onclick="exportDownloadSvg(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">🖼️</span> Download SVG
+        </button>
+        <button onclick="exportDownloadPng(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">🖼️</span> Download PNG
+        </button>
+        <button onclick="exportDownloadPptx(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">📊</span> Export to PowerPoint
+        </button>
+        <div class="export-menu__divider"></div>
+        <button onclick="exportSaveJson(); closeExportMenu()" role="menuitem">
+          <span class="export-icon">💾</span> Save as JSON
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-icon" onclick="settingsOpen()" title="API Settings" style="font-size:18px">⚙️</button>
+  </div>
+  <!-- /editor-toolbar -->
+
+  <!-- ── Editor body ──────────────────────────────────────── -->
+  <div class="editor-body">
+
+    <!-- Left panel: tabs + content -->
+    <div class="editor-left">
+
+      <!-- Tab bar -->
+      <div class="editor-tabs" role="tablist">
+        <button class="editor-tab active" data-tab="code" role="tab"
+          aria-selected="true" onclick="editorSwitchTab('code')">
+          ✏️ Code
+        </button>
+        <button class="editor-tab" data-tab="form" role="tab"
+          aria-selected="false" onclick="editorSwitchTab('form')">
+          🧩 Form Builder
+        </button>
+      </div>
+
+      <!-- ── Code tab panel ──────────────────────────────── -->
+      <div class="tab-panel active" id="panel-code" role="tabpanel">
+        <div class="code-editor-wrap">
+          <textarea
+            id="mermaid-code-input"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            aria-label="Mermaid diagram code"
+            placeholder="Start typing Mermaid code here, or use the AI generator or form builder…"
+            oninput="onCodeInput(this.value)"
+          ></textarea>
+          <div class="code-error-bar" id="code-error-bar"></div>
+        </div>
+      </div>
+
+      <!-- ── Form Builder tab panel ──────────────────────── -->
+      <div class="tab-panel" id="panel-form" role="tabpanel">
+
+        <!-- Form type switcher -->
+        <div style="padding:12px 16px 0;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <span style="font-size:12px;font-weight:700;color:var(--navy);align-self:center;margin-right:4px">Type:</span>
+          <button class="btn btn-ghost btn-sm" onclick="formSwitchType('flowchart')">Flowchart</button>
+          <button class="btn btn-ghost btn-sm" onclick="formSwitchType('sequence')">Sequence</button>
+          <button class="btn btn-ghost btn-sm" onclick="formSwitchType('journey')">Journey</button>
+          <button class="btn btn-ghost btn-sm" onclick="formSwitchType('gantt')">Gantt</button>
+        </div>
+
+        <!-- Flowchart builder -->
+        <div id="fc-builder" style="display:flex;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+
+        <!-- Sequence builder -->
+        <div id="seq-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+
+        <!-- Journey builder -->
+        <div id="journey-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+
+        <!-- Gantt builder -->
+        <div id="gantt-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+
+        <!-- Unsupported type placeholder -->
+        <div id="form-type-unsupported" style="display:none;flex:1;align-items:center;justify-content:center"></div>
+
+      </div>
+      <!-- /panel-form -->
+
+    </div>
+    <!-- /editor-left -->
+
+    <!-- Resizer handle -->
+    <div class="resizer" id="pane-resizer" title="Drag to resize"></div>
+
+    <!-- Right panel: preview -->
+    <div class="editor-right">
+      <div class="preview-header">
+        <span>Live Preview</span>
+        <div class="preview-header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportDownloadSvg()" title="Download SVG">⬇ SVG</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportDownloadPng()" title="Download PNG">⬇ PNG</button>
+        </div>
+      </div>
+
+      <div class="preview-container">
+        <div id="diagram-output">
+          <div class="preview-empty">
+            <div class="preview-empty-icon">📊</div>
+            <div>Your diagram will appear here</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /editor-right -->
+
+  </div>
+  <!-- /editor-body -->
+
+</div>
+<!-- /editor-screen -->
+
+<!-- ============================================================
+     SCRIPTS
+     Load order: mermaid → pptxgen → api → prompts → preview → builder → app
+============================================================ -->
+
+<!-- Mermaid.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+
+<!-- PptxGenJS — local copy (copied from status-report/lib/) -->
+<script src="lib/pptxgen.bundle.js"></script>
+
+<!-- Tool scripts -->
+<script src="js/api.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/builder.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
