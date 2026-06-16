@@ -115,11 +115,11 @@ function fcEdgeHtml(edge, idx, nodes) {
   return `
     <div class="edge-item">
       <select onchange="fcUpdateEdge(${idx},'from',this.value)" style="flex:1;min-width:80px">${opts}</select>
-      <select onchange="fcUpdateEdge(${idx},'type',this.value)" style="min-width:80px">
-        <option value="-->"  ${edge.type==='-->'?'selected':''}>──▶</option>
-        <option value="---"  ${edge.type==='---'?'selected':''}>────</option>
-        <option value="-.->  " ${edge.type==='-.->'?'selected':''}>·-·▶</option>
-        <option value="==>"  ${edge.type==='==>'?'selected':''}>══▶</option>
+      <select onchange="fcUpdateEdge(${idx},'type',this.value)" style="min-width:90px">
+        <option value="-->"  ${edge.type==='-->'?'selected':''}>──▶ arrow</option>
+        <option value="---"  ${edge.type==='---'?'selected':''}>──── line</option>
+        <option value="-.->  " ${edge.type==='-.->'?'selected':''}>·-·▶ dotted</option>
+        <option value="==>"  ${edge.type==='==>'?'selected':''}>══▶ thick</option>
       </select>
       <select onchange="fcUpdateEdge(${idx},'to',this.value)" style="flex:1;min-width:80px">${optsTo}</select>
       <input type="text" value="${escapeAttr(edge.label)}" placeholder="Label (optional)"
@@ -198,12 +198,13 @@ function fcUpdateCode() {
     }
   });
 
-  // Edge definitions
+  // Edge definitions — trim type to remove any accidental whitespace
   edges.forEach(e => {
+    const t = (e.type || '-->').trim();
     if (e.label) {
-      lines.push(`    ${e.from} ${e.type}|${e.label}| ${e.to}`);
+      lines.push(`    ${e.from} ${t}|${e.label}| ${e.to}`);
     } else {
-      lines.push(`    ${e.from} ${e.type} ${e.to}`);
+      lines.push(`    ${e.from} ${t} ${e.to}`);
     }
   });
 

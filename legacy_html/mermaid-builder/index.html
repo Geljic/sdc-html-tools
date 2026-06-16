@@ -341,31 +341,113 @@ Gantt: 'Project timeline for HCD discovery phase: stakeholder interviews 2 weeks
           ></textarea>
           <div class="code-error-bar" id="code-error-bar"></div>
         </div>
+
+        <!-- ── Snippet legend panel ──────────────────────── -->
+        <div class="snippet-panel" id="snippet-panel">
+          <div class="snippet-panel-header" onclick="toggleSnippetPanel()" id="snippet-panel-header">
+            <span>📖 Syntax snippets — click to insert</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="snippet-panel-body" id="snippet-panel-body">
+
+            <!-- Flowchart snippets -->
+            <div>
+              <div class="snippet-group-title">Flowchart nodes</div>
+              <div class="snippet-chips">
+                <button class="snippet-chip" onclick="insertSnippet('A[Label]')" title="Rectangle node">A[Label] <span class="chip-label">rect</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('B{Decision?}')" title="Diamond decision">B{Decision?} <span class="chip-label">diamond</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('C([Start])')" title="Rounded/stadium">C([Start]) <span class="chip-label">rounded</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('D((Circle))')" title="Circle">D((Circle)) <span class="chip-label">circle</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A --> B')" title="Arrow connection">A --> B <span class="chip-label">arrow</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A -->|Label| B')" title="Labelled arrow">A -->|Label| B <span class="chip-label">labelled</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A --- B')" title="Line (no arrow)">A --- B <span class="chip-label">line</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A -.-> B')" title="Dotted arrow">A -.-> B <span class="chip-label">dotted</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A ==> B')" title="Thick arrow">A ==> B <span class="chip-label">thick</span></button>
+              </div>
+            </div>
+
+            <!-- Sequence snippets -->
+            <div>
+              <div class="snippet-group-title">Sequence diagram</div>
+              <div class="snippet-chips">
+                <button class="snippet-chip" onclick="insertSnippet('participant Name')" title="Participant">participant Name</button>
+                <button class="snippet-chip" onclick="insertSnippet('actor Name')" title="Actor (person)">actor Name</button>
+                <button class="snippet-chip" onclick="insertSnippet('A->>B: Message')" title="Solid arrow">A->>B: Message <span class="chip-label">solid</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('A-->>B: Response')" title="Dashed arrow">A-->>B: Response <span class="chip-label">dashed</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('Note over A,B: text')" title="Note">Note over A,B: text</button>
+                <button class="snippet-chip" onclick="insertSnippet('activate A\n    deactivate A')" title="Activation box">activate / deactivate</button>
+              </div>
+            </div>
+
+            <!-- Journey snippets -->
+            <div>
+              <div class="snippet-group-title">User journey</div>
+              <div class="snippet-chips">
+                <button class="snippet-chip" onclick="insertSnippet('title My Journey')" title="Journey title">title My Journey</button>
+                <button class="snippet-chip" onclick="insertSnippet('section Phase Name')" title="Section">section Phase Name</button>
+                <button class="snippet-chip" onclick="insertSnippet('Task label: 3: User')" title="Task with score 1-5">Task: score: Actor <span class="chip-label">1-5</span></button>
+              </div>
+            </div>
+
+            <!-- Gantt snippets -->
+            <div>
+              <div class="snippet-group-title">Gantt chart</div>
+              <div class="snippet-chips">
+                <button class="snippet-chip" onclick="insertSnippet('dateFormat YYYY-MM-DD')" title="Date format">dateFormat YYYY-MM-DD</button>
+                <button class="snippet-chip" onclick="insertSnippet('section Section Name')" title="Section">section Section Name</button>
+                <button class="snippet-chip" onclick="insertSnippet('Task name :a1, 2024-01-01, 7d')" title="Task">Task :id, date, duration</button>
+                <button class="snippet-chip" onclick="insertSnippet('Task name :done, a1, 2024-01-01, 7d')" title="Done task">:done <span class="chip-label">status</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('Task name :active, a1, 2024-01-01, 7d')" title="Active task">:active <span class="chip-label">status</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('Task name :crit, a1, 2024-01-01, 7d')" title="Critical task">:crit <span class="chip-label">status</span></button>
+                <button class="snippet-chip" onclick="insertSnippet('Task name :after a1, 5d')" title="After dependency">:after id <span class="chip-label">chain</span></button>
+              </div>
+            </div>
+
+            <!-- Diagram starters -->
+            <div>
+              <div class="snippet-group-title">Start a new diagram</div>
+              <div class="snippet-chips">
+                <button class="snippet-chip" onclick="insertStarterDiagram('flowchart')" title="Flowchart starter">flowchart TD</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('sequence')" title="Sequence starter">sequenceDiagram</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('journey')" title="Journey starter">journey</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('gantt')" title="Gantt starter">gantt</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('mindmap')" title="Mindmap starter">mindmap</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('quadrant')" title="Quadrant starter">quadrantChart</button>
+                <button class="snippet-chip" onclick="insertStarterDiagram('er')" title="ER starter">erDiagram</button>
+              </div>
+            </div>
+
+          </div>
+          <!-- /snippet-panel-body -->
+        </div>
+        <!-- /snippet-panel -->
+
       </div>
+      <!-- /panel-code -->
 
       <!-- ── Form Builder tab panel ──────────────────────── -->
       <div class="tab-panel" id="panel-form" role="tabpanel">
 
-        <!-- Form type switcher -->
-        <div style="padding:12px 16px 0;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px">
-          <span style="font-size:12px;font-weight:700;color:var(--navy);align-self:center;margin-right:4px">Type:</span>
+        <!-- Form type switcher bar -->
+        <div class="form-type-bar">
+          <span style="font-size:12px;font-weight:700;color:var(--navy);margin-right:4px">Type:</span>
           <button class="btn btn-ghost btn-sm" onclick="formSwitchType('flowchart')">Flowchart</button>
           <button class="btn btn-ghost btn-sm" onclick="formSwitchType('sequence')">Sequence</button>
           <button class="btn btn-ghost btn-sm" onclick="formSwitchType('journey')">Journey</button>
           <button class="btn btn-ghost btn-sm" onclick="formSwitchType('gantt')">Gantt</button>
         </div>
 
-        <!-- Flowchart builder -->
-        <div id="fc-builder" style="display:flex;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+        <!-- Flowchart builder — scrollable -->
+        <div id="fc-builder"></div>
 
         <!-- Sequence builder -->
-        <div id="seq-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+        <div id="seq-builder" style="display:none"></div>
 
         <!-- Journey builder -->
-        <div id="journey-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+        <div id="journey-builder" style="display:none"></div>
 
         <!-- Gantt builder -->
-        <div id="gantt-builder" style="display:none;flex-direction:column;gap:10px;padding:14px;overflow-y:auto;flex:1"></div>
+        <div id="gantt-builder" style="display:none"></div>
 
         <!-- Unsupported type placeholder -->
         <div id="form-type-unsupported" style="display:none;flex:1;align-items:center;justify-content:center"></div>
@@ -384,6 +466,14 @@ Gantt: 'Project timeline for HCD discovery phase: stakeholder interviews 2 weeks
       <div class="preview-header">
         <span>Live Preview</span>
         <div class="preview-header-actions">
+          <!-- Zoom controls -->
+          <div class="zoom-controls">
+            <button class="zoom-btn" onclick="previewZoomOut()" title="Zoom out">−</button>
+            <span class="zoom-label" id="zoom-label">100%</span>
+            <button class="zoom-btn" onclick="previewZoomIn()" title="Zoom in">+</button>
+            <button class="zoom-btn" onclick="previewZoomFit()" title="Reset zoom" style="font-size:11px;width:auto;padding:0 6px">Fit</button>
+          </div>
+          <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
           <button class="btn btn-ghost btn-sm" onclick="exportDownloadSvg()" title="Download SVG">⬇ SVG</button>
           <button class="btn btn-ghost btn-sm" onclick="exportDownloadPng()" title="Download PNG">⬇ PNG</button>
         </div>

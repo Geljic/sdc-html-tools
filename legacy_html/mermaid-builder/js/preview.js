@@ -6,6 +6,7 @@
 let _previewDebounceTimer = null;
 let _currentSvg = '';
 let _currentTheme = 'default';
+let _zoomLevel = 1.0;
 
 // ── Mermaid initialisation ─────────────────────────────────
 function previewInit() {
@@ -14,9 +15,9 @@ function previewInit() {
     theme: _currentTheme,
     securityLevel: 'loose',
     fontFamily: "'Public Sans', 'Segoe UI', sans-serif",
-    flowchart: { useMaxWidth: true, htmlLabels: true },
-    sequence: { useMaxWidth: true },
-    gantt: { useMaxWidth: true },
+    flowchart: { useMaxWidth: false, htmlLabels: true },
+    sequence: { useMaxWidth: false },
+    gantt: { useMaxWidth: false },
   });
 }
 
@@ -28,6 +29,9 @@ function previewSetTheme(theme) {
     theme: _currentTheme,
     securityLevel: 'loose',
     fontFamily: "'Public Sans', 'Segoe UI', sans-serif",
+    flowchart: { useMaxWidth: false, htmlLabels: true },
+    sequence: { useMaxWidth: false },
+    gantt: { useMaxWidth: false },
   });
   // Re-render with current code
   const code = document.getElementById('mermaid-code-input')?.value || '';
@@ -66,13 +70,34 @@ async function previewRender(code) {
     _currentSvg = svg;
     output.innerHTML = svg;
 
-    // Make SVG responsive
+    // Fix SVG sizing — preserve viewBox aspect ratio, don't collapse height
     const svgEl = output.querySelector('svg');
     if (svgEl) {
+      // Get natural dimensions from viewBox or width/height attributes
+      let vbW = 0, vbH = 0;
+      const vb = svgEl.getAttribute('viewBox');
+      if (vb) {
+        const parts = vb.trim().split(/[\s,]+/);
+        if (parts.length === 4) { vbW = parseFloat(parts[2]); vbH = parseFloat(parts[3]); }
+      }
+      if (!vbW) vbW = parseFloat(svgEl.getAttribute('width')) || 800;
+      if (!vbH) vbH = parseFloat(svgEl.getAttribute('height')) || 400;
+
+      // Set viewBox if missing so aspect ratio is preserved
+      if (!vb && vbW && vbH) {
+        svgEl.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+      }
+
+      // Remove fixed pixel dimensions — let CSS control display size
+      svgEl.removeAttribute('width');
       svgEl.removeAttribute('height');
-      svgEl.style.maxWidth = '100%';
+      svgEl.style.width = '100%';
       svgEl.style.height = 'auto';
+      svgEl.style.display = 'block';
     }
+
+    // Apply current zoom
+    previewApplyZoom();
 
     if (errorBar) { errorBar.textContent = ''; errorBar.classList.remove('visible'); }
   } catch (err) {
@@ -92,6 +117,32 @@ async function previewRender(code) {
 // ── Get current SVG string ─────────────────────────────────
 function previewGetSvg() {
   return _currentSvg;
+}
+
+// ── Zoom controls ──────────────────────────────────────────
+function previewZoomIn() {
+  _zoomLevel = Math.min(4.0, _zoomLevel + 0.25);
+  previewApplyZoom();
+}
+
+function previewZoomOut() {
+  _zoomLevel = Math.max(0.25, _zoomLevel - 0.25);
+  previewApplyZoom();
+}
+
+function previewZoomFit() {
+  _zoomLevel = 1.0;
+  previewApplyZoom();
+}
+
+function previewApplyZoom() {
+  const svgEl = document.querySelector('#diagram-output svg');
+  if (!svgEl) return;
+  svgEl.style.transform = `scale(${_zoomLevel})`;
+  svgEl.style.transformOrigin = 'top center';
+  // Update zoom label
+  const label = document.getElementById('zoom-label');
+  if (label) label.textContent = Math.round(_zoomLevel * 100) + '%';
 }
 
 // ── Export: Copy Mermaid code ──────────────────────────────

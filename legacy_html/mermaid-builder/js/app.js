@@ -234,6 +234,66 @@ function onCodeInput(value) {
   previewScheduleRender(value, 350);
 }
 
+// ── Snippet legend ─────────────────────────────────────────
+
+function toggleSnippetPanel() {
+  const header = document.getElementById('snippet-panel-header');
+  const body   = document.getElementById('snippet-panel-body');
+  if (!header || !body) return;
+  const collapsed = header.classList.toggle('collapsed');
+  body.classList.toggle('hidden', collapsed);
+}
+
+/**
+ * Insert a snippet at the current cursor position in the code textarea.
+ * If there is a selection, it is replaced. After insertion the preview updates.
+ */
+function insertSnippet(text) {
+  const ta = document.getElementById('mermaid-code-input');
+  if (!ta) return;
+
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const value = ta.value;
+
+  // If textarea is empty or cursor is at end of a line, add a newline prefix
+  const before = value.slice(0, start);
+  const needsNewline = before.length > 0 && !before.endsWith('\n');
+  const insert = (needsNewline ? '\n' : '') + text;
+
+  ta.value = before + insert + value.slice(end);
+  const newPos = start + insert.length;
+  ta.selectionStart = newPos;
+  ta.selectionEnd   = newPos;
+  ta.focus();
+
+  onCodeInput(ta.value);
+}
+
+/**
+ * Replace the entire code textarea with a starter diagram template.
+ */
+function insertStarterDiagram(typeId) {
+  const ta = document.getElementById('mermaid-code-input');
+  if (!ta) return;
+
+  const typeInfo = mdGetDiagramType(typeId);
+  if (!typeInfo || !typeInfo.example) return;
+
+  if (ta.value.trim() && !confirm('Replace current diagram with a ' + typeInfo.label + ' starter?')) return;
+
+  ta.value = typeInfo.example;
+  ta.focus();
+  ta.selectionStart = ta.value.length;
+  ta.selectionEnd   = ta.value.length;
+
+  appState.diagramType = typeId;
+  const sel = document.getElementById('diagram-type-select');
+  if (sel) sel.value = typeId;
+
+  onCodeInput(ta.value);
+}
+
 // ── Editor toolbar title ───────────────────────────────────
 
 function updateEditorTitle(title) {
