@@ -323,5 +323,8 @@ function smSetupExportDropdown() {
     btn.setAttribute('aria-expanded', String(!isOpen));
   });
 
-  document.addEventListener('click', () => smCloseExportMenu());
+  document.addEventListener('click', () => {
+    smCloseExportMenu();
+    if (typeof smCloseUploadMenu === 'function') smCloseUploadMenu();
+  });
 }

@@ -138,3 +138,75 @@ async function smCallAi(systemPrompt, userPrompt, opts = {}) {
   if (!content) throw new Error('Empty response from AI. Please try again.');
   return content.trim();
 }
+
+/**
+ * Call the AI with a system prompt + image (vision).
+ * Converts the image file to base64 and sends as a vision message.
+ *
+ * @param {string} systemPrompt
+ * @param {string} userPrompt   — text part of the user message
+ * @param {File}   imageFile    — the image file (JPG, PNG, PDF)
+ * @param {object} [opts]
+ * @returns {Promise<string>}
+ */
+async function smCallAiWithImage(systemPrompt, userPrompt, imageFile, opts = {}) {
+  const endpoint = smGetEndpoint();
+  const model    = smGetModel();
+
+  if (!endpoint) throw new Error('No API endpoint configured. Click the ⚙️ settings icon to set up.');
+  if (!smGetApiKey()) throw new Error('No API key configured. Click the ⚙️ settings icon to set up.');
+
+  // Convert file to base64 data URL
+  const base64 = await smFileToBase64(imageFile);
+  const mimeType = imageFile.type || 'image/jpeg';
+
+  // Build vision message content
+  const userContent = [
+    {
+      type: 'image_url',
+      image_url: { url: base64 },
+    },
+    {
+      type: 'text',
+      text: userPrompt,
+    },
+  ];
+
+  const body = {
+    model,
+    max_tokens: opts.maxTokens || 4000,
+    temperature: opts.temperature !== undefined ? opts.temperature : 0.2,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userContent  },
+    ],
+  };
+
+  const res = await smFetchWithRetry(
+    endpoint + '/chat/completions',
+    {
+      method: 'POST',
+      headers: smApiHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from AI. Please try again.');
+  return content.trim();
+}
+
+/**
+ * Convert a File object to a base64 data URL.
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+function smFileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Failed to read file.'));
+    reader.readAsDataURL(file);
+  });
+}

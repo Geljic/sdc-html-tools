@@ -30,8 +30,11 @@ const smState = {
   projectContext: '',       // raw (unsanitised) project description
   stakeholders: [],         // array of stakeholder objects
   phases: ['Discover', 'Define', 'Develop', 'Deliver'],
-  activeView: 'power',      // power | raci
+  activeView: 'power',      // power | raci | orgchart
   activeFilter: 'all',      // all | delivery | executive | users | external | other
+  orgChart: {               // org chart hierarchy (populated from image upload)
+    nodes: [],              // [{ id, label, parentId }]
+  },
   metadata: {
     createdAt: null,
     updatedAt: null,
@@ -39,6 +42,9 @@ const smState = {
 };
 
 let _shIdCounter = 1;
+
+/** Reset the stakeholder ID counter (called on new project). */
+function smResetIdCounter() { _shIdCounter = 1; }
 
 // ── Stakeholder factory ────────────────────────────────────
 
@@ -56,7 +62,9 @@ function smCreateStakeholder(overrides = {}) {
 
   return {
     id,
-    name: '',
+    name: '',         // role label — safe to send to AI
+    realName: '',     // real staff name — LOCAL ONLY, never sent to AI
+    initials: '',     // 2-letter initials shown on matrix dot (from SF export or derived)
     team: '',
     group: 'other',
     power: 0.5,       // 0.0–1.0
@@ -192,6 +200,7 @@ function smPersist() {
       projectTitle: smState.projectTitle,
       stakeholders: smState.stakeholders,
       phases: smState.phases,
+      orgChart: smState.orgChart,
       metadata: smState.metadata,
     }));
   } catch (_) { /* storage full — ignore */ }
@@ -206,6 +215,7 @@ function smLoadFromStorage() {
       smState.projectTitle = saved.projectTitle || '';
       smState.stakeholders = saved.stakeholders;
       smState.phases = saved.phases || ['Discover', 'Define', 'Develop', 'Deliver'];
+      smState.orgChart = saved.orgChart || { nodes: [] };
       smState.metadata = saved.metadata || {};
       // Sync ID counter
       for (const sh of smState.stakeholders) {
@@ -223,11 +233,12 @@ function smLoadFromStorage() {
 function smSerialise() {
   return {
     tool: 'SDC Stakeholder Mapper',
-    version: '1.0',
+    version: '1.1',
     exportedAt: new Date().toISOString(),
     projectTitle: smState.projectTitle,
     phases: smState.phases,
     stakeholders: smState.stakeholders,
+    orgChart: smState.orgChart,
     metadata: smState.metadata,
   };
 }
@@ -239,6 +250,7 @@ function smDeserialise(json) {
   smState.projectTitle = json.projectTitle || '';
   smState.phases = json.phases || ['Discover', 'Define', 'Develop', 'Deliver'];
   smState.stakeholders = json.stakeholders;
+  smState.orgChart = json.orgChart || { nodes: [] };
   smState.metadata = json.metadata || {};
   _shIdCounter = 1;
   for (const sh of smState.stakeholders) {
@@ -270,8 +282,14 @@ function smImportFromAi(aiStakeholders) {
     const power    = Math.min(1, Math.max(0, parseFloat(raw.power)    || 0.5));
     const interest = Math.min(1, Math.max(0, parseFloat(raw.interest) || 0.5));
 
+    // Derive initials from name if not provided
+    const name     = String(raw.name     || '').trim() || 'Unknown';
+    const initials = String(raw.initials || '').trim() || smDeriveInitials(name);
+
     smState.stakeholders.push(smCreateStakeholder({
-      name:     String(raw.name    || '').trim() || 'Unknown',
+      name,
+      initials,
+      realName: '',   // never populated from AI — local only
       team:     String(raw.team    || '').trim(),
       group:    ['delivery','executive','users','external','other'].includes(raw.group) ? raw.group : 'other',
       power,
@@ -284,7 +302,105 @@ function smImportFromAi(aiStakeholders) {
   smPersist();
 }
 
+// ── SuccessFactors import ───────────────────────────────────
+
+/**
+ * Import stakeholders from SuccessFactors AI extraction result.
+ * SF exports contain: initials, roleTitle, team, seniority level.
+ * Initials are shown on the dot; roleTitle is the AI-safe name.
+ * @param {Array} sfStakeholders
+ */
+function smImportFromSf(sfStakeholders) {
+  _shIdCounter = Math.max(_shIdCounter, 1);
+
+  for (const raw of sfStakeholders) {
+    const raci = {};
+    for (const phase of smState.phases) {
+      raci[phase.toLowerCase()] = '—';
+    }
+
+    const power    = Math.min(1, Math.max(0, parseFloat(raw.power)    || 0.5));
+    const interest = Math.min(1, Math.max(0, parseFloat(raw.interest) || 0.5));
+    const initials = String(raw.initials || '').trim().toUpperCase().substring(0, 3);
+    const name     = String(raw.name     || raw.roleTitle || '').trim() || 'Unknown';
+
+    smState.stakeholders.push(smCreateStakeholder({
+      name,
+      initials,
+      realName: '',   // initials are not full names — no PII concern
+      team:     String(raw.team || '').trim(),
+      group:    ['delivery','executive','users','external','other'].includes(raw.group) ? raw.group : 'other',
+      power,
+      interest,
+      raci,
+      notes:    String(raw.notes || '').trim(),
+    }));
+  }
+
+  smPersist();
+}
+
+// ── Org chart import ────────────────────────────────────────
+
+/**
+ * Replace the org chart with AI-extracted hierarchy.
+ * @param {Array<{id, label, parentId}>} nodes
+ */
+function smImportOrgChart(nodes) {
+  smState.orgChart = { nodes: nodes.map((n, i) => ({
+    id:       n.id       || 'oc_' + i,
+    label:    String(n.label    || '').trim() || 'Unknown',
+    parentId: n.parentId || null,
+  })) };
+  smPersist();
+}
+
+/**
+ * Add a node to the org chart.
+ */
+function smOrgChartAddNode(label, parentId = null) {
+  const id = 'oc_' + Date.now();
+  smState.orgChart.nodes.push({ id, label, parentId });
+  smPersist();
+  return id;
+}
+
+/**
+ * Update an org chart node's label or parent.
+ */
+function smOrgChartUpdateNode(id, updates) {
+  const node = smState.orgChart.nodes.find(n => n.id === id);
+  if (node) Object.assign(node, updates);
+  smPersist();
+}
+
+/**
+ * Remove an org chart node (and re-parent its children to its parent).
+ */
+function smOrgChartRemoveNode(id) {
+  const node = smState.orgChart.nodes.find(n => n.id === id);
+  if (!node) return;
+  const parentId = node.parentId;
+  // Re-parent children
+  smState.orgChart.nodes.forEach(n => {
+    if (n.parentId === id) n.parentId = parentId;
+  });
+  smState.orgChart.nodes = smState.orgChart.nodes.filter(n => n.id !== id);
+  smPersist();
+}
+
 // ── Utility ────────────────────────────────────────────────
+
+/**
+ * Derive 2-letter initials from a role title or name string.
+ * e.g. "Product Owner" → "PO", "Executive Sponsor" → "ES"
+ */
+function smDeriveInitials(str) {
+  if (!str || !str.trim()) return '';
+  const words = str.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
 
 function smGroupColour(group) {
   return SM_GROUP_COLOURS[group] || SM_GROUP_COLOURS.other;

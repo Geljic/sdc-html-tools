@@ -53,7 +53,18 @@ Important rules:
 - Include users who should be engaged in discovery (score them high on interest, lower on power)
 - Include decision-makers who need buy-in (high power, variable interest)
 - Aim for 6–20 stakeholders for a typical project
-- Return ONLY the JSON array, nothing else`;
+- Return ONLY the JSON array, nothing else
+
+Power/interest inference by team or group type:
+- Executive / SES / Secretary / Minister → power 0.85–1.0, interest 0.5–0.8
+- Director-General / Deputy Secretary → power 0.75–0.9, interest 0.6–0.8
+- Executive Director / Director → power 0.6–0.8, interest 0.5–0.75
+- Manager / Team Lead → power 0.4–0.65, interest 0.6–0.85
+- Delivery team (SDC, designers, developers, product owners) → power 0.4–0.7, interest 0.8–1.0
+- Frontline staff / teachers / students / parents → power 0.1–0.35, interest 0.75–1.0
+- Union representatives → power 0.5–0.75, interest 0.7–0.9
+- External vendors / partner agencies → power 0.2–0.5, interest 0.4–0.7
+- Governance / audit / legal → power 0.6–0.85, interest 0.3–0.6`;
 
 // ── User prompt builder ────────────────────────────────────
 
@@ -201,4 +212,214 @@ function smGenerateMermaid(stakeholders, projectTitle) {
   }
 
   return lines.join('\n');
+}
+
+// ── SuccessFactors image prompt ─────────────────────────────
+
+/**
+ * System prompt for extracting stakeholders from a SuccessFactors export image.
+ * SF exports show: initials (2 letters), role title, team/unit, reporting hierarchy.
+ * Initials are NOT PII — they are safe to include in the AI response.
+ */
+const SM_SF_SYSTEM_PROMPT = `You are an expert at reading SuccessFactors org chart exports for the NSW Department of Education.
+
+A SuccessFactors export image shows a vertical list of people with:
+- 2-letter initials in a circle (e.g. MD, MM, JF, SS, RJ)
+- A role title (e.g. "Secretary, Department of Education", "Chief Operating Officer")
+- A team or unit name (e.g. "Primary Employment", "Shared Services")
+- Sometimes a reporting level or matrix count
+
+Extract each person as a stakeholder object. The initials are anonymised — they are safe to use.
+
+For each person, return:
+- initials: the 2-letter initials shown in the circle (e.g. "MD")
+- name: the role title (e.g. "Secretary, Department of Education") — this is the AI-safe label
+- team: the team or unit name if shown, otherwise infer from context
+- group: one of: delivery | executive | users | external | other
+  - Secretary/CEO/COO/CFO/Director-General → executive
+  - Directors/Managers/Team Leads → delivery or executive depending on seniority
+  - Frontline staff → users
+- power: 0.0–1.0 based on seniority (Secretary = 0.95, COO = 0.85, Director = 0.7, Manager = 0.5, etc.)
+- interest: 0.0–1.0 (infer from role — operational roles score higher interest)
+- notes: one sentence about their likely engagement need
+
+Return ONLY a valid JSON array. No explanation, no preamble, no markdown fences.
+
+Important:
+- Preserve the initials exactly as shown — they will be displayed on the matrix dot
+- Use the role title as the name field — never invent personal names
+- Infer the reporting hierarchy from the visual order (top = most senior)`;
+
+/**
+ * Build user prompt for SF image extraction.
+ * The image is passed separately as a vision message — this is the text part.
+ * @param {string} projectTitle
+ * @param {string[]} phases
+ * @param {string} [additionalContext] — optional extra context from the user
+ */
+function smBuildSfUserPrompt(projectTitle, phases, additionalContext = '') {
+  const phaseList = phases.join(', ');
+  const contextBlock = additionalContext && additionalContext.trim()
+    ? `\n\nAdditional context from the user:\n${additionalContext.trim()}`
+    : '';
+  return `Project: ${projectTitle || 'Unnamed project'}
+Project phases: ${phaseList}${contextBlock}
+
+The attached image is a SuccessFactors org chart export. Extract all visible people as stakeholders.
+Preserve their initials exactly. Use their role titles as the name field.
+For the RACI object, use these phase keys (lowercase): ${phases.map(p => p.toLowerCase()).join(', ')}
+Set all RACI values to "—" by default — the user will fill these in.
+
+Return a JSON array of stakeholder objects.`;
+}
+
+/**
+ * Parse and validate a SuccessFactors AI response.
+ * Same structure as smParseAiResponse but also validates initials field.
+ */
+function smParseSfResponse(raw) {
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  cleaned = cleaned.replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+  const arrayStart = cleaned.indexOf('[');
+  const arrayEnd   = cleaned.lastIndexOf(']');
+  if (arrayStart === -1 || arrayEnd === -1 || arrayEnd <= arrayStart) {
+    throw new Error('AI response did not contain a valid JSON array.');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned.slice(arrayStart, arrayEnd + 1));
+  } catch (e) {
+    throw new Error('Could not parse AI response as JSON: ' + e.message);
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('AI returned an empty or invalid stakeholder list.');
+  }
+
+  return parsed.filter(item => item && item.name).map(item => ({
+    initials: String(item.initials || '').trim().toUpperCase().substring(0, 3),
+    name:     String(item.name     || '').trim() || 'Unknown',
+    team:     String(item.team     || '').trim(),
+    group:    ['delivery','executive','users','external','other'].includes(item.group) ? item.group : 'other',
+    power:    Math.min(1, Math.max(0, parseFloat(item.power)    || 0.5)),
+    interest: Math.min(1, Math.max(0, parseFloat(item.interest) || 0.5)),
+    notes:    String(item.notes    || '').trim(),
+  }));
+}
+
+// ── Org chart image prompt ──────────────────────────────────
+
+/**
+ * System prompt for extracting a hierarchy from an org chart image.
+ * The image shows boxes connected by lines — extract the tree structure.
+ */
+const SM_ORGCHART_SYSTEM_PROMPT = `You are an expert at reading organisational hierarchy diagrams.
+
+The attached image shows an org chart with boxes connected by lines representing reporting relationships.
+Each box contains a team name, group name, or role title.
+
+Extract the hierarchy as a flat list of nodes with parent-child relationships.
+
+For each node, return:
+- id: a short unique slug (e.g. "ops-group", "service-experience") — lowercase, hyphens only
+- label: the exact text shown in the box (e.g. "Operations Group", "Service Design team")
+- parentId: the id of the parent node, or null if this is the root
+
+Rules:
+- The topmost box is the root (parentId: null)
+- Boxes connected below another box are its children
+- Preserve the exact label text from the image
+- If a box has multiple parents (matrix structure), pick the primary/closest parent
+
+Return ONLY a valid JSON array of node objects. No explanation, no preamble, no markdown fences.`;
+
+/**
+ * Build user prompt for org chart image extraction.
+ */
+function smBuildOrgChartUserPrompt() {
+  return `The attached image is an org chart. Extract all visible boxes and their parent-child relationships.
+Return a JSON array of node objects with id, label, and parentId fields.
+The root node should have parentId: null.`;
+}
+
+/**
+ * Parse and validate an org chart AI response.
+ * @param {string} raw
+ * @returns {Array<{id, label, parentId}>}
+ */
+function smParseOrgChartResponse(raw) {
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  cleaned = cleaned.replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+  const arrayStart = cleaned.indexOf('[');
+  const arrayEnd   = cleaned.lastIndexOf(']');
+  if (arrayStart === -1 || arrayEnd === -1 || arrayEnd <= arrayStart) {
+    throw new Error('AI response did not contain a valid JSON array.');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned.slice(arrayStart, arrayEnd + 1));
+  } catch (e) {
+    throw new Error('Could not parse org chart response as JSON: ' + e.message);
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('AI returned an empty org chart.');
+  }
+
+  return parsed.filter(n => n && n.label).map((n, i) => ({
+    id:       String(n.id || 'node_' + i).trim(),
+    label:    String(n.label || '').trim(),
+    parentId: n.parentId || null,
+  }));
+}
+
+// ── Org chart CSV prompt ────────────────────────────────────
+
+/**
+ * System prompt for inferring org hierarchy from a flat staff list CSV.
+ * The CSV has had PII columns stripped by the user before sending.
+ * Remaining columns typically include: Role, Team, Manager, Department, Level.
+ */
+const SM_ORGCHART_CSV_SYSTEM_PROMPT = `You are an expert at reading staff list data and inferring organisational hierarchies.
+
+You will receive a CSV with columns representing staff attributes (e.g. Role, Team, Manager, Department, Level).
+Personal name columns have been removed by the user for privacy.
+
+Your task is to infer the reporting hierarchy from the available data and return it as a flat list of nodes.
+
+For each unique team, group, or role cluster, create a node:
+- id: a short unique slug (lowercase, hyphens only, e.g. "operations-group", "service-design-team")
+- label: the team or group name (e.g. "Operations Group", "Service Design Team")
+- parentId: the id of the parent node, or null if this is the root
+
+Rules:
+- Group rows by Team or Department to create team nodes
+- Use the Manager column (if present) to infer parent-child relationships between teams
+- If a "Level" or "Grade" column exists, use it to determine hierarchy depth
+- The most senior team/group is the root (parentId: null)
+- Do NOT create individual person nodes — only team/group nodes
+- Aim for 5–20 nodes representing the organisational structure
+
+Return ONLY a valid JSON array of node objects. No explanation, no preamble, no markdown fences.`;
+
+/**
+ * Build user prompt for CSV org chart extraction.
+ * @param {string} sanitisedCsv — CSV with PII columns already stripped
+ */
+function smBuildOrgChartCsvUserPrompt(sanitisedCsv) {
+  return `The following is a staff list CSV with personal name columns removed.
+Infer the organisational hierarchy from the remaining columns and return a JSON array of team/group nodes.
+
+CSV data:
+${sanitisedCsv}
+
+Return a JSON array of node objects with id, label, and parentId fields.
+The root node should have parentId: null.
+Group by team/department — do not create individual person nodes.`;
 }

@@ -243,7 +243,7 @@ body {
 
 .welcome-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px; width: 100%;
 }
 
@@ -276,6 +276,28 @@ body {
 }
 .welcome-card-hint {
   font-size: 11px; color: var(--muted); font-style: italic;
+}
+
+/* AI panel wrapper — column layout, full width */
+.sm-ai-panel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 760px;
+}
+
+/* SF upload shortcut inside AI panel */
+.sm-ai-sf-shortcut {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #f0f9ff; border: 1px solid #bae6fd;
+  border-radius: 8px; padding: 10px 14px;
+}
+.sm-ai-sf-label {
+  font-size: 13px; font-weight: 600; color: #0369a1;
+}
+.sm-ai-sf-hint {
+  font-size: 11px; color: #0369a1; opacity: 0.7;
 }
 
 /* AI panel */
@@ -713,4 +735,197 @@ body {
   .sm-editor-body { flex-direction: column; }
   .sm-editor-left { width: 100%; max-width: none; border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
   .sm-resizer { display: none; }
+}
+
+/* ── Local-only / AI-safe badges ─────────────────────────── */
+.sm-local-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600;
+  background: #dcfce7; color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px; padding: 1px 5px;
+  vertical-align: middle; margin-left: 4px;
+  cursor: help;
+}
+.sm-ai-safe-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600;
+  background: #ede9fe; color: #5b21b6;
+  border: 1px solid #c4b5fd;
+  border-radius: 4px; padding: 1px 5px;
+  vertical-align: middle; margin-left: 4px;
+  cursor: help;
+}
+
+/* ── Stakeholder initials inside circle ──────────────────── */
+.stakeholder-initials {
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Public Sans', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── Drag cursor on matrix circles ──────────────────────── */
+.stakeholder-node {
+  cursor: grab;
+}
+.stakeholder-node:active {
+  cursor: grabbing;
+}
+
+/* ── Org chart SVG styles ────────────────────────────────── */
+.oc-link {
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 1.5px;
+}
+
+.oc-node-rect {
+  fill: #dbeafe;
+  stroke: #93c5fd;
+  stroke-width: 1.5px;
+  transition: fill 0.15s, stroke 0.15s;
+}
+.oc-node-rect:hover,
+.oc-node g:hover .oc-node-rect {
+  fill: #bfdbfe;
+  stroke: #3b82f6;
+}
+.oc-node-rect.oc-node-root {
+  fill: #002664;
+  stroke: #001a4a;
+}
+.oc-node-root + text,
+.oc-node-root ~ text {
+  fill: #ffffff !important;
+}
+
+.oc-node-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #1e3a5f;
+  pointer-events: none;
+  user-select: none;
+}
+
+.oc-add-child-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+  cursor: pointer;
+}
+.oc-node:hover .oc-add-child-btn {
+  opacity: 1;
+}
+
+/* ── Upload dropdown ─────────────────────────────────────── */
+#sm-upload-menu {
+  min-width: 220px;
+}
+
+/* ── Upload panels (SF + Org Chart) ─────────────────────── */
+.sm-upload-privacy-note {
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  border-radius: 8px; padding: 12px 14px;
+  font-size: 12px; color: #166534; line-height: 1.5;
+}
+
+/* Drag-and-drop upload area */
+.sm-upload-drop-area {
+  border: 2px dashed var(--border);
+  border-radius: 10px; padding: 28px 20px;
+  text-align: center; cursor: pointer;
+  background: var(--white);
+  transition: border-color 0.15s, background 0.15s;
+}
+.sm-upload-drop-area:hover,
+.sm-upload-drop-area.drag-over {
+  border-color: var(--navy);
+  background: var(--navy-light);
+}
+.sm-upload-drop-icon {
+  font-size: 36px; margin-bottom: 8px;
+}
+.sm-upload-drop-label {
+  font-size: 14px; font-weight: 600; color: var(--navy);
+  margin-bottom: 4px;
+}
+.sm-upload-drop-hint {
+  font-size: 11px; color: var(--muted);
+}
+
+/* Upload type tabs (image / CSV) */
+.sm-upload-type-tabs {
+  display: flex; gap: 8px;
+}
+.sm-upload-type-tab {
+  flex: 1; padding: 8px 12px;
+  border: 2px solid var(--border); border-radius: 8px;
+  background: var(--white); color: var(--navy);
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.sm-upload-type-tab:hover {
+  border-color: var(--navy); background: var(--navy-light);
+}
+.sm-upload-type-tab.active {
+  border-color: var(--navy); background: var(--navy); color: #fff;
+}
+
+/* Column exclusion UI */
+.sm-csv-columns-title {
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  margin-bottom: 10px; margin-top: 16px;
+}
+.sm-csv-column-list {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 16px;
+}
+.sm-csv-col-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--white);
+  cursor: pointer; font-size: 12px; font-weight: 500;
+  transition: all 0.12s;
+}
+.sm-csv-col-label:hover { border-color: var(--navy); }
+.sm-csv-col-label.excluded {
+  background: #fee2e2; border-color: #fca5a5; color: #991b1b;
+  text-decoration: line-through;
+}
+.sm-csv-col-name { font-weight: 600; }
+.sm-csv-col-badge {
+  font-size: 10px; font-weight: 700; color: #991b1b;
+  background: #fecaca; border-radius: 3px; padding: 1px 4px;
+}
+
+/* CSV preview table */
+.sm-csv-preview-wrap {
+  margin-top: 8px;
+}
+.sm-csv-preview-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  margin-bottom: 6px;
+}
+.sm-csv-preview {
+  overflow-x: auto; border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.sm-csv-preview-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 11px;
+}
+.sm-csv-preview-table th {
+  background: var(--navy-light); color: var(--navy);
+  font-weight: 700; padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.sm-csv-preview-table td {
+  padding: 5px 10px; border-bottom: 1px solid var(--border);
+  white-space: nowrap; max-width: 160px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.sm-csv-preview-table .col-excluded {
+  opacity: 0.35; text-decoration: line-through;
+  background: #fef2f2;
 }

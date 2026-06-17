@@ -103,8 +103,19 @@
     </div>
     <div class="sm-edit-grid">
       <div class="form-group">
-        <label for="edit-name">Name / Role label</label>
+        <label for="edit-name">Role label <span class="sm-ai-safe-badge" title="This is sent to AI — use a role title, not a personal name">🤖 AI-safe</span></label>
         <input type="text" id="edit-name" placeholder="e.g. Product Owner, Executive Sponsor" />
+        <span class="hint">Use a role title. This may be sent to AI for analysis.</span>
+      </div>
+      <div class="form-group">
+        <label for="edit-realname">Real name <span class="sm-local-badge" title="Stored in your browser only — never sent to AI">🔒 Local only</span></label>
+        <input type="text" id="edit-realname" placeholder="e.g. Jane Smith (optional)" autocomplete="off" />
+        <span class="hint">Optional. Stays in your browser — never sent to AI.</span>
+      </div>
+      <div class="form-group">
+        <label for="edit-initials">Initials <span class="sm-local-badge" title="Shown on the matrix dot">🔵 Dot label</span></label>
+        <input type="text" id="edit-initials" placeholder="e.g. JS" maxlength="3" style="text-transform:uppercase" autocomplete="off" />
+        <span class="hint">2–3 letters shown on the matrix dot. Auto-derived if blank.</span>
       </div>
       <div class="form-group">
         <label for="edit-team">Team / Unit</label>
@@ -127,13 +138,13 @@
       <div class="form-group">
         <label>Power / Influence <span class="hint-inline" id="edit-power-val">5</span>/10</label>
         <input type="range" id="edit-power" min="0" max="10" step="1" value="5"
-          oninput="document.getElementById('edit-power-val').textContent=this.value" />
+          oninput="document.getElementById('edit-power-val').textContent=this.value; smEditSyncDragPosition()" />
         <span class="hint">How much authority they have over the project outcome</span>
       </div>
       <div class="form-group">
         <label>Interest <span class="hint-inline" id="edit-interest-val">5</span>/10</label>
         <input type="range" id="edit-interest" min="0" max="10" step="1" value="5"
-          oninput="document.getElementById('edit-interest-val').textContent=this.value" />
+          oninput="document.getElementById('edit-interest-val').textContent=this.value; smEditSyncDragPosition()" />
         <span class="hint">How much they care about the project outcome</span>
       </div>
     </div>
@@ -171,12 +182,48 @@
 </div>
 
 <!-- ============================================================
+     ORG CHART EDIT MODAL
+============================================================ -->
+<div id="sm-orgchart-node-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this)smOcNodeClose()">
+  <div class="sm-modal-box" role="dialog" aria-modal="true" aria-labelledby="sm-oc-node-title">
+    <div class="sm-modal-header">
+      <h3 id="sm-oc-node-title">Edit Node</h3>
+      <button class="sm-modal-close" onclick="smOcNodeClose()" aria-label="Close">✕</button>
+    </div>
+    <div class="form-group">
+      <label for="oc-node-label">Label</label>
+      <input type="text" id="oc-node-label" placeholder="e.g. Service Design team" />
+    </div>
+    <div class="form-group">
+      <label for="oc-node-parent">Parent node</label>
+      <select id="oc-node-parent">
+        <option value="">(none — root node)</option>
+        <!-- Populated by orgchart.js -->
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:space-between;margin-top:16px">
+      <button class="btn btn-danger btn-sm" id="oc-node-delete-btn" onclick="smOcNodeDelete()">🗑 Delete</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="smOcNodeClose()">Cancel</button>
+        <button class="btn btn-primary" onclick="smOcNodeSave()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      WELCOME / SPLASH SCREEN
 ============================================================ -->
 <div id="sm-welcome-screen" style="display:flex">
 
   <input type="file" id="sm-json-input" accept=".json" style="display:none"
     onchange="smLoadJson(this.files[0]); this.value=''" />
+  <input type="file" id="sm-sf-input" accept=".jpg,.jpeg,.png,.pdf" style="display:none"
+    onchange="smSfPanelFileSelected(this.files[0]); this.value=''" />
+  <input type="file" id="sm-orgchart-img-input" accept=".jpg,.jpeg,.png,.pdf" style="display:none"
+    onchange="smOcPanelImageSelected(this.files[0]); this.value=''" />
+  <input type="file" id="sm-orgchart-csv-input" accept=".csv" style="display:none"
+    onchange="smOcPanelCsvSelected(this.files[0]); this.value=''" />
 
   <div class="welcome-inner">
 
@@ -213,7 +260,23 @@
         <span class="welcome-card-hint">Good when you already know your stakeholders</span>
       </button>
 
-      <!-- Card 3: Load JSON -->
+      <!-- Card 3: SuccessFactors upload -->
+      <button class="welcome-card" onclick="smChooseSf()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">📊</div>
+        <span class="welcome-card-title">Upload SuccessFactors export</span>
+        <span class="welcome-card-desc">Upload a SuccessFactors org chart export (JPG or PDF). AI extracts roles, teams, and seniority — initials shown on the matrix dot.</span>
+        <span class="welcome-card-hint">Anonymised names (initials) are safe — no PII sent to AI</span>
+      </button>
+
+      <!-- Card 4: Org chart image or CSV -->
+      <button class="welcome-card" onclick="smChooseOrgChart()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">🌳</div>
+        <span class="welcome-card-title">Upload org chart</span>
+        <span class="welcome-card-desc">Upload an org chart image (JPG/PDF) or a staff list CSV. AI extracts the team hierarchy — view and edit in the Org Chart tab.</span>
+        <span class="welcome-card-hint">Choose which CSV columns to exclude before sending to AI</span>
+      </button>
+
+      <!-- Card 5: Load JSON -->
       <button class="welcome-card" onclick="document.getElementById('sm-json-input').click()" tabindex="0">
         <div class="welcome-card-icon" style="background:var(--navy-light)">📥</div>
         <span class="welcome-card-title">Load saved map</span>
@@ -223,8 +286,152 @@
 
     </div>
 
+    <!-- ── SUCCESSFACTORS UPLOAD PANEL ──────────────────── -->
+    <div id="sm-sf-panel" class="sm-ai-panel-wrap" style="display:none">
+
+      <div class="ai-prompt-header">
+        <button class="btn-back" onclick="smHideSfPanel()">← Back</button>
+        <h3>📊 Upload SuccessFactors export</h3>
+      </div>
+
+      <!-- API not configured warning -->
+      <div id="sm-sf-creds-warn" class="ai-creds-warn" style="display:none">
+        <span>⚠️ AI not configured.</span>
+        <button class="btn-link" onclick="smSettingsOpen()">Set up API credentials →</button>
+      </div>
+
+      <!-- Privacy note -->
+      <div class="sm-upload-privacy-note">
+        🔒 <strong>Privacy:</strong> SuccessFactors exports show initials only (e.g. MD, JF) — not full names.
+        Initials are not personally identifying and are safe to send to AI.
+        Role titles and team names will also be sent. No full names leave your browser.
+      </div>
+
+      <!-- Project name -->
+      <div class="form-group">
+        <label for="sm-sf-project-title">Project name</label>
+        <input type="text" id="sm-sf-project-title" placeholder="e.g. Teacher Onboarding Redesign" />
+      </div>
+
+      <!-- Optional context -->
+      <div class="form-group">
+        <label for="sm-sf-context">Additional context <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <textarea id="sm-sf-context" class="ai-notes-textarea" rows="3"
+          placeholder="e.g. This is a change management project for teacher onboarding. Focus on the Operations Group and Service Design team. We are in the Discover phase."></textarea>
+        <span class="hint">Helps AI assign the right group, RACI, and power/interest scores.</span>
+      </div>
+
+      <!-- File upload area -->
+      <div class="sm-upload-drop-area" id="sm-sf-drop-area"
+        onclick="document.getElementById('sm-sf-input').click()"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="event.preventDefault(); this.classList.remove('drag-over'); smSfPanelFileSelected(event.dataTransfer.files[0])">
+        <div class="sm-upload-drop-icon">📊</div>
+        <div class="sm-upload-drop-label" id="sm-sf-file-label">
+          Click to select or drag &amp; drop a SuccessFactors export
+        </div>
+        <div class="sm-upload-drop-hint">JPG, PNG, or PDF · Multiple uploads supported — each adds to your map</div>
+      </div>
+
+      <div class="ai-prompt-actions">
+        <button class="btn btn-ghost" onclick="smHideSfPanel()">Cancel</button>
+        <button class="btn btn-primary" id="sm-sf-btn-generate" onclick="smRunSfGenerate()" disabled>
+          📊 Extract stakeholders →
+        </button>
+      </div>
+
+    </div>
+    <!-- /sm-sf-panel -->
+
+    <!-- ── ORG CHART UPLOAD PANEL ────────────────────────── -->
+    <div id="sm-oc-panel" class="sm-ai-panel-wrap" style="display:none">
+
+      <div class="ai-prompt-header">
+        <button class="btn-back" onclick="smHideOcPanel()">← Back</button>
+        <h3>🌳 Upload org chart</h3>
+      </div>
+
+      <!-- API not configured warning -->
+      <div id="sm-oc-creds-warn" class="ai-creds-warn" style="display:none">
+        <span>⚠️ AI not configured.</span>
+        <button class="btn-link" onclick="smSettingsOpen()">Set up API credentials →</button>
+      </div>
+
+      <!-- Upload type tabs -->
+      <div class="sm-upload-type-tabs">
+        <button class="sm-upload-type-tab active" id="sm-oc-tab-image" onclick="smOcSwitchType('image')">
+          🖼️ Image (JPG / PDF)
+        </button>
+        <button class="sm-upload-type-tab" id="sm-oc-tab-csv" onclick="smOcSwitchType('csv')">
+          📄 Staff list CSV
+        </button>
+      </div>
+
+      <!-- Image upload section -->
+      <div id="sm-oc-image-section">
+        <div class="sm-upload-privacy-note">
+          🔒 <strong>Privacy:</strong> Only team names, group names, and role titles from the image will be sent to AI.
+          No personal names are extracted from org chart images.
+        </div>
+        <div class="sm-upload-drop-area" id="sm-oc-img-drop-area"
+          onclick="document.getElementById('sm-orgchart-img-input').click()"
+          ondragover="event.preventDefault(); this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="event.preventDefault(); this.classList.remove('drag-over'); smOcPanelImageSelected(event.dataTransfer.files[0])">
+          <div class="sm-upload-drop-icon">🌳</div>
+          <div class="sm-upload-drop-label" id="sm-oc-img-file-label">
+            Click to select or drag &amp; drop an org chart image
+          </div>
+          <div class="sm-upload-drop-hint">JPG, PNG, or PDF · AI extracts boxes and hierarchy</div>
+        </div>
+      </div>
+
+      <!-- CSV upload section -->
+      <div id="sm-oc-csv-section" style="display:none">
+        <div class="sm-upload-privacy-note">
+          🔒 <strong>Privacy:</strong> Select which columns to <strong>exclude</strong> before sending to AI.
+          Typically exclude the Name column — role, team, and manager columns are safe to send.
+        </div>
+        <div class="sm-upload-drop-area" id="sm-oc-csv-drop-area"
+          onclick="document.getElementById('sm-orgchart-csv-input').click()"
+          ondragover="event.preventDefault(); this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="event.preventDefault(); this.classList.remove('drag-over'); smOcPanelCsvSelected(event.dataTransfer.files[0])">
+          <div class="sm-upload-drop-icon">📄</div>
+          <div class="sm-upload-drop-label" id="sm-oc-csv-file-label">
+            Click to select or drag &amp; drop a staff list CSV
+          </div>
+          <div class="sm-upload-drop-hint">CSV with columns like: Name, Role, Team, Manager, Department</div>
+        </div>
+
+        <!-- Column exclusion UI — shown after CSV is parsed -->
+        <div id="sm-oc-csv-columns" style="display:none">
+          <div class="sm-csv-columns-title">
+            🔒 Select columns to <strong>exclude</strong> before sending to AI:
+          </div>
+          <div id="sm-oc-csv-column-list" class="sm-csv-column-list">
+            <!-- Rendered by app.js after CSV parse -->
+          </div>
+          <div class="sm-csv-preview-wrap">
+            <div class="sm-csv-preview-title">Preview — first 3 rows (excluded columns greyed out):</div>
+            <div id="sm-oc-csv-preview" class="sm-csv-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-prompt-actions">
+        <button class="btn btn-ghost" onclick="smHideOcPanel()">Cancel</button>
+        <button class="btn btn-primary" id="sm-oc-btn-generate" onclick="smRunOcGenerate()" disabled>
+          🌳 Extract org chart →
+        </button>
+      </div>
+
+    </div>
+    <!-- /sm-oc-panel -->
+
     <!-- ── AI PROMPT PANEL ───────────────────────────────── -->
-    <div id="sm-ai-panel" style="display:none;width:100%;max-width:760px">
+    <div id="sm-ai-panel" class="sm-ai-panel-wrap" style="display:none">
 
       <div class="ai-prompt-header">
         <button class="btn-back" onclick="smHideAiPanel()">← Back</button>
@@ -243,6 +450,15 @@
         <input type="text" id="sm-ai-project-title" placeholder="e.g. Teacher Onboarding Redesign" />
       </div>
 
+      <!-- SF upload shortcut inside AI panel -->
+      <div class="sm-ai-sf-shortcut">
+        <span class="sm-ai-sf-label">📊 Have a SuccessFactors export?</span>
+        <button class="btn btn-ghost btn-sm" onclick="smHideAiPanel(); smChooseSf()">
+          Upload JPG / PDF instead →
+        </button>
+        <span class="sm-ai-sf-hint">Initials are safe — no PII sent to AI</span>
+      </div>
+
       <!-- Context input -->
       <label class="ai-prompt-label" for="sm-ai-context-input">
         Paste your project brief, org chart, meeting notes, or any text that describes who is involved in this project.
@@ -250,10 +466,10 @@
       <textarea
         id="sm-ai-context-input"
         class="ai-notes-textarea"
-        rows="8"
+        rows="7"
         placeholder="Examples:
 
-'We are redesigning the teacher onboarding process. Key people: Sarah Chen (Product Owner, Digital Delivery), Mark Johnson (Executive Director, People & Culture), the HR team, school principals, and new teachers. The union rep needs to be consulted. IT team will build the system.'
+'We are redesigning the teacher onboarding process. Key people: Sarah Chen (Product Owner, Digital Delivery), Mark Johnson (Executive Director, People &amp; Culture), the HR team, school principals, and new teachers. The union rep needs to be consulted. IT team will build the system.'
 
 Or paste an org chart, project charter extract, or stakeholder register..."
         oninput="smPiiAutoDetect()"
@@ -298,6 +514,7 @@ Or paste an org chart, project charter extract, or stakeholder register..."
   <!-- ── Toolbar ──────────────────────────────────────────── -->
   <div class="editor-toolbar">
     <button class="btn btn-ghost btn-sm" onclick="smBackToSplash()" title="Back to start">← Home</button>
+    <button class="btn btn-ghost btn-sm" onclick="smNewProject()" title="Clear all data and start a new project" style="color:var(--danger);border-color:var(--danger)">🗑 New project</button>
     <div class="editor-toolbar__sep"></div>
     <input type="text" id="sm-project-title-input" class="sm-project-title-input"
       placeholder="Project name…" oninput="smState.projectTitle=this.value" />
@@ -311,9 +528,27 @@ Or paste an org chart, project charter extract, or stakeholder register..."
       <button class="sm-view-tab" id="tab-raci" onclick="smSwitchView('raci')" role="tab" aria-selected="false">
         📋 RACI Matrix
       </button>
+      <button class="sm-view-tab" id="tab-orgchart" onclick="smSwitchView('orgchart')" role="tab" aria-selected="false">
+        🌳 Org Chart
+      </button>
     </div>
 
     <div class="editor-toolbar__spacer"></div>
+
+    <!-- Upload more dropdown (append SF exports or org chart from editor) -->
+    <div class="export-dropdown">
+      <button class="btn btn-ghost btn-sm" id="sm-upload-btn" aria-haspopup="true" aria-expanded="false">
+        📤 Upload more ▾
+      </button>
+      <div class="export-menu" id="sm-upload-menu" role="menu">
+        <button onclick="smCloseUploadMenu(); smChooseSfFromEditor()" role="menuitem">
+          <span class="export-icon">📊</span> Add from SuccessFactors export
+        </button>
+        <button onclick="smCloseUploadMenu(); smChooseOrgChartFromEditor()" role="menuitem">
+          <span class="export-icon">🌳</span> Upload org chart (image or CSV)
+        </button>
+      </div>
+    </div>
 
     <!-- Export dropdown -->
     <div class="export-dropdown">
@@ -434,6 +669,28 @@ Or paste an org chart, project charter extract, or stakeholder register..."
         </div>
       </div>
 
+      <!-- Org Chart view -->
+      <div id="sm-view-orgchart" class="sm-view-panel" style="display:none">
+        <div class="sm-view-header">
+          <span class="sm-view-title">Org Chart</span>
+          <div class="sm-matrix-controls">
+            <button class="btn btn-ghost btn-sm" onclick="smOcAddRootNode()" title="Add a root node">+ Add node</button>
+            <button class="btn btn-ghost btn-sm" onclick="smOcReset()" title="Reset zoom">⊙ Reset</button>
+          </div>
+        </div>
+        <div class="sm-matrix-container" id="sm-orgchart-container">
+          <div class="sm-matrix-empty" id="sm-orgchart-empty">
+            <div style="font-size:48px;margin-bottom:12px">🌳</div>
+            <div style="margin-bottom:12px">No org chart yet.</div>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('sm-orgchart-input').click()">
+              📤 Upload org chart image
+            </button>
+            <div style="margin-top:8px;font-size:12px;color:var(--muted)">or click <strong>+ Add node</strong> above to build manually</div>
+          </div>
+          <!-- D3 tree rendered here -->
+        </div>
+      </div>
+
     </div>
     <!-- /sm-editor-right -->
 
@@ -445,7 +702,7 @@ Or paste an org chart, project charter extract, or stakeholder register..."
 
 <!-- ============================================================
      SCRIPTS
-     Load order: d3 → pptxgen → api → pii → data → prompts → matrix → raci → export → app
+     Load order: d3 → pptxgen → api → pii → data → prompts → matrix → raci → orgchart → export → app
 ============================================================ -->
 
 <!-- D3.js v7 from CDN -->
@@ -461,6 +718,7 @@ Or paste an org chart, project charter extract, or stakeholder register..."
 <script src="js/prompts.js"></script>
 <script src="js/matrix.js"></script>
 <script src="js/raci.js"></script>
+<script src="js/orgchart.js"></script>
 <script src="js/export.js"></script>
 <script src="js/app.js"></script>
 
