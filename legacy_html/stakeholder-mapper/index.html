@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stakeholder Mapper — HCD Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../shared/navbar.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     SHARED NAVBAR
+============================================================ -->
+<nav class="hcd-navbar" role="navigation" aria-label="HCD Tools navigation">
+  <a class="hcd-navbar__brand" href="../../index.html" title="HCD Tools Home">
+    <span class="hcd-navbar__brand-icon">🏠</span>
+    <span>HCD Tools</span>
+  </a>
+  <ul class="hcd-navbar__links">
+
+    <!-- HCD Tools -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">🔬</span> HCD Tools <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../research-synthesiser/index.html"><span class="nav-icon">🔬</span> Research Synthesiser</a>
+        <a href="../data-synthesis/index.html"><span class="nav-icon">🧪</span> Data Synthesis</a>
+        <a href="../persona-builder/index.html"><span class="nav-icon">🧑</span> Persona Builder</a>
+        <a href="../ideation-scanner/index.html"><span class="nav-icon">💡</span> Ideation Scanner</a>
+        <div class="nav-dropdown__divider"></div>
+        <a href="index.html" class="active"><span class="nav-icon">🗺️</span> Stakeholder Mapper ✦</a>
+      </div>
+    </li>
+
+    <!-- Project Management -->
+    <li>
+      <button class="nav-group-btn" type="button">
+        <span class="nav-icon">📋</span> Project Management <span class="nav-chevron">▼</span>
+      </button>
+      <div class="nav-dropdown">
+        <a href="../project-charter/index.html"><span class="nav-icon">📋</span> Project Charter</a>
+        <a href="../timeline-builder/index.html"><span class="nav-icon">📅</span> Timeline Builder</a>
+        <a href="../status-report/index.html"><span class="nav-icon">📊</span> Status Report</a>
+        <a href="../mermaid-builder/index.html"><span class="nav-icon">📐</span> Diagram Builder</a>
+      </div>
+    </li>
+
+  </ul>
+  <div class="hcd-navbar__right">
+    <button class="btn-icon" onclick="smSettingsOpen()" title="API Settings" style="color:#fff;font-size:18px">⚙️</button>
+    <span class="hcd-navbar__tag">HCD Tools</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     TOAST
+============================================================ -->
+<div id="sm-toast"></div>
+
+<!-- ============================================================
+     SETTINGS MODAL
+============================================================ -->
+<div id="sm-settings-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this)smSettingsClose()">
+  <div class="sm-modal-box" role="dialog" aria-modal="true" aria-labelledby="sm-settings-title">
+    <div class="sm-modal-header">
+      <h3 id="sm-settings-title">⚙️ API Settings</h3>
+      <button class="sm-modal-close" onclick="smSettingsClose()" aria-label="Close settings">✕</button>
+    </div>
+    <div class="form-group">
+      <label for="sm-settings-endpoint">API Endpoint URL</label>
+      <input type="url" id="sm-settings-endpoint" placeholder="https://your-litellm-proxy.example.com" autocomplete="off" />
+      <span class="hint">LiteLLM or OpenAI-compatible endpoint (no trailing slash)</span>
+    </div>
+    <div class="form-group">
+      <label for="sm-settings-key">API Key</label>
+      <input type="password" id="sm-settings-key" placeholder="sk-…" autocomplete="off" />
+      <span class="hint">Stored in browser localStorage only — never sent anywhere except your endpoint</span>
+    </div>
+    <div class="form-group">
+      <label for="sm-settings-model">Model</label>
+      <input type="text" id="sm-settings-model" placeholder="claude-sonnet-4-6" autocomplete="off" />
+      <span class="hint">Any model supported by your endpoint (e.g. claude-sonnet-4-6, gpt-4o)</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="smSettingsClose()">Cancel</button>
+      <button class="btn btn-primary" onclick="smSettingsSave()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     STAKEHOLDER EDIT MODAL
+============================================================ -->
+<div id="sm-edit-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this)smEditClose()">
+  <div class="sm-modal-box sm-modal-box--wide" role="dialog" aria-modal="true" aria-labelledby="sm-edit-title">
+    <div class="sm-modal-header">
+      <h3 id="sm-edit-title">Edit Stakeholder</h3>
+      <button class="sm-modal-close" onclick="smEditClose()" aria-label="Close">✕</button>
+    </div>
+    <div class="sm-edit-grid">
+      <div class="form-group">
+        <label for="edit-name">Name / Role label</label>
+        <input type="text" id="edit-name" placeholder="e.g. Product Owner, Executive Sponsor" />
+      </div>
+      <div class="form-group">
+        <label for="edit-team">Team / Unit</label>
+        <input type="text" id="edit-team" placeholder="e.g. Digital Delivery, SDC" />
+      </div>
+      <div class="form-group">
+        <label for="edit-group">Group</label>
+        <select id="edit-group">
+          <option value="delivery">Delivery Team</option>
+          <option value="executive">Executive / Governance</option>
+          <option value="users">Users / Frontline</option>
+          <option value="external">External</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-notes">Notes</label>
+        <input type="text" id="edit-notes" placeholder="Key concern or engagement need" />
+      </div>
+      <div class="form-group">
+        <label>Power / Influence <span class="hint-inline" id="edit-power-val">5</span>/10</label>
+        <input type="range" id="edit-power" min="0" max="10" step="1" value="5"
+          oninput="document.getElementById('edit-power-val').textContent=this.value" />
+        <span class="hint">How much authority they have over the project outcome</span>
+      </div>
+      <div class="form-group">
+        <label>Interest <span class="hint-inline" id="edit-interest-val">5</span>/10</label>
+        <input type="range" id="edit-interest" min="0" max="10" step="1" value="5"
+          oninput="document.getElementById('edit-interest-val').textContent=this.value" />
+        <span class="hint">How much they care about the project outcome</span>
+      </div>
+    </div>
+    <div class="sm-edit-raci" id="sm-edit-raci">
+      <!-- Rendered by app.js -->
+    </div>
+    <div style="display:flex;gap:10px;justify-content:space-between;margin-top:16px">
+      <button class="btn btn-danger btn-sm" onclick="smEditDelete()">🗑 Delete</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="smEditClose()">Cancel</button>
+        <button class="btn btn-primary" onclick="smEditSave()">Save stakeholder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PII PREVIEW MODAL
+============================================================ -->
+<div id="sm-pii-preview-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this)smPiiPreviewClose()">
+  <div class="sm-modal-box sm-modal-box--wide" role="dialog" aria-modal="true" aria-labelledby="sm-pii-preview-title">
+    <div class="sm-modal-header">
+      <h3 id="sm-pii-preview-title">🔍 Preview — text to be sent to AI</h3>
+      <button class="sm-modal-close" onclick="smPiiPreviewClose()" aria-label="Close">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+      This is exactly what will be sent to the AI. Review it carefully before proceeding.
+    </p>
+    <div id="sm-pii-preview-text" class="sm-pii-preview-text"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="smPiiPreviewClose()">← Edit rules</button>
+      <button class="btn btn-primary" onclick="smRunAiGenerate()">✨ Send to AI →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WELCOME / SPLASH SCREEN
+============================================================ -->
+<div id="sm-welcome-screen" style="display:flex">
+
+  <input type="file" id="sm-json-input" accept=".json" style="display:none"
+    onchange="smLoadJson(this.files[0]); this.value=''" />
+
+  <div class="welcome-inner">
+
+    <!-- Brand block -->
+    <div class="welcome-brand">
+      <div class="welcome-brand-icon">🗺️</div>
+      <div class="welcome-brand-text">
+        <h2>Stakeholder Mapper</h2>
+        <p>NSW Department of Education · HCD Pilot</p>
+      </div>
+    </div>
+
+    <p style="font-size:14px;color:var(--muted);text-align:center;margin-top:-12px">
+      Map stakeholder power &amp; interest, plan engagement, and build your RACI — with AI assistance
+    </p>
+    <p class="welcome-prompt" id="sm-welcome-prompt">How would you like to start?</p>
+
+    <!-- ── THREE ENTRY CARDS ──────────────────────────────── -->
+    <div class="welcome-cards" id="sm-welcome-cards">
+
+      <!-- Card 1: AI generation -->
+      <button class="welcome-card welcome-card--ai" onclick="smChooseAi()" tabindex="0">
+        <div class="welcome-card-icon">✨</div>
+        <span class="welcome-card-title">Generate with AI</span>
+        <span class="welcome-card-desc">Paste a project brief, org chart, or meeting notes — AI will suggest your stakeholder list with power, interest, and RACI assignments.</span>
+        <span class="welcome-card-hint">Best for getting started quickly from existing documents</span>
+      </button>
+
+      <!-- Card 2: Manual build -->
+      <button class="welcome-card" onclick="smChooseManual()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">📋</div>
+        <span class="welcome-card-title">Build manually</span>
+        <span class="welcome-card-desc">Add stakeholders one by one using structured fields. Set their power, interest, group, and RACI engagement for each project phase.</span>
+        <span class="welcome-card-hint">Good when you already know your stakeholders</span>
+      </button>
+
+      <!-- Card 3: Load JSON -->
+      <button class="welcome-card" onclick="document.getElementById('sm-json-input').click()" tabindex="0">
+        <div class="welcome-card-icon" style="background:var(--navy-light)">📥</div>
+        <span class="welcome-card-title">Load saved map</span>
+        <span class="welcome-card-desc">Import a JSON file from a previous session to continue editing or adapt an existing stakeholder map.</span>
+        <span class="welcome-card-hint">You will need a JSON file exported from this tool</span>
+      </button>
+
+    </div>
+
+    <!-- ── AI PROMPT PANEL ───────────────────────────────── -->
+    <div id="sm-ai-panel" style="display:none;width:100%;max-width:760px">
+
+      <div class="ai-prompt-header">
+        <button class="btn-back" onclick="smHideAiPanel()">← Back</button>
+        <h3>✨ Generate with AI</h3>
+      </div>
+
+      <!-- API not configured warning -->
+      <div id="sm-creds-warn" class="ai-creds-warn" style="display:none">
+        <span>⚠️ AI not configured.</span>
+        <button class="btn-link" onclick="smSettingsOpen()">Set up API credentials →</button>
+      </div>
+
+      <!-- Project title -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label for="sm-ai-project-title">Project name</label>
+        <input type="text" id="sm-ai-project-title" placeholder="e.g. Teacher Onboarding Redesign" />
+      </div>
+
+      <!-- Context input -->
+      <label class="ai-prompt-label" for="sm-ai-context-input">
+        Paste your project brief, org chart, meeting notes, or any text that describes who is involved in this project.
+      </label>
+      <textarea
+        id="sm-ai-context-input"
+        class="ai-notes-textarea"
+        rows="8"
+        placeholder="Examples:
+
+'We are redesigning the teacher onboarding process. Key people: Sarah Chen (Product Owner, Digital Delivery), Mark Johnson (Executive Director, People & Culture), the HR team, school principals, and new teachers. The union rep needs to be consulted. IT team will build the system.'
+
+Or paste an org chart, project charter extract, or stakeholder register..."
+        oninput="smPiiAutoDetect()"
+      ></textarea>
+
+      <!-- PII Find & Replace panel -->
+      <div class="sm-pii-panel">
+        <div class="sm-pii-header">
+          <span>🔒 Privacy — replace before sending to AI</span>
+          <span class="sm-pii-count" id="sm-pii-count"></span>
+        </div>
+        <p class="sm-pii-desc">
+          Real names detected below. Replace them with role labels before sending to AI.
+          The AI will use role labels only — real names stay in your browser.
+        </p>
+        <div id="sm-pii-rules-list" class="sm-pii-rules-list">
+          <!-- Rendered by pii.js -->
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="smPiiAddRule()" style="margin-top:8px">+ Add rule</button>
+      </div>
+
+      <div class="ai-prompt-actions">
+        <button class="btn btn-ghost" onclick="smPiiPreview()">🔍 Preview sanitised text</button>
+        <button class="btn btn-primary" id="sm-btn-generate" onclick="smRunAiGenerate()">
+          ✨ Generate stakeholder list
+        </button>
+      </div>
+
+    </div>
+    <!-- /sm-ai-panel -->
+
+  </div>
+  <!-- /welcome-inner -->
+</div>
+<!-- /sm-welcome-screen -->
+
+<!-- ============================================================
+     EDITOR SCREEN
+============================================================ -->
+<div id="sm-editor-screen" style="display:none">
+
+  <!-- ── Toolbar ──────────────────────────────────────────── -->
+  <div class="editor-toolbar">
+    <button class="btn btn-ghost btn-sm" onclick="smBackToSplash()" title="Back to start">← Home</button>
+    <div class="editor-toolbar__sep"></div>
+    <input type="text" id="sm-project-title-input" class="sm-project-title-input"
+      placeholder="Project name…" oninput="smState.projectTitle=this.value" />
+    <div class="editor-toolbar__spacer"></div>
+
+    <!-- View switcher -->
+    <div class="sm-view-tabs" role="tablist">
+      <button class="sm-view-tab active" id="tab-power" onclick="smSwitchView('power')" role="tab" aria-selected="true">
+        📊 Power/Interest Matrix
+      </button>
+      <button class="sm-view-tab" id="tab-raci" onclick="smSwitchView('raci')" role="tab" aria-selected="false">
+        📋 RACI Matrix
+      </button>
+    </div>
+
+    <div class="editor-toolbar__spacer"></div>
+
+    <!-- Export dropdown -->
+    <div class="export-dropdown">
+      <button class="btn btn-secondary btn-sm" id="sm-export-btn" aria-haspopup="true" aria-expanded="false">
+        Export ▾
+      </button>
+      <div class="export-menu" id="sm-export-menu" role="menu">
+        <button onclick="smExportSvg(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">🖼️</span> Download SVG
+        </button>
+        <button onclick="smExportPng(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">🖼️</span> Download PNG
+        </button>
+        <button onclick="smExportPptx(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">📊</span> Export to PowerPoint
+        </button>
+        <div class="export-menu__divider"></div>
+        <button onclick="smExportCsv(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">📄</span> Export RACI as CSV
+        </button>
+        <button onclick="smExportJson(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">💾</span> Save as JSON
+        </button>
+        <div class="export-menu__divider"></div>
+        <button onclick="smExportMermaid(); smCloseExportMenu()" role="menuitem">
+          <span class="export-icon">📋</span> Copy as Mermaid (simplified)
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-icon" onclick="smSettingsOpen()" title="API Settings" style="font-size:18px">⚙️</button>
+  </div>
+  <!-- /editor-toolbar -->
+
+  <!-- ── Editor body ──────────────────────────────────────── -->
+  <div class="sm-editor-body">
+
+    <!-- Left panel: stakeholder list -->
+    <div class="sm-editor-left">
+      <div class="sm-list-header">
+        <span class="sm-list-title">Stakeholders <span class="sm-list-count" id="sm-list-count">0</span></span>
+        <button class="btn btn-primary btn-sm" onclick="smAddStakeholder()">+ Add</button>
+      </div>
+
+      <!-- Group filter -->
+      <div class="sm-group-filters" id="sm-group-filters">
+        <button class="sm-filter-btn active" data-group="all" onclick="smFilterGroup('all')">All</button>
+        <button class="sm-filter-btn" data-group="delivery" onclick="smFilterGroup('delivery')">Delivery</button>
+        <button class="sm-filter-btn" data-group="executive" onclick="smFilterGroup('executive')">Executive</button>
+        <button class="sm-filter-btn" data-group="users" onclick="smFilterGroup('users')">Users</button>
+        <button class="sm-filter-btn" data-group="external" onclick="smFilterGroup('external')">External</button>
+      </div>
+
+      <!-- Stakeholder list -->
+      <div class="sm-stakeholder-list" id="sm-stakeholder-list">
+        <!-- Rendered by app.js -->
+      </div>
+
+      <!-- Phase config -->
+      <div class="sm-phase-config">
+        <div class="sm-phase-config-header" onclick="smTogglePhaseConfig()">
+          <span>⚙️ Configure phases</span>
+          <span class="chevron" id="sm-phase-chevron">▼</span>
+        </div>
+        <div class="sm-phase-config-body" id="sm-phase-config-body" style="display:none">
+          <div id="sm-phase-list"><!-- Rendered by app.js --></div>
+          <button class="btn btn-ghost btn-sm" onclick="smAddPhaseAndRefresh()" style="margin-top:8px">+ Add phase</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resizer -->
+    <div class="sm-resizer" id="sm-resizer"></div>
+
+    <!-- Right panel: diagram views -->
+    <div class="sm-editor-right">
+
+      <!-- Power/Interest Matrix view -->
+      <div id="sm-view-power" class="sm-view-panel">
+        <div class="sm-view-header">
+          <span class="sm-view-title">Power / Interest Matrix</span>
+          <div class="sm-matrix-controls">
+            <div class="sm-group-legend" id="sm-matrix-legend"></div>
+            <button class="btn btn-ghost btn-sm" onclick="smMatrixSpread()" title="Spread overlapping circles">⊕ Spread</button>
+            <button class="btn btn-ghost btn-sm" onclick="smMatrixReset()" title="Reset zoom">⊙ Reset</button>
+          </div>
+        </div>
+        <div class="sm-matrix-container" id="sm-matrix-container">
+          <div class="sm-matrix-empty" id="sm-matrix-empty">
+            <div style="font-size:48px;margin-bottom:12px">🗺️</div>
+            <div>Add stakeholders to see the Power/Interest Matrix</div>
+          </div>
+          <!-- D3 SVG rendered here -->
+        </div>
+        <div id="sm-matrix-tooltip" class="sm-tooltip" style="display:none"></div>
+      </div>
+
+      <!-- RACI Matrix view -->
+      <div id="sm-view-raci" class="sm-view-panel" style="display:none">
+        <div class="sm-view-header">
+          <span class="sm-view-title">RACI / Engagement Matrix</span>
+          <div class="sm-raci-controls">
+            <span class="sm-raci-legend">
+              <span class="raci-badge raci-L">L</span> Lead &nbsp;
+              <span class="raci-badge raci-A">A</span> Accountable &nbsp;
+              <span class="raci-badge raci-C">C</span> Consult &nbsp;
+              <span class="raci-badge raci-I">I</span> Inform &nbsp;
+              <span class="raci-badge raci-E">E</span> Engage
+            </span>
+          </div>
+        </div>
+        <div class="sm-raci-container" id="sm-raci-container">
+          <div class="sm-matrix-empty" id="sm-raci-empty">
+            <div style="font-size:48px;margin-bottom:12px">📋</div>
+            <div>Add stakeholders to see the RACI Matrix</div>
+          </div>
+          <!-- RACI table rendered here -->
+        </div>
+      </div>
+
+    </div>
+    <!-- /sm-editor-right -->
+
+  </div>
+  <!-- /sm-editor-body -->
+
+</div>
+<!-- /sm-editor-screen -->
+
+<!-- ============================================================
+     SCRIPTS
+     Load order: d3 → pptxgen → api → pii → data → prompts → matrix → raci → export → app
+============================================================ -->
+
+<!-- D3.js v7 from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+
+<!-- PptxGenJS — local copy -->
+<script src="lib/pptxgen.bundle.js"></script>
+
+<!-- Tool scripts -->
+<script src="js/api.js"></script>
+<script src="js/pii.js"></script>
+<script src="js/data.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/matrix.js"></script>
+<script src="js/raci.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
