@@ -1,0 +1,270 @@
+/* ============================================================
+   SHARED NAVBAR — SDC AI Tools
+   Styled using ADS3 Design System tokens.
+   Requires: design-tokens.css loaded before this file.
+============================================================ */
+
+:root {
+  /* ── Local aliases → ADS3 tokens ──────────────────────────
+     These map the old --sdc-* names to the real DoE palette.
+     Existing HTML using --sdc-* vars continues to work.
+  ─────────────────────────────────────────────────────────── */
+  --sdc-navy:        var(--ads3-blue-01);       /* #002664 — DoE primary navy */
+  --sdc-navy-hover:  color-mix(in srgb, var(--ads3-blue-01) 85%, black);
+  --sdc-blue:        var(--ads3-blue-02);       /* #146CFD — DoE info blue */
+  --sdc-blue-light:  var(--ads3-blue-04);       /* #CBEDFD — DoE light blue */
+  --sdc-bg:          var(--ads3-color-bg);      /* #F2F2F2 */
+  --sdc-white:       var(--ads3-white);         /* #FFFFFF */
+  --sdc-border:      var(--ads3-color-border);  /* #EBEBEB */
+  --sdc-text:        var(--ads3-color-text);    /* #22272B */
+  --sdc-text-muted:  var(--ads3-color-text-secondary); /* #495054 */
+  --sdc-active:      var(--ads3-blue-02);       /* #146CFD */
+  --navbar-h:        56px;                      /* matches ADS3 TopBar h-14 */
+}
+
+/* ---- Top bar ---- */
+.sdc-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--ads3-topbar);
+  height: var(--navbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 0;
+  box-shadow: var(--ads3-shadow-md);
+  font-family: var(--ads3-font-sans);
+}
+
+/* Brand / home link */
+.sdc-navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ads3-white);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  padding-right: 24px;
+  border-right: 1px solid rgba(255,255,255,0.18);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.sdc-navbar__brand:hover {
+  color: var(--ads3-blue-04);
+}
+
+.sdc-navbar__brand-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Nav links list */
+.sdc-navbar__links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-x: visible;
+  scrollbar-width: none;
+  height: var(--navbar-h);
+}
+
+.sdc-navbar__links::-webkit-scrollbar {
+  display: none;
+}
+
+.sdc-navbar__links > li {
+  flex-shrink: 0;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Top-level nav trigger buttons */
+.sdc-navbar__links > li > .nav-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--ads3-radius-sm);
+  text-decoration: none;
+  color: rgba(255,255,255,0.82);
+  font-size: var(--ads3-text-small);
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  height: 100%;
+}
+
+.sdc-navbar__links > li > .nav-group-btn:hover,
+.sdc-navbar__links > li:hover > .nav-group-btn {
+  background: rgba(255,255,255,0.12);
+  color: var(--ads3-white);
+}
+
+.sdc-navbar__links > li > .nav-group-btn.active {
+  background: rgba(255,255,255,0.18);
+  color: var(--ads3-white);
+  font-weight: 600;
+}
+
+.nav-group-btn .nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.nav-group-btn .nav-chevron {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  transition: transform 0.15s;
+  margin-left: 2px;
+}
+
+.sdc-navbar__links > li:hover > .nav-group-btn .nav-chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- Dropdown panel ---- */
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(var(--navbar-h) - 2px);
+  left: 0;
+  min-width: 220px;
+  background: var(--ads3-color-surface);
+  border: 1px solid var(--ads3-color-border);
+  border-radius: 0 0 var(--ads3-radius) var(--ads3-radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  padding: 6px 0;
+  z-index: 1100;
+}
+
+.sdc-navbar__links > li:hover > .nav-dropdown {
+  display: block;
+}
+
+.nav-dropdown a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  text-decoration: none;
+  color: var(--ads3-color-text);
+  font-size: var(--ads3-text-small);
+  font-weight: 500;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.nav-dropdown a:hover {
+  background: var(--ads3-color-bg);
+  color: var(--ads3-color-primary);
+}
+
+.nav-dropdown a.active {
+  background: var(--ads3-blue-04);
+  color: var(--ads3-color-primary);
+  font-weight: 600;
+}
+
+.nav-dropdown a.nav-disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.nav-dropdown .nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-dropdown .nav-badge {
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: var(--ads3-color-bg);
+  color: var(--ads3-color-text-secondary);
+  padding: 1px 6px;
+  border-radius: var(--ads3-radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--ads3-color-border);
+}
+
+/* Divider inside dropdown */
+.nav-dropdown__divider {
+  height: 1px;
+  background: var(--ads3-color-border);
+  margin: 4px 0;
+}
+
+/* Badge for "coming soon" items */
+.sdc-navbar__links a .nav-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.7);
+  padding: 1px 5px;
+  border-radius: var(--ads3-radius-full);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Right-side slot */
+.sdc-navbar__right {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 16px;
+}
+
+.sdc-navbar__tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---- Body offset so sticky navbar doesn't cover content ---- */
+body.has-sdc-navbar {
+  padding-top: 0; /* navbar is sticky inside flow */
+}
+
+/* ---- Shared page footer ---- */
+.site-footer {
+  text-align: center;
+  padding: 20px 16px;
+  font-size: 0.78rem;
+  color: var(--ads3-color-text-secondary);
+  border-top: 1px solid var(--ads3-color-border);
+  background: var(--ads3-color-surface);
+  font-family: var(--ads3-font-sans);
+}
+
+.site-footer a {
+  color: var(--ads3-blue-02);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
