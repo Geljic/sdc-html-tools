@@ -402,7 +402,7 @@ Include only the rows the transcript gives evidence for.
 `,cl=`---
 skill: session-findings
 title: Session Findings
-version: 1.0.0
+version: 1.1.0
 author: SDC AI Pilot
 ---
 
@@ -414,7 +414,7 @@ Your task is to turn one research session into a **session findings** document: 
 
 - **Every section heading is a claim, not a label.** Write "The cut-off is unmeetable on some shift patterns", never "Theme 3" or "Process issues". A reader who reads only the headings should get the whole argument.
 - **Evidence before interpretation.** Quote first, then say why it matters. Never the reverse.
-- **Quotes are verbatim and attributed**, with a timestamp where the source carries one. Where several people made the same point, stack them as a chorus rather than picking one voice.
+- **Every quote is verbatim, attributed and timestamped.** Meeting transcripts carry a timestamp against each turn. Copy it. A quote without one is unusable, because the reader cannot go back to the recording and hear it in context. See the timestamp rule below.
 - **Contradictions are findings.** Where the session disagrees with itself, or with something the source says was established earlier, record both positions and mark them contested. Never smooth a disagreement away.
 - **Say how strong each finding is.** One person, however senior, is SINGLE. Two independent sources is CORROBORATED. Three or more, or a source plus a document, is STRONG. Anything you worked out yourself and nobody said is INFERRED, and must be labelled as such.
 - **Numbers belong in a small table**, not buried in a sentence.
@@ -429,6 +429,17 @@ The source may already be de-identified, with speakers appearing as \`Participan
 - **Flag personal information, do not redact it.** Names of non-staff, clients, students and vulnerable people; health, welfare or financial detail; allegations about an identifiable individual. Say where it appears so a practitioner can decide what to do.
 - **If a participant asks not to be identified, or asks for something to be attributed to the group rather than to them, record that request at the top and honour it throughout the body.** This is the most important rule in this document.
 
+## Timestamps
+
+This is not optional and it is the rule most often got wrong.
+
+- **Every quote carries the timestamp of the turn it came from**, in the format the source uses, for example \`12:34\` or \`1:05:22\`.
+- Put it **after the speaker label**: \`— Participant 3, 24:07\`.
+- Where you cite a claim in running prose without quoting it, still give the speaker and the timestamp: "Participant 2 put the figure at about thirty a week (38:01)."
+- If several turns support one point, cite each one. Do not merge two turns into a single quotation.
+- **Never invent, round or estimate a timestamp.** If the source genuinely has none, write the quote without one and say so once under the PII and consent line: "This source carries no timestamps."
+- If a turn spans a long passage, use the timestamp printed at the start of that turn.
+
 ## Tags
 
 Use these in backticks at the start of a paragraph, heading or table row where they apply, and nowhere else.
@@ -438,7 +449,7 @@ Use these in backticks at the start of a paragraph, heading or table row where t
 ## Rules
 
 - Markdown only. No preamble, no explanation, no closing commentary. Output the document directly.
-- Keep quotes to one or two sentences. Use an ellipsis to mark an elision and never alter a word inside quotation marks.
+- Keep quotes to one or two sentences. Use an ellipsis to mark an elision and never alter a word inside quotation marks. Keep the timestamp even when you elide.
 - Do not use em dashes.
 - Where a section has nothing in it, write "Nothing in this session." rather than padding it.
 - Order findings by how much each one should change what the team does next, not by when they came up in the session.
@@ -464,7 +475,7 @@ Use these in backticks at the start of a paragraph, heading or table row where t
 > *"[Verbatim quote]"* — [Speaker label], [timestamp]
 > *"[A second voice on the same point]"* — [Speaker label], [timestamp]
 
-[Two to four sentences on what this means for the project and why it matters. Name the evidence strength.]
+[Two to four sentences on what this means for the project and why it matters. Name the evidence strength. Any claim you make here that came from the session carries its speaker and timestamp too.]
 
 ## 2. [Next finding, stated as a claim]
 
@@ -474,7 +485,7 @@ Use these in backticks at the start of a paragraph, heading or table row where t
 
 | Measure | Value |
 |---|---|
-| [What was counted] | [Value, with the speaker label where it is one person's estimate] |
+| [What was counted] | [Value, with the speaker label and timestamp where it is one person's estimate] |
 
 [Omit this section entirely if the session produced no numbers.]
 
@@ -482,11 +493,11 @@ Use these in backticks at the start of a paragraph, heading or table row where t
 
 | # | Question | Positions |
 |---|---|---|
-| 1 | [The question] | **[Speaker label]:** [position]. **[Other speaker, or an earlier source]:** [position]. [Who can resolve it] |
+| 1 | [The question] | **[Speaker label], [timestamp]:** [position]. **[Other speaker, or an earlier source]:** [position]. [Who can resolve it] |
 
 ## [n]. Things to act on
 
-1. [Action, with the date and owner the session named, or "owner not named"]
+1. [Action, with the date and owner the session named, or "owner not named". Cite the timestamp where the session asked for it.]
 
 ---
 *AI-generated from a session transcript. Practitioner review is required before this is used in a deliverable or quoted outside the team.*
